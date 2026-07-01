@@ -1,6 +1,7 @@
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
 
 import { ConfidenceMeter } from "@/components/ConfidenceMeter";
+import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,8 @@ import type { PredictionResult } from "@/types";
 interface PredictionCardProps {
   prediction: PredictionResult | null;
   isLoading?: boolean;
+  updatedAt?: string | null;
+  isLive?: boolean;
 }
 
 const DIRECTION_META = {
@@ -17,7 +20,7 @@ const DIRECTION_META = {
   neutral: { label: "Neutral", icon: Minus, color: "text-ink-muted" },
 } as const;
 
-export function PredictionCard({ prediction, isLoading }: PredictionCardProps) {
+export function PredictionCard({ prediction, isLoading, updatedAt, isLive }: PredictionCardProps) {
   const meta = prediction ? DIRECTION_META[prediction.direction] : null;
   const Icon = meta?.icon ?? Minus;
 
@@ -36,6 +39,9 @@ export function PredictionCard({ prediction, isLoading }: PredictionCardProps) {
           )}
         </div>
         {prediction && <ConfidenceMeter confidence={prediction.confidence} />}
+      </div>
+      <div className="mt-4">
+        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} />
       </div>
     </Panel>
   );

@@ -1,11 +1,14 @@
 import { Activity, Moon, Sunrise, Sunset } from "lucide-react";
 
+import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { cn } from "@/lib/utils";
 import type { MarketStatus } from "@/types";
 
 interface MarketStatusCardProps {
   status: MarketStatus | null;
+  updatedAt?: string | null;
+  isLive?: boolean;
 }
 
 const SESSION_META = {
@@ -15,7 +18,7 @@ const SESSION_META = {
   after_hours: { label: "After Hours", icon: Sunset, dot: "bg-warn" },
 } as const;
 
-export function MarketStatusCard({ status }: MarketStatusCardProps) {
+export function MarketStatusCard({ status, updatedAt, isLive }: MarketStatusCardProps) {
   const meta = status ? SESSION_META[status.session] : null;
   const Icon = meta?.icon ?? Activity;
 
@@ -40,6 +43,10 @@ export function MarketStatusCard({ status }: MarketStatusCardProps) {
           <span className="font-medium capitalize text-ink">{status.asset_type}</span>
         </div>
       )}
+
+      <div className="mt-3">
+        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} />
+      </div>
     </Panel>
   );
 }

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { ConnectionState } from "@/hooks/useLiveQuote";
+import type { ConnectionState } from "@/hooks/useLiveSnapshot";
 
 const LABELS: Record<ConnectionState, string> = {
   connecting: "Connecting to live market data...",

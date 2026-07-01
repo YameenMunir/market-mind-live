@@ -16,6 +16,10 @@ import type { Candle, PredictionResult } from "@/types";
 
 interface LiveCandlestickChartProps {
   candles: Candle[];
+  /** Latest live quote price - when set, ticks the last bar's close/high/low in place
+   * via `series.update()` between full candle refreshes, so the chart visibly tracks
+   * the live price without a full redraw (no reset zoom/pan, no flicker). */
+  livePrice?: number | null;
   supportLevels: number[];
   resistanceLevels: number[];
   prediction: PredictionResult | null;
@@ -51,6 +55,7 @@ const THEME_COLORS = {
 
 export function LiveCandlestickChart({
   candles,
+  livePrice,
   supportLevels,
   resistanceLevels,
   prediction,
@@ -67,6 +72,8 @@ export function LiveCandlestickChart({
   const bbUpperRef = useRef<ISeriesApi<"Line"> | null>(null);
   const bbLowerRef = useRef<ISeriesApi<"Line"> | null>(null);
   const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
+  const lastBaseCandleRef = useRef<{ time: Time; open: number; high: number; low: number } | null>(null);
+  const hasFitContentRef = useRef(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -122,6 +129,7 @@ export function LiveCandlestickChart({
     sma50SeriesRef.current = sma50Series;
     bbUpperRef.current = bbUpper;
     bbLowerRef.current = bbLower;
+    hasFitContentRef.current = false;
     setIsReady(true);
 
     return () => {
@@ -142,6 +150,16 @@ export function LiveCandlestickChart({
       close: c.close,
     }));
     candleSeriesRef.current.setData(candleData);
+
+    const lastCandleForLiveTick = candles[candles.length - 1];
+    lastBaseCandleRef.current = lastCandleForLiveTick
+      ? {
+          time: lastCandleForLiveTick.time as Time,
+          open: lastCandleForLiveTick.open,
+          high: lastCandleForLiveTick.high,
+          low: lastCandleForLiveTick.low,
+        }
+      : null;
 
     volumeSeriesRef.current?.setData(
       candles.map((c) => ({
@@ -222,8 +240,33 @@ export function LiveCandlestickChart({
       candleSeriesRef.current?.setMarkers([]);
     }
 
-    chartRef.current?.timeScale().fitContent();
+    // Only fit the visible range on the first load - refitting on every subsequent
+    // refresh would reset any zoom/pan the user has done, which reads as a jarring
+    // "jump" rather than a smooth live update.
+    if (!hasFitContentRef.current) {
+      chartRef.current?.timeScale().fitContent();
+      hasFitContentRef.current = true;
+    }
   }, [candles, isReady, showMovingAverages, showBollinger, supportLevels, resistanceLevels, prediction, theme]);
+
+  // Ticks the last bar's close (and high/low if the live price extends them) in place
+  // on every quote update, without touching the rest of the series or the viewport.
+  useEffect(() => {
+    if (!isReady || !candleSeriesRef.current || livePrice === null || livePrice === undefined) return;
+    const base = lastBaseCandleRef.current;
+    if (!base) return;
+
+    const updatedCandle = {
+      time: base.time,
+      open: base.open,
+      high: Math.max(base.high, livePrice),
+      low: Math.min(base.low, livePrice),
+      close: livePrice,
+    };
+    candleSeriesRef.current.update(updatedCandle);
+    base.high = updatedCandle.high;
+    base.low = updatedCandle.low;
+  }, [livePrice, isReady]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 }

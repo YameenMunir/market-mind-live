@@ -1,9 +1,12 @@
+import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { cn } from "@/lib/utils";
 import type { IndicatorSet } from "@/types";
 
 interface IndicatorPanelProps {
   indicators: IndicatorSet | null;
+  updatedAt?: string | null;
+  isLive?: boolean;
 }
 
 function Row({ label, value, tone }: { label: string; value: string; tone?: "bull" | "bear" | "warn" }) {
@@ -25,7 +28,7 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "bul
   );
 }
 
-export function IndicatorPanel({ indicators }: IndicatorPanelProps) {
+export function IndicatorPanel({ indicators, updatedAt, isLive }: IndicatorPanelProps) {
   const rsi = indicators?.rsi_14;
   const rsiTone = rsi === null || rsi === undefined ? undefined : rsi >= 70 ? "bear" : rsi <= 30 ? "bull" : undefined;
   const macdTone =
@@ -82,6 +85,10 @@ export function IndicatorPanel({ indicators }: IndicatorPanelProps) {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="mt-3 border-t border-border pt-3">
+        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} />
       </div>
     </Panel>
   );

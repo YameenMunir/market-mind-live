@@ -3,17 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
+import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
-import { formatCompactNumber, formatPercent, formatPrice, timeAgo } from "@/lib/utils";
+import { formatCompactNumber, formatPercent, formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { PriceQuote } from "@/types";
 
 interface PriceCardProps {
   quote: PriceQuote | null;
   symbol: string;
+  isLive?: boolean;
 }
 
-export function PriceCard({ quote, symbol }: PriceCardProps) {
+export function PriceCard({ quote, symbol, isLive }: PriceCardProps) {
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
   const previousPrice = useRef<number | null>(null);
 
@@ -74,9 +76,10 @@ export function PriceCard({ quote, symbol }: PriceCardProps) {
       </div>
 
       {quote && (
-        <p className="mt-4 text-[11px] text-ink-faint">
-          Updated {timeAgo(quote.as_of)} {quote.is_delayed && "· delayed data"}
-        </p>
+        <div className="mt-4 flex items-center justify-between">
+          <LastUpdated updatedAt={quote.as_of} live={isLive} />
+          {quote.is_delayed && <span className="text-[11px] text-ink-faint">Delayed data</span>}
+        </div>
       )}
     </Panel>
   );

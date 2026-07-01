@@ -1,9 +1,12 @@
+import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { cn } from "@/lib/utils";
 import type { RiskAssessment } from "@/types";
 
 interface RiskCardProps {
   risk: RiskAssessment | null;
+  updatedAt?: string | null;
+  isLive?: boolean;
 }
 
 const RISK_META = {
@@ -13,7 +16,7 @@ const RISK_META = {
   extreme: { label: "Extreme Risk", color: "bg-bear", text: "text-bear" },
 } as const;
 
-export function RiskCard({ risk }: RiskCardProps) {
+export function RiskCard({ risk, updatedAt, isLive }: RiskCardProps) {
   const meta = risk ? RISK_META[risk.risk_level] : null;
 
   return (
@@ -52,6 +55,10 @@ export function RiskCard({ risk }: RiskCardProps) {
           ))}
         </ul>
       )}
+
+      <div className="mt-3">
+        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} />
+      </div>
     </Panel>
   );
 }

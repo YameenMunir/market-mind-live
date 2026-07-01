@@ -68,8 +68,14 @@ def get_candles(symbol: str, interval: str = "1d") -> CandleSeries:
 
 
 def get_history_df(symbol: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
-    _check_rate_limit(symbol)
-    return provider.get_history(symbol, period=period, interval=interval)
+    def _fetch() -> pd.DataFrame:
+        _check_rate_limit(symbol)
+        return provider.get_history(symbol, period=period, interval=interval)
+
+    # Indicators/predictions/risk/backtest all pull the same recent history for a symbol -
+    # cache it so the live hub's frequent recompute cycles don't each trigger a fresh Yahoo call.
+    key = f"history:{symbol.upper()}:{period}:{interval}"
+    return cache.get_or_set(key, settings.candle_cache_ttl_seconds, _fetch)
 
 
 def _dataframe_to_candles(df: pd.DataFrame) -> list[Candle]:
