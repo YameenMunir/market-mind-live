@@ -46,7 +46,7 @@ export default function BacktestingPage() {
 
   return (
     <>
-      <header className="flex items-center justify-between border-b border-border bg-canvas/80 px-6 py-4 backdrop-blur">
+      <header className="flex items-center justify-between border-b border-border bg-canvas px-6 py-4">
         <h1 className="text-sm font-semibold uppercase tracking-wider text-ink-faint">Backtesting</h1>
         <ThemeToggle />
       </header>
