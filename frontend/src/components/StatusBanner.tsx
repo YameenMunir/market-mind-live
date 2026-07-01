@@ -1,0 +1,37 @@
+import { AlertTriangle, Clock, Loader2, MoonStar, WifiOff } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+
+export type StatusTone = "info" | "warning" | "error" | "muted";
+
+interface StatusBannerProps {
+  message: string;
+  tone?: StatusTone;
+  icon?: "loading" | "clock" | "moon" | "warning" | "offline";
+  className?: string;
+}
+
+const TONE_STYLES: Record<StatusTone, string> = {
+  info: "border-brand/30 bg-brand/10 text-brand-strong",
+  warning: "border-warn/30 bg-warn/10 text-warn",
+  error: "border-bear/30 bg-bear/10 text-bear",
+  muted: "border-border bg-surface-raised text-ink-muted",
+};
+
+const ICONS = {
+  loading: Loader2,
+  clock: Clock,
+  moon: MoonStar,
+  warning: AlertTriangle,
+  offline: WifiOff,
+};
+
+export function StatusBanner({ message, tone = "muted", icon = "clock", className }: StatusBannerProps) {
+  const Icon = ICONS[icon];
+  return (
+    <div className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium", TONE_STYLES[tone], className)}>
+      <Icon size={14} className={icon === "loading" ? "animate-spin" : ""} />
+      <span>{message}</span>
+    </div>
+  );
+}

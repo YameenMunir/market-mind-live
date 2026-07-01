@@ -1,0 +1,90 @@
+"use client";
+
+import { Moon, Sun } from "lucide-react";
+
+import { Panel } from "@/components/Panel";
+import { Toggle } from "@/components/Toggle";
+import { useChartPreferences } from "@/hooks/useChartPreferences";
+import { useTheme } from "@/hooks/useTheme";
+import { API_BASE_URL, INDICATOR_POLL_MS, QUOTE_POLL_FALLBACK_MS, WS_BASE_URL } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+
+export function SettingsPanel() {
+  const { theme, setTheme } = useTheme();
+  const { prefs, updatePrefs } = useChartPreferences();
+
+  return (
+    <div className="flex flex-col gap-5">
+      <Panel eyebrow="Appearance" title="Theme">
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setTheme("dark")}
+            className={cn(
+              "flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors",
+              theme === "dark" ? "border-brand bg-brand/10 text-ink" : "border-border text-ink-muted hover:text-ink"
+            )}
+          >
+            <Moon size={16} /> Dark mode
+          </button>
+          <button
+            onClick={() => setTheme("light")}
+            className={cn(
+              "flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors",
+              theme === "light" ? "border-brand bg-brand/10 text-ink" : "border-border text-ink-muted hover:text-ink"
+            )}
+          >
+            <Sun size={16} /> Light mode
+          </button>
+        </div>
+      </Panel>
+
+      <Panel eyebrow="Chart Defaults" title="Overlays">
+        <div className="divide-y divide-border">
+          <Toggle
+            checked={prefs.showMovingAverages}
+            onChange={(v) => updatePrefs({ showMovingAverages: v })}
+            label="Moving averages"
+            description="Show SMA 20 / SMA 50 overlays on the live chart by default."
+          />
+          <Toggle
+            checked={prefs.showBollinger}
+            onChange={(v) => updatePrefs({ showBollinger: v })}
+            label="Bollinger Bands"
+            description="Show volatility bands overlay on the live chart by default."
+          />
+        </div>
+      </Panel>
+
+      <Panel eyebrow="Default Asset" title="Startup symbol">
+        <input
+          value={prefs.defaultSymbol}
+          onChange={(e) => updatePrefs({ defaultSymbol: e.target.value.toUpperCase() })}
+          className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 font-mono text-sm text-ink focus:border-brand/60 focus:outline-none"
+          placeholder="AAPL"
+        />
+        <p className="mt-2 text-xs text-ink-muted">The dashboard will load this symbol on your next visit.</p>
+      </Panel>
+
+      <Panel eyebrow="Connection" title="Data & refresh">
+        <div className="space-y-2.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-ink-faint">API endpoint</span>
+            <span className="font-mono text-ink-muted">{API_BASE_URL}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-ink-faint">WebSocket endpoint</span>
+            <span className="font-mono text-ink-muted">{WS_BASE_URL}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-ink-faint">Quote polling fallback</span>
+            <span className="font-mono text-ink-muted">{QUOTE_POLL_FALLBACK_MS / 1000}s</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-ink-faint">Indicator / prediction refresh</span>
+            <span className="font-mono text-ink-muted">{INDICATOR_POLL_MS / 1000}s</span>
+          </div>
+        </div>
+      </Panel>
+    </div>
+  );
+}

@@ -1,0 +1,57 @@
+import { Panel } from "@/components/Panel";
+import { cn } from "@/lib/utils";
+import type { RiskAssessment } from "@/types";
+
+interface RiskCardProps {
+  risk: RiskAssessment | null;
+}
+
+const RISK_META = {
+  low: { label: "Low Risk", color: "bg-bull", text: "text-bull" },
+  medium: { label: "Medium Risk", color: "bg-warn", text: "text-warn" },
+  high: { label: "High Risk", color: "bg-brand", text: "text-brand" },
+  extreme: { label: "Extreme Risk", color: "bg-bear", text: "text-bear" },
+} as const;
+
+export function RiskCard({ risk }: RiskCardProps) {
+  const meta = risk ? RISK_META[risk.risk_level] : null;
+
+  return (
+    <Panel eyebrow="Risk Assessment" title={meta?.label ?? "--"}>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
+        <div
+          className={cn("h-full rounded-full transition-all duration-700", meta?.color ?? "bg-ink-faint")}
+          style={{ width: `${risk?.risk_score ?? 0}%` }}
+        />
+      </div>
+      <p className={cn("mt-2 numeric text-xs font-medium", meta?.text ?? "text-ink-muted")}>
+        Risk score {risk ? Math.round(risk.risk_score) : "--"} / 100
+      </p>
+
+      <div className="mt-4 flex items-center justify-between text-xs">
+        <span className="text-ink-faint">Annualized volatility</span>
+        <span className="numeric font-medium text-ink">
+          {risk ? `${risk.volatility_annualized_pct.toFixed(1)}%` : "--"}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center justify-between text-xs">
+        <span className="text-ink-faint">Max drawdown</span>
+        <span className="numeric font-medium text-ink">
+          {risk?.max_drawdown_pct !== null && risk?.max_drawdown_pct !== undefined
+            ? `${risk.max_drawdown_pct.toFixed(1)}%`
+            : "--"}
+        </span>
+      </div>
+
+      {risk && risk.factors.length > 0 && (
+        <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
+          {risk.factors.map((factor, i) => (
+            <li key={i} className="text-[11px] leading-relaxed text-ink-muted">
+              {factor}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
