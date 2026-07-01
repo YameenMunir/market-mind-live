@@ -67,21 +67,21 @@ export function SettingsPanel() {
 
       <Panel eyebrow="Connection" title="Data & refresh">
         <div className="space-y-2.5 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-ink-faint">API endpoint</span>
-            <span className="font-mono text-ink-muted">{API_BASE_URL}</span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="shrink-0 text-ink-faint">API endpoint</span>
+            <span className="break-all text-right font-mono text-ink-muted">{API_BASE_URL}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-faint">WebSocket endpoint</span>
-            <span className="font-mono text-ink-muted">{WS_BASE_URL}</span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="shrink-0 text-ink-faint">WebSocket endpoint</span>
+            <span className="break-all text-right font-mono text-ink-muted">{WS_BASE_URL}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-faint">Quote polling fallback</span>
-            <span className="font-mono text-ink-muted">{QUOTE_POLL_FALLBACK_MS / 1000}s</span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="shrink-0 text-ink-faint">Quote polling fallback</span>
+            <span className="shrink-0 font-mono text-ink-muted">{QUOTE_POLL_FALLBACK_MS / 1000}s</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-faint">Indicator / prediction refresh</span>
-            <span className="font-mono text-ink-muted">{INDICATOR_POLL_MS / 1000}s</span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="shrink-0 text-ink-faint">Indicator / prediction refresh</span>
+            <span className="shrink-0 font-mono text-ink-muted">{INDICATOR_POLL_MS / 1000}s</span>
           </div>
         </div>
       </Panel>

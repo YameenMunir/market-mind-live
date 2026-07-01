@@ -65,15 +65,16 @@ const fadeUp = {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-canvas">
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-5 sm:px-6 sm:py-6">
         <BrandMark />
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
           <Link
             href="/dashboard"
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-canvas transition-opacity hover:opacity-90"
+            className="whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 sm:px-4"
           >
-            Launch Dashboard
+            <span className="sm:hidden">Launch</span>
+            <span className="hidden sm:inline">Launch Dashboard</span>
           </Link>
         </div>
       </header>
@@ -109,17 +110,17 @@ export default function LandingPage() {
             traders who want the signal, not the noise.
           </motion.p>
 
-          <motion.div custom={3} variants={fadeUp} className="mt-9 flex items-center justify-center gap-3">
+          <motion.div custom={3} variants={fadeUp} className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/dashboard"
-              className="group flex items-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-canvas transition-transform hover:-translate-y-0.5"
+              className="group flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-canvas transition-transform hover:-translate-y-0.5 sm:w-auto"
             >
               Open the terminal
               <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
             <Link
               href="/backtesting"
-              className="rounded-lg border border-border px-5 py-3 text-sm font-semibold text-ink-muted transition-colors hover:text-ink"
+              className="w-full whitespace-nowrap rounded-lg border border-border px-5 py-3 text-center text-sm font-semibold text-ink-muted transition-colors hover:text-ink sm:w-auto"
             >
               Explore backtesting
             </Link>

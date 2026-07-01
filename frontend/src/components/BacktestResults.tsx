@@ -52,8 +52,8 @@ export function BacktestResults({ result, theme }: { result: BacktestResult | nu
       </Panel>
 
       <Panel eyebrow="Trade Log" title={`${result.trades.length} closed trades`}>
-        <div className="max-h-72 overflow-y-auto">
-          <table className="w-full text-left text-xs">
+        <div className="max-h-72 overflow-auto">
+          <table className="w-full min-w-[520px] text-left text-xs">
             <thead className="sticky top-0 bg-surface text-ink-faint">
               <tr>
                 <th className="pb-2 font-medium">Entry</th>

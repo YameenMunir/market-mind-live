@@ -14,8 +14,8 @@ export function Panel({ children, className, title, eyebrow, action }: PanelProp
   return (
     <div className={cn("rounded-2xl border border-border bg-surface p-5 shadow-panel", className)}>
       {(title || eyebrow || action) && (
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
             {eyebrow && <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">{eyebrow}</p>}
             {title && <h3 className="mt-0.5 text-sm font-semibold text-ink">{title}</h3>}
           </div>

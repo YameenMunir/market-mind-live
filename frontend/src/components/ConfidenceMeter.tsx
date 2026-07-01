@@ -5,7 +5,7 @@ interface ConfidenceMeterProps {
   size?: number;
 }
 
-export function ConfidenceMeter({ confidence, size = 88 }: ConfidenceMeterProps) {
+export function ConfidenceMeter({ confidence, size = 100 }: ConfidenceMeterProps) {
   const radius = (size - 10) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - confidence / 100);
@@ -34,9 +34,9 @@ export function ConfidenceMeter({ confidence, size = 88 }: ConfidenceMeterProps)
           stroke="currentColor"
         />
       </svg>
-      <div className="absolute flex flex-col items-center">
-        <span className="numeric font-mono text-xl font-semibold text-ink">{Math.round(confidence)}%</span>
-        <span className="text-[9px] uppercase tracking-wider text-ink-faint">Confidence</span>
+      <div className="absolute flex flex-col items-center gap-0.5">
+        <span className="numeric font-mono text-xl font-semibold leading-none text-ink">{Math.round(confidence)}%</span>
+        <span className="text-[8px] font-medium uppercase tracking-wide text-ink-faint">Confidence</span>
       </div>
     </div>
   );

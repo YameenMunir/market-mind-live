@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
+    <div className={cn("flex shrink-0 items-center gap-2.5 whitespace-nowrap", className)}>
       <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="26" height="26" rx="7" className="fill-brand" />
         <path

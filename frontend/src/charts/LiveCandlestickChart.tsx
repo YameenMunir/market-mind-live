@@ -85,7 +85,7 @@ export function LiveCandlestickChart({
       },
       crosshair: { mode: CrosshairMode.Normal },
       rightPriceScale: { borderColor: colors.border },
-      timeScale: { borderColor: colors.border, timeVisible: true, secondsVisible: false },
+      timeScale: { borderColor: colors.border, timeVisible: true, secondsVisible: false, rightOffset: 10 },
       autoSize: true,
     });
 
@@ -104,10 +104,16 @@ export function LiveCandlestickChart({
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
-    const sma20Series = chart.addLineSeries({ color: colors.sma20, lineWidth: 2, title: "SMA 20" });
-    const sma50Series = chart.addLineSeries({ color: colors.sma50, lineWidth: 2, title: "SMA 50" });
-    const bbUpper = chart.addLineSeries({ color: colors.bollinger, lineWidth: 1, title: "BB Upper" });
-    const bbLower = chart.addLineSeries({ color: colors.bollinger, lineWidth: 1, title: "BB Lower" });
+    // No title text and lastValueVisible/priceLineVisible off for overlay series - an axis
+    // badge per series (SMA20/SMA50/BB upper/lower) stacks up and collides with the
+    // support/resistance labels when values sit close together. Colors + the legend
+    // checkboxes below the chart identify each line instead; crosshair tooltip still
+    // shows exact values on hover.
+    const overlaySeriesOptions = { lastValueVisible: false, priceLineVisible: false } as const;
+    const sma20Series = chart.addLineSeries({ color: colors.sma20, lineWidth: 2, ...overlaySeriesOptions });
+    const sma50Series = chart.addLineSeries({ color: colors.sma50, lineWidth: 2, ...overlaySeriesOptions });
+    const bbUpper = chart.addLineSeries({ color: colors.bollinger, lineWidth: 1, ...overlaySeriesOptions });
+    const bbLower = chart.addLineSeries({ color: colors.bollinger, lineWidth: 1, ...overlaySeriesOptions });
 
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
@@ -165,14 +171,27 @@ export function LiveCandlestickChart({
     priceLinesRef.current.forEach((line) => candleSeriesRef.current?.removePriceLine(line));
     priceLinesRef.current = [];
 
+    // Only the level closest to the last price gets an axis label - drawing every
+    // support/resistance line with its own badge crowds the price axis and the labels
+    // collide when levels sit close together. The rest still render as dashed zone
+    // lines (visible on the chart) without a badge; the full list stays in the panel below.
+    const lastPrice = candles[candles.length - 1]?.close;
+    const nearestLevel = (levels: number[]) =>
+      levels.length === 0 || lastPrice === undefined
+        ? null
+        : levels.reduce((closest, level) => (Math.abs(level - lastPrice) < Math.abs(closest - lastPrice) ? level : closest));
+
+    const nearestSupport = nearestLevel(supportLevels);
+    const nearestResistance = nearestLevel(resistanceLevels);
+
     supportLevels.forEach((level) => {
       const line = candleSeriesRef.current!.createPriceLine({
         price: level,
         color: THEME_COLORS[theme].up,
         lineWidth: 1,
         lineStyle: 2,
-        axisLabelVisible: true,
-        title: "Support",
+        axisLabelVisible: level === nearestSupport,
+        title: level === nearestSupport ? "S" : "",
       });
       priceLinesRef.current.push(line);
     });
@@ -183,8 +202,8 @@ export function LiveCandlestickChart({
         color: THEME_COLORS[theme].down,
         lineWidth: 1,
         lineStyle: 2,
-        axisLabelVisible: true,
-        title: "Resistance",
+        axisLabelVisible: level === nearestResistance,
+        title: level === nearestResistance ? "R" : "",
       });
       priceLinesRef.current.push(line);
     });
