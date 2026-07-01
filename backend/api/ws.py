@@ -44,6 +44,8 @@ async def live_feed(websocket: WebSocket, symbol: str):
         while True:
             try:
                 await websocket.send_json(_serialize(symbol))
+            except WebSocketDisconnect:
+                raise  # let the outer handler log this as a normal disconnect, not an error
             except Exception:
                 logger.exception("Failed to send live snapshot for %s", symbol)
                 break
