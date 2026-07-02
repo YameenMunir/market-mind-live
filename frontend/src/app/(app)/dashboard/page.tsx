@@ -141,6 +141,7 @@ export default function DashboardPage() {
           <div className="xl:col-span-4">
             <IndicatorPanel
               indicators={snapshot.indicators}
+              price={snapshot.quote?.price ?? null}
               updatedAt={snapshot.indicatorsUpdatedAt}
               isLive={snapshot.connectionState === "live"}
             />
