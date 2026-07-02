@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from models.schemas import IndicatorSet, PredictionDirection, PredictionResult
+from models.schemas import AssetType, IndicatorSet, PredictionDirection, PredictionResult, RiskAssessment
 
 DIRECTION_LABEL = {
     PredictionDirection.BULLISH: "upward",
@@ -10,9 +10,21 @@ DIRECTION_LABEL = {
     PredictionDirection.NEUTRAL: "sideways",
 }
 
+# How each asset class refers to its "price" in plain English, so the same sentence
+# template doesn't read oddly for a currency pair or an index level.
+PRICE_NOUN = {
+    AssetType.STOCK: "share price",
+    AssetType.ETF: "share price",
+    AssetType.CRYPTO: "price",
+    AssetType.FOREX: "exchange rate",
+    AssetType.COMMODITY: "futures price",
+    AssetType.INDEX: "index level",
+}
 
-def _score_trend(price: float, indicators: IndicatorSet) -> tuple[float, list[str]]:
-    reasons = []
+
+def _score_trend(price: float, indicators: IndicatorSet) -> tuple[float, list[str], list[str]]:
+    reasons: list[str] = []
+    data_notes: list[str] = []
     score = 0.0
     ma = indicators.moving_averages
 
@@ -23,6 +35,8 @@ def _score_trend(price: float, indicators: IndicatorSet) -> tuple[float, list[st
         else:
             score -= 0.35
             reasons.append("Short-term trend (SMA 20) is below the medium-term trend (SMA 50), a bearish signal.")
+    else:
+        data_notes.append("Not enough history yet to compare the 20- and 50-period trend.")
 
     if ma.sma_200 and price:
         if price > ma.sma_200:
@@ -31,12 +45,15 @@ def _score_trend(price: float, indicators: IndicatorSet) -> tuple[float, list[st
         else:
             score -= 0.2
             reasons.append("Price is trading below its 200-period average, indicating a longer-term downtrend.")
+    else:
+        data_notes.append("Not enough history yet to establish the longer-term (200-period) trend.")
 
-    return score, reasons
+    return score, reasons, data_notes
 
 
-def _score_momentum(indicators: IndicatorSet) -> tuple[float, list[str]]:
-    reasons = []
+def _score_momentum(indicators: IndicatorSet) -> tuple[float, list[str], list[str]]:
+    reasons: list[str] = []
+    data_notes: list[str] = []
     score = 0.0
 
     if indicators.rsi_14 is not None:
@@ -48,6 +65,8 @@ def _score_momentum(indicators: IndicatorSet) -> tuple[float, list[str]]:
             reasons.append(f"RSI is at {indicators.rsi_14:.1f}, suggesting oversold conditions.")
         else:
             reasons.append(f"RSI is at {indicators.rsi_14:.1f}, in a neutral range.")
+    else:
+        data_notes.append("RSI could not be calculated from the available history.")
 
     macd = indicators.macd
     if macd.histogram is not None:
@@ -57,12 +76,15 @@ def _score_momentum(indicators: IndicatorSet) -> tuple[float, list[str]]:
         else:
             score -= 0.2
             reasons.append("MACD histogram is negative, indicating bearish momentum.")
+    else:
+        data_notes.append("MACD could not be calculated from the available history.")
 
-    return score, reasons
+    return score, reasons, data_notes
 
 
-def _score_volatility_position(price: float, indicators: IndicatorSet) -> tuple[float, list[str]]:
-    reasons = []
+def _score_volatility_position(price: float, indicators: IndicatorSet) -> tuple[float, list[str], list[str]]:
+    reasons: list[str] = []
+    data_notes: list[str] = []
     score = 0.0
     bb = indicators.bollinger_bands
 
@@ -76,17 +98,30 @@ def _score_volatility_position(price: float, indicators: IndicatorSet) -> tuple[
             elif position <= 0.15:
                 score += 0.15
                 reasons.append("Price is near the lower Bollinger Band, which can precede a bounce.")
+    else:
+        data_notes.append("Bollinger Bands could not be calculated from the available history.")
 
-    return score, reasons
+    return score, reasons, data_notes
 
 
-def generate_prediction(symbol: str, price: float, indicators: IndicatorSet) -> PredictionResult:
-    trend_score, trend_reasons = _score_trend(price, indicators)
-    momentum_score, momentum_reasons = _score_momentum(indicators)
-    volatility_score, volatility_reasons = _score_volatility_position(price, indicators)
+def generate_prediction(
+    symbol: str,
+    price: float,
+    indicators: IndicatorSet,
+    *,
+    asset_name: str | None = None,
+    asset_type: AssetType | None = None,
+    price_change_percent: float | None = None,
+    risk: RiskAssessment | None = None,
+    market_is_open: bool | None = None,
+) -> PredictionResult:
+    trend_score, trend_reasons, trend_notes = _score_trend(price, indicators)
+    momentum_score, momentum_reasons, momentum_notes = _score_momentum(indicators)
+    volatility_score, volatility_reasons, volatility_notes = _score_volatility_position(price, indicators)
 
     total_score = trend_score + momentum_score + volatility_score
     reasoning = trend_reasons + momentum_reasons + volatility_reasons
+    data_notes = trend_notes + momentum_notes + volatility_notes
 
     if total_score > 0.15:
         direction = PredictionDirection.BULLISH
@@ -102,39 +137,129 @@ def generate_prediction(symbol: str, price: float, indicators: IndicatorSet) -> 
         move = indicators.atr_14 * 1.5
         target_price = round(price + move if direction == PredictionDirection.BULLISH else price - move, 4)
 
-    beginner_summary = _build_beginner_summary(symbol, direction, confidence)
-    plain_english = _build_plain_english_explanation(direction, reasoning)
+    agreement = _signal_agreement(trend_score, momentum_score, volatility_score)
+
+    label = symbol.upper()
+    display_name = f"{asset_name} ({label})" if asset_name and asset_name.upper() != label else label
+    price_noun = PRICE_NOUN.get(asset_type, "price") if asset_type else "price"
+
+    beginner_summary = _build_beginner_summary(
+        display_name=display_name,
+        price_noun=price_noun,
+        direction=direction,
+        confidence=confidence,
+        risk=risk,
+        price_change_percent=price_change_percent,
+        market_is_open=market_is_open,
+        agreement=agreement,
+    )
+    plain_english = _build_plain_english_explanation(
+        display_name=display_name,
+        direction=direction,
+        reasoning=reasoning,
+        data_notes=data_notes,
+        agreement=agreement,
+        risk=risk,
+    )
 
     return PredictionResult(
-        symbol=symbol.upper(),
+        symbol=label,
         direction=direction,
         confidence=confidence,
         target_price=target_price,
-        reasoning=reasoning,
+        reasoning=reasoning + data_notes,
         beginner_summary=beginner_summary,
         plain_english_explanation=plain_english,
         generated_at=datetime.now(timezone.utc).isoformat(),
     )
 
 
-def _build_beginner_summary(symbol: str, direction: PredictionDirection, confidence: float) -> str:
+def _signal_agreement(trend_score: float, momentum_score: float, volatility_score: float) -> str:
+    """Classifies how strongly the three signal groups agree with each other, so the
+    explanation can call out mixed/contradictory readings explicitly instead of
+    silently averaging them into one confidence number."""
+    signs = [s for s in (trend_score, momentum_score, volatility_score) if abs(s) > 1e-9]
+    if len(signs) <= 1:
+        return "weak" if not signs else "strong"
+    positive = sum(1 for s in signs if s > 0)
+    negative = sum(1 for s in signs if s < 0)
+    if positive and negative:
+        return "mixed"
+    return "strong" if abs(sum(signs)) >= 0.4 else "weak"
+
+
+def _build_beginner_summary(
+    *,
+    display_name: str,
+    price_noun: str,
+    direction: PredictionDirection,
+    confidence: float,
+    risk: RiskAssessment | None,
+    price_change_percent: float | None,
+    market_is_open: bool | None,
+    agreement: str,
+) -> str:
     label = DIRECTION_LABEL[direction]
+    sentences: list[str] = []
+
     if direction == PredictionDirection.NEUTRAL:
-        return (
-            f"{symbol.upper()} doesn't show a strong signal in either direction right now. "
-            "It may be best to wait for a clearer trend before acting."
+        sentences.append(
+            f"{display_name} doesn't show a strong signal in either direction right now - "
+            "its indicators are roughly balanced, so it may be best to wait for a clearer trend before acting."
         )
-    return (
-        f"Based on current trend and momentum signals, {symbol.upper()} is showing signs of {label} movement "
-        f"with {confidence:.0f}% model confidence. This is not financial advice - always do your own research."
-    )
+    else:
+        confidence_word = "confident" if confidence >= 70 else "moderately confident" if confidence >= 55 else "not very confident"
+        sentences.append(
+            f"{display_name} is currently showing signs of {label} movement in its {price_noun}, "
+            f"and the model is {confidence_word} ({confidence:.0f}%)."
+        )
+
+    if agreement == "mixed":
+        sentences.append("Not every signal agrees, though - some point one way and some the other, so treat this read with extra caution.")
+
+    if price_change_percent is not None:
+        move_word = "up" if price_change_percent >= 0 else "down"
+        sentences.append(f"It's {move_word} {abs(price_change_percent):.2f}% over the current session.")
+
+    if risk is not None:
+        risk_word = {"low": "low", "medium": "moderate", "high": "high", "extreme": "very high"}.get(risk.risk_level.value, risk.risk_level.value)
+        sentences.append(f"Risk is currently rated {risk_word}, so size any decision accordingly.")
+
+    if market_is_open is False:
+        sentences.append("The market for this asset is currently closed, so this reflects the most recent completed session.")
+
+    sentences.append("This is not financial advice - always do your own research.")
+    return " ".join(sentences)
 
 
-def _build_plain_english_explanation(direction: PredictionDirection, reasoning: list[str]) -> str:
+def _build_plain_english_explanation(
+    *,
+    display_name: str,
+    direction: PredictionDirection,
+    reasoning: list[str],
+    data_notes: list[str],
+    agreement: str,
+    risk: RiskAssessment | None,
+) -> str:
     intro = {
-        PredictionDirection.BULLISH: "Several indicators are pointing up:",
-        PredictionDirection.BEARISH: "Several indicators are pointing down:",
-        PredictionDirection.NEUTRAL: "Indicators are mixed or inconclusive:",
+        PredictionDirection.BULLISH: f"Several indicators for {display_name} are pointing up:",
+        PredictionDirection.BEARISH: f"Several indicators for {display_name} are pointing down:",
+        PredictionDirection.NEUTRAL: f"Indicators for {display_name} are mixed or inconclusive:",
     }[direction]
-    bullet_points = " ".join(reasoning) if reasoning else "Not enough historical data was available to form strong signals."
-    return f"{intro} {bullet_points}"
+
+    parts = [intro]
+    parts.append(" ".join(reasoning) if reasoning else "Not enough historical data was available to form strong signals.")
+
+    if agreement == "mixed":
+        parts.append(
+            "Signals disagree with each other here - trend, momentum, and volatility positioning aren't all "
+            "pointing the same way, which is why confidence is limited despite a directional call being made."
+        )
+
+    if risk is not None and risk.factors:
+        parts.append("On risk: " + " ".join(risk.factors))
+
+    if data_notes:
+        parts.append("Data limitations: " + " ".join(data_notes))
+
+    return " ".join(parts)

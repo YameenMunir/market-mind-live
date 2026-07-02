@@ -110,7 +110,16 @@ def build_asset_context(symbol: str) -> AIAssetContext:
             reasons=risk.factors,
         )
 
-        prediction = generate_prediction(symbol, price, indicators)
+        prediction = generate_prediction(
+            symbol,
+            price,
+            indicators,
+            asset_name=asset_name,
+            asset_type=metadata["asset_type"] if metadata else None,
+            price_change_percent=quote.change_percent if quote else None,
+            risk=risk,
+            market_is_open=market_status.is_open if market_status else None,
+        )
         history_store.record(prediction, price)
         prediction_ctx = AIPredictionContext(
             signal=_signal_from_prediction(prediction.direction, prediction.confidence),

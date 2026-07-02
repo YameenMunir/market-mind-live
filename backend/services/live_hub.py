@@ -11,6 +11,7 @@ from models.schemas import IndicatorSet, MarketStatus, PredictionResult, PriceQu
 from prediction.engine import generate_prediction
 from prediction.history_store import history_store
 from services import price_service
+from services.asset_service import resolve_asset_metadata
 from services.indicator_service import compute_indicators
 from services.market_status_service import get_market_status
 from services.risk_service import compute_risk
@@ -160,8 +161,18 @@ class LiveDataHub:
 
         indicators = compute_indicators(symbol, df)
         price = float(df["Close"].iloc[-1])
-        prediction = generate_prediction(symbol, price, indicators)
         risk = compute_risk(symbol, df)
+        metadata = resolve_asset_metadata(symbol)
+        prediction = generate_prediction(
+            symbol,
+            price,
+            indicators,
+            asset_name=metadata["name"] if metadata else None,
+            asset_type=metadata["asset_type"] if metadata else None,
+            price_change_percent=watch.snapshot.quote.change_percent if watch.snapshot.quote else None,
+            risk=risk,
+            market_is_open=watch.snapshot.market_status.is_open if watch.snapshot.market_status else None,
+        )
         history_store.record(prediction, price)
 
         watch.snapshot.indicators = indicators
