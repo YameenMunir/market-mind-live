@@ -14,8 +14,13 @@ from models.schemas import (
     ChatRequest,
     ChatResponse,
     ChatRole,
+    DeleteSessionResponse,
     ErrorCode,
     FeedbackRequest,
+    NewSessionRequest,
+    NewSessionResponse,
+    SessionDetailResponse,
+    SessionListResponse,
     SummariseRequest,
     SummariseResponse,
 )
@@ -149,6 +154,14 @@ async def handle_chat(request: ChatRequest) -> ChatResponse:
 
     chat_store.append(request.session_id, user_msg)
     chat_store.append(request.session_id, assistant_msg)
+    chat_store.touch(
+        request.session_id,
+        asset=context.asset,
+        asset_name=context.asset_name,
+        preview=request.message,  # the user's question reads better in a history list than the full reply
+        signal=context.prediction.signal if context.prediction else None,
+        risk_level=context.risk.level if context.risk else None,
+    )
 
     return ChatResponse(
         session_id=request.session_id,
@@ -204,3 +217,57 @@ def record_feedback(request: FeedbackRequest) -> None:
 
 def get_history(session_id: str) -> ChatHistoryResponse:
     return ChatHistoryResponse(session_id=session_id, messages=chat_store.get_history(session_id))
+
+
+def _build_welcome_message(context: AIAssetContext) -> str:
+    label = f"{context.asset_name} ({context.asset})" if context.asset_name else context.asset
+    lines = [
+        f"AI Insights for {label} are ready. Ask me about the latest signal, technical indicators, "
+        "risk score, prediction, or chart trend."
+    ]
+    if context.missing_data:
+        lines.append("Note: " + " ".join(context.missing_data))
+    return "\n\n".join(lines)
+
+
+def create_new_session(request: NewSessionRequest) -> NewSessionResponse:
+    """Starts a fresh, asset-scoped chat session with a deterministic welcome message
+    (no Gemini/mock call needed just to say hello - keeps this instant and free)."""
+    session_id = str(uuid.uuid4())
+    context = resolve_context(request.asset, request.client_context)
+    welcome_text = _build_welcome_message(context)
+    welcome_msg = ChatMessage(
+        message_id=str(uuid.uuid4()), role=ChatRole.ASSISTANT, content=welcome_text, created_at=_now_iso()
+    )
+
+    chat_store.append(session_id, welcome_msg)
+    chat_store.touch(
+        session_id,
+        asset=context.asset,
+        asset_name=context.asset_name,
+        preview=welcome_text,
+        signal=context.prediction.signal if context.prediction else None,
+        risk_level=context.risk.level if context.risk else None,
+    )
+
+    return NewSessionResponse(session_id=session_id, asset=context.asset, welcome_message=welcome_msg, disclaimer=DISCLAIMER)
+
+
+def list_sessions() -> SessionListResponse:
+    return SessionListResponse(sessions=chat_store.list_sessions())
+
+
+def get_session(session_id: str) -> SessionDetailResponse:
+    meta = chat_store.get_meta(session_id)
+    messages = chat_store.get_history(session_id)
+    return SessionDetailResponse(
+        session_id=session_id,
+        asset=meta.asset if meta else None,
+        asset_name=meta.asset_name if meta else None,
+        messages=messages,
+    )
+
+
+def delete_session(session_id: str) -> DeleteSessionResponse:
+    chat_store.delete(session_id)
+    return DeleteSessionResponse()

@@ -1,60 +1,139 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "@/lib/api";
-import type { AIAssetContext, ChatMessage, FeedbackRating } from "@/types";
+import type { AIAssetContext, ChatMessage, ChatSessionSummary, FeedbackRating } from "@/types";
 import { ApiError } from "@/types";
 
-const SESSION_STORAGE_KEY = "mml-ai-session-id";
+const ACTIVE_SESSION_MAP_KEY = "mml-ai-active-sessions";
 
-function getOrCreateSessionId(): string {
-  if (typeof window === "undefined") return "server";
+/** Which session is "active" for a given asset, persisted for the browser tab's
+ * lifetime - lets switching between assets resume each one's own conversation
+ * instead of spawning a fresh session every time the user revisits an asset. */
+function readActiveSessionMap(): Record<string, string> {
+  if (typeof window === "undefined") return {};
   try {
-    const existing = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (existing) return existing;
-    const created =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `sess-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    window.sessionStorage.setItem(SESSION_STORAGE_KEY, created);
-    return created;
+    const raw = window.sessionStorage.getItem(ACTIVE_SESSION_MAP_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch {
-    return `sess-${Date.now()}`;
+    return {};
+  }
+}
+
+function writeActiveSession(asset: string, sessionId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const map = readActiveSessionMap();
+    map[asset] = sessionId;
+    window.sessionStorage.setItem(ACTIVE_SESSION_MAP_KEY, JSON.stringify(map));
+  } catch {
+    // Best-effort persistence only - a failure here just means the next asset
+    // switch starts a fresh session instead of resuming one.
   }
 }
 
 interface UseAIChatOptions {
   asset: string;
+  /** Gates session resolution/creation - switching the dashboard's selected asset
+   * shouldn't silently spin up chat sessions while the assistant panel is closed. */
+  enabled: boolean;
   buildContext: () => AIAssetContext;
 }
 
-export function useAIChat({ asset, buildContext }: UseAIChatOptions) {
-  const sessionId = useMemo(() => getOrCreateSessionId(), []);
+export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionAsset, setSessionAsset] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, FeedbackRating>>({});
+  const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+
+  const resolvedForAssetRef = useRef<string | null>(null);
+
+  const startNewChat = useCallback(async () => {
+    setError(null);
+    setIsLoadingSession(true);
+    try {
+      const context = buildContext();
+      const res = await api.newAISession({ asset, client_context: context });
+      writeActiveSession(asset, res.session_id);
+      setSessionId(res.session_id);
+      setSessionAsset(res.asset);
+      setMessages([res.welcome_message]);
+      setFeedbackGiven({});
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't start a new chat session.");
+    } finally {
+      setIsLoadingSession(false);
+    }
+  }, [asset, buildContext]);
+
+  const loadSession = useCallback(async (id: string) => {
+    setError(null);
+    setIsLoadingSession(true);
+    try {
+      const detail = await api.getAISessionDetail(id);
+      setSessionId(detail.session_id);
+      setSessionAsset(detail.asset);
+      setMessages(detail.messages);
+      setFeedbackGiven({});
+      if (detail.asset) writeActiveSession(detail.asset, detail.session_id);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't load that conversation.");
+    } finally {
+      setIsLoadingSession(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    api
-      .getAIHistory(sessionId)
-      .then((res) => {
-        if (!cancelled) setMessages(res.messages);
-      })
-      .catch(() => {
-        // No history yet, or backend unavailable - start with an empty conversation.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionId]);
+    if (!enabled || resolvedForAssetRef.current === asset) return;
+    resolvedForAssetRef.current = asset;
+
+    const existing = readActiveSessionMap()[asset];
+    if (existing) {
+      loadSession(existing);
+    } else {
+      startNewChat();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asset, enabled]);
+
+  const refreshSessions = useCallback(async () => {
+    setIsLoadingSessions(true);
+    try {
+      const res = await api.getAISessions();
+      setSessions(res.sessions);
+    } catch {
+      // Best-effort - the history list just stays stale/empty on failure.
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, []);
+
+  const deleteSession = useCallback(
+    async (id: string) => {
+      try {
+        await api.deleteAISession(id);
+      } catch {
+        // Ignore - worst case the entry lingers in the list until the next refresh.
+      }
+      setSessions((prev) => prev.filter((s) => s.session_id !== id));
+      if (id === sessionId) {
+        resolvedForAssetRef.current = null;
+        await startNewChat();
+      }
+    },
+    [sessionId, startNewChat]
+  );
 
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || isSending) return;
+      if (!trimmed || isSending || !sessionId) return;
 
       setError(null);
       setIsSending(true);
@@ -98,6 +177,7 @@ export function useAIChat({ asset, buildContext }: UseAIChatOptions) {
 
   const sendFeedback = useCallback(
     async (messageId: string, rating: FeedbackRating) => {
+      if (!sessionId) return;
       setFeedbackGiven((prev) => ({ ...prev, [messageId]: rating }));
       try {
         await api.sendAIFeedback({ session_id: sessionId, message_id: messageId, rating });
@@ -108,5 +188,21 @@ export function useAIChat({ asset, buildContext }: UseAIChatOptions) {
     [sessionId]
   );
 
-  return { sessionId, messages, isSending, error, sendMessage, sendFeedback, feedbackGiven };
+  return {
+    sessionId,
+    sessionAsset,
+    messages,
+    isSending,
+    isLoadingSession,
+    error,
+    sendMessage,
+    sendFeedback,
+    feedbackGiven,
+    startNewChat,
+    loadSession,
+    sessions,
+    isLoadingSessions,
+    refreshSessions,
+    deleteSession,
+  };
 }

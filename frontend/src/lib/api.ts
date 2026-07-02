@@ -10,13 +10,18 @@ import type {
   ChatHistoryResponse,
   ChatRequest,
   ChatResponse,
+  DeleteSessionResponse,
   FeedbackRequest,
   IndicatorSet,
   MarketStatus,
+  NewSessionRequest,
+  NewSessionResponse,
   PredictionHistoryEntry,
   PredictionResult,
   PriceQuote,
   RiskAssessment,
+  SessionDetailResponse,
+  SessionListResponse,
   SummariseRequest,
   SummariseResponse,
 } from "@/types";
@@ -77,4 +82,11 @@ export const api = {
     request<ChatHistoryResponse>(`/api/ai/insights/history?session_id=${encodeURIComponent(sessionId)}`),
   summariseAI: (body: SummariseRequest) =>
     request<SummariseResponse>(`/api/ai/insights/summarise`, { method: "POST", body: JSON.stringify(body) }),
+  newAISession: (body: NewSessionRequest) =>
+    request<NewSessionResponse>(`/api/ai/insights/new-session`, { method: "POST", body: JSON.stringify(body) }),
+  getAISessions: () => request<SessionListResponse>(`/api/ai/insights/sessions`),
+  getAISessionDetail: (sessionId: string) =>
+    request<SessionDetailResponse>(`/api/ai/insights/sessions/${encodeURIComponent(sessionId)}`),
+  deleteAISession: (sessionId: string) =>
+    request<DeleteSessionResponse>(`/api/ai/insights/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" }),
 };

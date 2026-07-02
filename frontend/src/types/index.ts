@@ -289,3 +289,42 @@ export interface SummariseResponse {
   provider: "gemini" | "mock" | "mock-fallback";
   disclaimer: string;
 }
+
+export interface ChatSessionSummary {
+  session_id: string;
+  asset: string;
+  asset_name: string | null;
+  created_at: string;
+  updated_at: string;
+  last_message_preview: string;
+  signal: "buy" | "sell" | "hold" | null;
+  risk_level: RiskLevel | null;
+  message_count: number;
+}
+
+export interface NewSessionRequest {
+  asset: string;
+  client_context?: AIAssetContext | null;
+}
+
+export interface NewSessionResponse {
+  session_id: string;
+  asset: string;
+  welcome_message: ChatMessage;
+  disclaimer: string;
+}
+
+export interface SessionListResponse {
+  sessions: ChatSessionSummary[];
+}
+
+export interface SessionDetailResponse {
+  session_id: string;
+  asset: string | null;
+  asset_name: string | null;
+  messages: ChatMessage[];
+}
+
+export interface DeleteSessionResponse {
+  status: string;
+}

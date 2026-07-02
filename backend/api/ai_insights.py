@@ -7,8 +7,13 @@ from models.schemas import (
     ChatHistoryResponse,
     ChatRequest,
     ChatResponse,
+    DeleteSessionResponse,
     FeedbackRequest,
     FeedbackResponse,
+    NewSessionRequest,
+    NewSessionResponse,
+    SessionDetailResponse,
+    SessionListResponse,
     SummariseRequest,
     SummariseResponse,
 )
@@ -41,3 +46,23 @@ def history(session_id: str = Query(..., description="Chat session identifier"))
 @router.post("/summarise", response_model=SummariseResponse)
 async def summarise(request: SummariseRequest):
     return await ai_insights_service.handle_summarise(request)
+
+
+@router.post("/new-session", response_model=NewSessionResponse)
+def new_session(request: NewSessionRequest):
+    return ai_insights_service.create_new_session(request)
+
+
+@router.get("/sessions", response_model=SessionListResponse)
+def sessions():
+    return ai_insights_service.list_sessions()
+
+
+@router.get("/sessions/{session_id}", response_model=SessionDetailResponse)
+def session_detail(session_id: str):
+    return ai_insights_service.get_session(session_id)
+
+
+@router.delete("/sessions/{session_id}", response_model=DeleteSessionResponse)
+def delete_session(session_id: str):
+    return ai_insights_service.delete_session(session_id)

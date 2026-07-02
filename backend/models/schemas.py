@@ -317,3 +317,42 @@ class SummariseResponse(BaseModel):
     summary: str
     provider: str
     disclaimer: str
+
+
+class ChatSessionSummary(BaseModel):
+    session_id: str
+    asset: str
+    asset_name: str | None = None
+    created_at: str
+    updated_at: str
+    last_message_preview: str
+    signal: str | None = None  # "buy" | "sell" | "hold"
+    risk_level: RiskLevel | None = None
+    message_count: int
+
+
+class NewSessionRequest(BaseModel):
+    asset: str
+    client_context: AIAssetContext | None = None
+
+
+class NewSessionResponse(BaseModel):
+    session_id: str
+    asset: str
+    welcome_message: ChatMessage
+    disclaimer: str
+
+
+class SessionListResponse(BaseModel):
+    sessions: list[ChatSessionSummary]
+
+
+class SessionDetailResponse(BaseModel):
+    session_id: str
+    asset: str | None = None
+    asset_name: str | None = None
+    messages: list[ChatMessage]
+
+
+class DeleteSessionResponse(BaseModel):
+    status: str = "deleted"
