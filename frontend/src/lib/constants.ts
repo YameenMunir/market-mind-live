@@ -24,3 +24,12 @@ export const DEFAULT_SYMBOL = "AAPL";
 export const QUOTE_POLL_FALLBACK_MS = 8000;
 export const CANDLE_POLL_MS = 30000;
 export const INDICATOR_POLL_MS = 60000;
+
+export const AI_SUGGESTED_QUESTIONS = [
+  "Why is this asset showing this risk level?",
+  "What does this prediction mean?",
+  "Explain these indicators in simple terms",
+  "How reliable is this based on the backtest?",
+  "Is the model confident or uncertain?",
+  "What should I pay attention to next?",
+] as const;

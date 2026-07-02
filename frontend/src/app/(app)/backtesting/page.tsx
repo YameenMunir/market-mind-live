@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Loader2, PlayCircle } from "lucide-react";
 
+import { AIInsightsButton } from "@/components/AIInsightsButton";
+import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AssetSearch } from "@/components/AssetSearch";
 import { BacktestResults } from "@/components/BacktestResults";
 import { Panel } from "@/components/Panel";
@@ -10,6 +12,7 @@ import { StatusBanner } from "@/components/StatusBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/hooks/useTheme";
 import { api } from "@/lib/api";
+import { buildAssetContext } from "@/lib/aiContext";
 import { describeError } from "@/lib/errorMessages";
 import type { AssetSearchResult, BacktestResult } from "@/types";
 import { ApiError } from "@/types";
@@ -30,6 +33,7 @@ export default function BacktestingPage() {
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const [isAIOpen, setIsAIOpen] = useState(false);
 
   const runBacktest = async () => {
     setIsLoading(true);
@@ -101,6 +105,25 @@ export default function BacktestingPage() {
 
         <BacktestResults result={result} theme={theme} />
       </main>
+
+      <AIInsightsButton onClick={() => setIsAIOpen(true)} />
+      <AIInsightsPanel
+        isOpen={isAIOpen}
+        onClose={() => setIsAIOpen(false)}
+        asset={symbol}
+        buildContext={() =>
+          buildAssetContext({
+            asset: symbol,
+            assetName: null,
+            quote: null,
+            marketStatus: null,
+            indicators: null,
+            prediction: null,
+            risk: null,
+            backtest: result,
+          })
+        }
+      />
     </>
   );
 }

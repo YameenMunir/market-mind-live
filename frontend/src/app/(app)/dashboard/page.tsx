@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { AIInsightsButton } from "@/components/AIInsightsButton";
+import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AssetTypeSelector } from "@/components/AssetTypeSelector";
 import { BeginnerSummary } from "@/components/BeginnerSummary";
 import { ConnectionStatusPill } from "@/components/ConnectionStatusPill";
@@ -19,6 +21,7 @@ import { useChartPreferences } from "@/hooks/useChartPreferences";
 import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
 import { useTheme } from "@/hooks/useTheme";
+import { buildAssetContext } from "@/lib/aiContext";
 import { CANDLE_INTERVALS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { AssetSearchResult, AssetType } from "@/types";
@@ -29,9 +32,11 @@ export default function DashboardPage() {
 
   const [symbol, setSymbol] = useState(prefs.defaultSymbol);
   const [assetType, setAssetType] = useState<AssetType | null>(null);
+  const [assetName, setAssetName] = useState<string | null>(null);
   const [interval, setInterval_] = useState("1d");
   const [showMA, setShowMA] = useState(prefs.showMovingAverages);
   const [showBB, setShowBB] = useState(prefs.showBollinger);
+  const [isAIOpen, setIsAIOpen] = useState(false);
 
   useEffect(() => {
     setSymbol(prefs.defaultSymbol);
@@ -44,6 +49,7 @@ export default function DashboardPage() {
   const handleSelectAsset = (asset: AssetSearchResult) => {
     setSymbol(asset.symbol);
     setAssetType(asset.asset_type);
+    setAssetName(asset.name);
   };
 
   return (
@@ -146,6 +152,24 @@ export default function DashboardPage() {
           <ExplanationPanel prediction={snapshot.prediction} />
         </div>
       </main>
+
+      <AIInsightsButton onClick={() => setIsAIOpen(true)} />
+      <AIInsightsPanel
+        isOpen={isAIOpen}
+        onClose={() => setIsAIOpen(false)}
+        asset={symbol}
+        buildContext={() =>
+          buildAssetContext({
+            asset: symbol,
+            assetName,
+            quote: snapshot.quote,
+            marketStatus: snapshot.marketStatus,
+            indicators: snapshot.indicators,
+            prediction: snapshot.prediction,
+            risk: snapshot.risk,
+          })
+        }
+      />
     </>
   );
 }

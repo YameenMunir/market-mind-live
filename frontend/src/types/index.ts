@@ -157,6 +157,7 @@ export type ErrorCode =
   | "network_error"
   | "data_delayed"
   | "unsupported_asset_type"
+  | "ai_provider_error"
   | "internal_error";
 
 export interface ApiErrorPayload {
@@ -174,4 +175,117 @@ export class ApiError extends Error {
     this.errorCode = payload.error_code;
     this.detail = payload.detail;
   }
+}
+
+// ---------------------------------------------------------------------------
+// AI Insights Assistant
+// ---------------------------------------------------------------------------
+
+export type ChatRole = "user" | "assistant";
+
+export interface ChatMessage {
+  message_id: string;
+  role: ChatRole;
+  content: string;
+  created_at: string;
+}
+
+export interface AITechnicalContext {
+  rsi: number | null;
+  macd_trend: string | null;
+  moving_average_trend: string | null;
+  volatility: string | null;
+  bollinger_position: string | null;
+}
+
+export interface AIPredictionContext {
+  signal: "buy" | "sell" | "hold";
+  forecast_direction: PredictionDirection;
+  confidence: number;
+  model_name: string;
+  horizon: string | null;
+  target_price: number | null;
+  explanation: string;
+  reasoning: string[];
+}
+
+export interface AIRiskContext {
+  level: RiskLevel;
+  score: number;
+  volatility_annualized_pct: number;
+  max_drawdown_pct: number | null;
+  reasons: string[];
+}
+
+export interface AIBacktestContext {
+  available: boolean;
+  win_rate_pct: number | null;
+  max_drawdown_pct: number | null;
+  sharpe_ratio: number | null;
+  total_return_pct: number | null;
+  total_trades: number | null;
+  lookback_days: number | null;
+  note: string | null;
+}
+
+export interface AIAssetContext {
+  asset: string;
+  asset_name: string | null;
+  latest_price: number | null;
+  price_change: number | null;
+  price_change_percent: number | null;
+  timeframe: string;
+  market_status: string | null;
+  is_market_open: boolean | null;
+  last_updated: string | null;
+  data_is_delayed: boolean;
+  technical_indicators: AITechnicalContext | null;
+  prediction: AIPredictionContext | null;
+  risk: AIRiskContext | null;
+  backtesting: AIBacktestContext | null;
+  prediction_history_count: number;
+  missing_data: string[];
+}
+
+export interface ChatRequest {
+  session_id: string;
+  message: string;
+  asset: string;
+  client_context?: AIAssetContext | null;
+}
+
+export interface ChatResponse {
+  session_id: string;
+  message_id: string;
+  reply: string;
+  provider: "gemini" | "mock" | "mock-fallback";
+  context_used: AIAssetContext;
+  disclaimer: string;
+  created_at: string;
+}
+
+export type FeedbackRating = "up" | "down";
+
+export interface FeedbackRequest {
+  session_id: string;
+  message_id: string;
+  rating: FeedbackRating;
+  comment?: string | null;
+}
+
+export interface ChatHistoryResponse {
+  session_id: string;
+  messages: ChatMessage[];
+}
+
+export interface SummariseRequest {
+  asset: string;
+  client_context?: AIAssetContext | null;
+}
+
+export interface SummariseResponse {
+  asset: string;
+  summary: string;
+  provider: "gemini" | "mock" | "mock-fallback";
+  disclaimer: string;
 }

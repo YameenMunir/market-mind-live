@@ -1,17 +1,24 @@
 import { API_BASE_URL } from "@/lib/constants";
 import type {
+  AIAssetContext,
   ApiErrorPayload,
   AssetSearchResult,
   AssetType,
   BacktestRequest,
   BacktestResult,
   CandleSeries,
+  ChatHistoryResponse,
+  ChatRequest,
+  ChatResponse,
+  FeedbackRequest,
   IndicatorSet,
   MarketStatus,
   PredictionHistoryEntry,
   PredictionResult,
   PriceQuote,
   RiskAssessment,
+  SummariseRequest,
+  SummariseResponse,
 } from "@/types";
 import { ApiError } from "@/types";
 
@@ -60,4 +67,14 @@ export const api = {
   getRisk: (symbol: string) => request<RiskAssessment>(`/api/risk/${encodeURIComponent(symbol)}`),
   runBacktest: (body: BacktestRequest) =>
     request<BacktestResult>(`/api/backtest`, { method: "POST", body: JSON.stringify(body) }),
+  aiChat: (body: ChatRequest) =>
+    request<ChatResponse>(`/api/ai/insights/chat`, { method: "POST", body: JSON.stringify(body) }),
+  getAIContext: (asset: string) =>
+    request<AIAssetContext>(`/api/ai/insights/context/${encodeURIComponent(asset)}`),
+  sendAIFeedback: (body: FeedbackRequest) =>
+    request<{ status: string }>(`/api/ai/insights/feedback`, { method: "POST", body: JSON.stringify(body) }),
+  getAIHistory: (sessionId: string) =>
+    request<ChatHistoryResponse>(`/api/ai/insights/history?session_id=${encodeURIComponent(sessionId)}`),
+  summariseAI: (body: SummariseRequest) =>
+    request<SummariseResponse>(`/api/ai/insights/summarise`, { method: "POST", body: JSON.stringify(body) }),
 };

@@ -23,6 +23,14 @@ class Settings(BaseSettings):
 
     provider_rate_limit_per_minute: int = 60
 
+    # AI Insights Assistant (Gemini). If gemini_api_key is unset, the assistant falls back
+    # to a deterministic mock provider so the feature still works in local development.
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_timeout_seconds: float = 20.0
+    ai_chat_rate_limit_per_minute: int = 20
+    ai_max_history_messages: int = 20
+
     # LiveDataHub: one background poller per actively-watched symbol, shared across every
     # client subscribed to it, so N viewers of the same symbol still cost 1 upstream poll.
     hub_quote_interval_seconds: float = 2.0

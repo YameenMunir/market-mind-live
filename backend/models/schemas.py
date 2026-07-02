@@ -185,6 +185,7 @@ class ErrorCode(str, Enum):
     NETWORK_ERROR = "network_error"
     DATA_DELAYED = "data_delayed"
     UNSUPPORTED_ASSET_TYPE = "unsupported_asset_type"
+    AI_PROVIDER_ERROR = "ai_provider_error"
     INTERNAL_ERROR = "internal_error"
 
 
@@ -192,3 +193,127 @@ class ErrorResponse(BaseModel):
     error_code: ErrorCode
     message: str
     detail: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# AI Insights Assistant
+# ---------------------------------------------------------------------------
+
+
+class ChatRole(str, Enum):
+    USER = "user"
+    ASSISTANT = "assistant"
+
+
+class ChatMessage(BaseModel):
+    message_id: str
+    role: ChatRole
+    content: str
+    created_at: str
+
+
+class AITechnicalContext(BaseModel):
+    rsi: float | None = None
+    macd_trend: str | None = None  # "bullish" | "bearish" | "neutral"
+    moving_average_trend: str | None = None
+    volatility: str | None = None  # "low" | "medium" | "high" | "extreme"
+    bollinger_position: str | None = None
+
+
+class AIPredictionContext(BaseModel):
+    signal: str  # "buy" | "sell" | "hold"
+    forecast_direction: PredictionDirection
+    confidence: float
+    model_name: str = "rule-based technical ensemble"
+    horizon: str | None = None
+    target_price: float | None = None
+    explanation: str
+    reasoning: list[str] = Field(default_factory=list)
+
+
+class AIRiskContext(BaseModel):
+    level: RiskLevel
+    score: float
+    volatility_annualized_pct: float
+    max_drawdown_pct: float | None = None
+    reasons: list[str] = Field(default_factory=list)
+
+
+class AIBacktestContext(BaseModel):
+    available: bool = False
+    win_rate_pct: float | None = None
+    max_drawdown_pct: float | None = None
+    sharpe_ratio: float | None = None
+    total_return_pct: float | None = None
+    total_trades: int | None = None
+    lookback_days: int | None = None
+    note: str | None = None
+
+
+class AIAssetContext(BaseModel):
+    asset: str
+    asset_name: str | None = None
+    latest_price: float | None = None
+    price_change: float | None = None
+    price_change_percent: float | None = None
+    timeframe: str = "1D"
+    market_status: str | None = None
+    is_market_open: bool | None = None
+    last_updated: str | None = None
+    data_is_delayed: bool = True
+    technical_indicators: AITechnicalContext | None = None
+    prediction: AIPredictionContext | None = None
+    risk: AIRiskContext | None = None
+    backtesting: AIBacktestContext | None = None
+    prediction_history_count: int = 0
+    missing_data: list[str] = Field(default_factory=list)
+
+
+class ChatRequest(BaseModel):
+    session_id: str = Field(min_length=1, max_length=128)
+    message: str = Field(min_length=1, max_length=2000)
+    asset: str
+    client_context: AIAssetContext | None = None
+
+
+class ChatResponse(BaseModel):
+    session_id: str
+    message_id: str
+    reply: str
+    provider: str  # "gemini" | "mock" | "mock-fallback"
+    context_used: AIAssetContext
+    disclaimer: str
+    created_at: str
+
+
+class FeedbackRating(str, Enum):
+    UP = "up"
+    DOWN = "down"
+
+
+class FeedbackRequest(BaseModel):
+    session_id: str
+    message_id: str
+    rating: FeedbackRating
+    comment: str | None = Field(default=None, max_length=1000)
+
+
+class FeedbackResponse(BaseModel):
+    status: str = "recorded"
+
+
+class ChatHistoryResponse(BaseModel):
+    session_id: str
+    messages: list[ChatMessage]
+
+
+class SummariseRequest(BaseModel):
+    asset: str
+    client_context: AIAssetContext | None = None
+
+
+class SummariseResponse(BaseModel):
+    asset: str
+    summary: str
+    provider: str
+    disclaimer: str
