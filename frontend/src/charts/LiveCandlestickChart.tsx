@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import {
   ColorType,
   CrosshairMode,
@@ -28,6 +28,14 @@ interface LiveCandlestickChartProps {
   showBollinger: boolean;
 }
 
+export interface LiveCandlestickChartHandle {
+  /** Re-fits the visible time range to all loaded candles - lets a parent offer a
+   * "Reset zoom" control without the chart needing to expose its internal chart/series refs. */
+  fitContent: () => void;
+  /** Returns a PNG data URL of the current chart canvas, or null if the chart isn't ready. */
+  takeScreenshot: () => string | null;
+}
+
 const THEME_COLORS = {
   dark: {
     background: "#0d1018",
@@ -53,16 +61,11 @@ const THEME_COLORS = {
   },
 };
 
-export function LiveCandlestickChart({
-  candles,
-  livePrice,
-  supportLevels,
-  resistanceLevels,
-  prediction,
-  theme,
-  showMovingAverages,
-  showBollinger,
-}: LiveCandlestickChartProps) {
+export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveCandlestickChartProps>(
+  function LiveCandlestickChart(
+    { candles, livePrice, supportLevels, resistanceLevels, prediction, theme, showMovingAverages, showBollinger },
+    ref
+  ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -268,5 +271,15 @@ export function LiveCandlestickChart({
     base.low = updatedCandle.low;
   }, [livePrice, isReady]);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      fitContent: () => chartRef.current?.timeScale().fitContent(),
+      takeScreenshot: () => (chartRef.current ? chartRef.current.takeScreenshot().toDataURL() : null),
+    }),
+    []
+  );
+
   return <div ref={containerRef} className="h-full w-full" />;
-}
+  }
+);

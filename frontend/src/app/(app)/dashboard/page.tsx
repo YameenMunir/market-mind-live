@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Maximize2 } from "lucide-react";
 
 import { AIInsightsButton } from "@/components/AIInsightsButton";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AssetTypeSelector } from "@/components/AssetTypeSelector";
 import { BeginnerSummary } from "@/components/BeginnerSummary";
+import { ChartOverlayToggles } from "@/components/ChartOverlayToggles";
 import { ConnectionStatusPill } from "@/components/ConnectionStatusPill";
 import { ExplanationPanel } from "@/components/ExplanationPanel";
+import { FullscreenChartModal } from "@/components/FullscreenChartModal";
 import { IndicatorPanel } from "@/components/IndicatorPanel";
 import { MarketStatusCard } from "@/components/MarketStatusCard";
 import { Panel } from "@/components/Panel";
@@ -15,6 +18,7 @@ import { PredictionCard } from "@/components/PredictionCard";
 import { PriceCard } from "@/components/PriceCard";
 import { RiskCard } from "@/components/RiskCard";
 import { StatusBanner } from "@/components/StatusBanner";
+import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { Topbar } from "@/components/Topbar";
 import { LiveCandlestickChart } from "@/charts/LiveCandlestickChart";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
@@ -23,7 +27,6 @@ import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
 import { useTheme } from "@/hooks/useTheme";
 import { buildAssetContext } from "@/lib/aiContext";
 import { CANDLE_INTERVALS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import type { AssetSearchResult, AssetType } from "@/types";
 
 export default function DashboardPage() {
@@ -37,6 +40,7 @@ export default function DashboardPage() {
   const [showMA, setShowMA] = useState(prefs.showMovingAverages);
   const [showBB, setShowBB] = useState(prefs.showBollinger);
   const [isAIOpen, setIsAIOpen] = useState(false);
+  const [isChartFullscreen, setIsChartFullscreen] = useState(false);
 
   useEffect(() => {
     setSymbol(prefs.defaultSymbol);
@@ -88,32 +92,19 @@ export default function DashboardPage() {
             title={`${symbol} · ${CANDLE_INTERVALS.find((i) => i.value === interval)?.label}`}
             action={
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-1 rounded-lg bg-surface-raised p-1">
-                  {CANDLE_INTERVALS.map((i) => (
-                    <button
-                      key={i.value}
-                      onClick={() => setInterval_(i.value)}
-                      className={cn(
-                        "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                        interval === i.value ? "bg-brand text-canvas" : "text-ink-muted hover:text-ink"
-                      )}
-                    >
-                      {i.label}
-                    </button>
-                  ))}
-                </div>
+                <TimeframeSelector value={interval} onChange={setInterval_} />
+                <button
+                  onClick={() => setIsChartFullscreen(true)}
+                  aria-label="Expand chart to full screen"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-raised text-ink-muted transition-colors hover:text-ink"
+                >
+                  <Maximize2 size={14} />
+                </button>
               </div>
             }
           >
             <div className="mb-3 flex flex-wrap items-center gap-5">
-              <label className="flex items-center gap-2 text-xs text-ink-muted">
-                <input type="checkbox" checked={showMA} onChange={(e) => setShowMA(e.target.checked)} className="accent-brand" />
-                Moving Averages
-              </label>
-              <label className="flex items-center gap-2 text-xs text-ink-muted">
-                <input type="checkbox" checked={showBB} onChange={(e) => setShowBB(e.target.checked)} className="accent-brand" />
-                Bollinger Bands
-              </label>
+              <ChartOverlayToggles showMA={showMA} onToggleMA={setShowMA} showBB={showBB} onToggleBB={setShowBB} />
               {candles.isLoading && !candles.data && (
                 <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" className="ml-auto" />
               )}
@@ -153,6 +144,27 @@ export default function DashboardPage() {
           <ExplanationPanel prediction={snapshot.prediction} />
         </div>
       </main>
+
+      <FullscreenChartModal
+        isOpen={isChartFullscreen}
+        onClose={() => setIsChartFullscreen(false)}
+        symbol={symbol}
+        assetName={assetName}
+        interval={interval}
+        onIntervalChange={setInterval_}
+        showMA={showMA}
+        onToggleMA={setShowMA}
+        showBB={showBB}
+        onToggleBB={setShowBB}
+        candles={candles.data ?? null}
+        isLoadingCandles={candles.isLoading}
+        quote={snapshot.quote}
+        marketStatus={snapshot.marketStatus}
+        supportLevels={snapshot.indicators?.support_resistance.support ?? []}
+        resistanceLevels={snapshot.indicators?.support_resistance.resistance ?? []}
+        prediction={snapshot.prediction}
+        theme={theme}
+      />
 
       <AIInsightsButton onClick={() => setIsAIOpen(true)} />
       <AIInsightsPanel
