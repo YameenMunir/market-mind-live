@@ -28,7 +28,7 @@ from services.risk_service import compute_risk
 from utils.errors import AppError
 
 
-def _signal_from_prediction(direction: PredictionDirection, confidence: float) -> str:
+def signal_from_prediction(direction: PredictionDirection, confidence: float) -> str:
     if direction == PredictionDirection.BULLISH:
         return "buy" if confidence >= 60 else "hold"
     if direction == PredictionDirection.BEARISH:

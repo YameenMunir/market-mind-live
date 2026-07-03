@@ -186,6 +186,7 @@ class ErrorCode(str, Enum):
     DATA_DELAYED = "data_delayed"
     UNSUPPORTED_ASSET_TYPE = "unsupported_asset_type"
     AI_PROVIDER_ERROR = "ai_provider_error"
+    VALIDATION_ERROR = "validation_error"
     INTERNAL_ERROR = "internal_error"
 
 
@@ -356,3 +357,56 @@ class SessionDetailResponse(BaseModel):
 
 class DeleteSessionResponse(BaseModel):
     status: str = "deleted"
+
+
+# ---------------------------------------------------------------------------
+# Price / signal alerts
+# ---------------------------------------------------------------------------
+
+
+class AlertCondition(str, Enum):
+    PRICE_ABOVE = "price_above"
+    PRICE_BELOW = "price_below"
+    RSI_OVERBOUGHT = "rsi_overbought"
+    RSI_OVERSOLD = "rsi_oversold"
+    SIGNAL_CHANGE = "signal_change"
+    RISK_LEVEL_CHANGE = "risk_level_change"
+
+
+class AlertStatus(str, Enum):
+    ACTIVE = "active"
+    TRIGGERED = "triggered"
+    DISMISSED = "dismissed"
+
+
+class AlertCreateRequest(BaseModel):
+    symbol: str
+    condition: AlertCondition
+    # Required for price_above/price_below; overrides the 70/30 default for
+    # rsi_overbought/rsi_oversold; ignored for signal_change/risk_level_change.
+    threshold: float | None = None
+    note: str | None = Field(default=None, max_length=280)
+
+
+class Alert(BaseModel):
+    id: str
+    symbol: str
+    asset_name: str | None = None
+    condition: AlertCondition
+    threshold: float | None = None
+    # Signal/risk level captured at creation time - signal_change/risk_level_change
+    # fire when the live value diverges from this baseline, not a fixed threshold.
+    baseline_value: str | None = None
+    note: str | None = None
+    status: AlertStatus
+    created_at: str
+    triggered_at: str | None = None
+    triggered_message: str | None = None
+
+
+class AlertListResponse(BaseModel):
+    alerts: list[Alert]
+
+
+class AlertActionResponse(BaseModel):
+    status: str

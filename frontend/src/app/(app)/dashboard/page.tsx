@@ -5,6 +5,9 @@ import { Maximize2 } from "lucide-react";
 
 import { AIInsightsButton } from "@/components/AIInsightsButton";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
+import { AlertsBellButton } from "@/components/AlertsBellButton";
+import { AlertsPanel } from "@/components/AlertsPanel";
+import { AlertToastStack } from "@/components/AlertToastStack";
 import { AssetTypeSelector } from "@/components/AssetTypeSelector";
 import { BeginnerSummary } from "@/components/BeginnerSummary";
 import { ChartOverlayToggles } from "@/components/ChartOverlayToggles";
@@ -21,6 +24,7 @@ import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { Topbar } from "@/components/Topbar";
 import { LiveCandlestickChart } from "@/charts/LiveCandlestickChart";
+import { useAlerts } from "@/hooks/useAlerts";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
 import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
@@ -41,6 +45,7 @@ export default function DashboardPage() {
   const [showBB, setShowBB] = useState(prefs.showBollinger);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isChartFullscreen, setIsChartFullscreen] = useState(false);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
 
   useEffect(() => {
     setSymbol(prefs.defaultSymbol);
@@ -48,7 +53,9 @@ export default function DashboardPage() {
 
   const snapshot = useLiveSnapshot(symbol);
   const candles = useCandles(symbol, interval);
+  const alertsState = useAlerts(symbol);
   const isLive = snapshot.connectionState === "live" || snapshot.connectionState === "polling";
+  const activeAlertCount = alertsState.alerts.filter((a) => a.status === "active" || a.status === "triggered").length;
 
   const handleSelectAsset = (asset: AssetSearchResult) => {
     setSymbol(asset.symbol);
@@ -62,7 +69,12 @@ export default function DashboardPage() {
         assetType={assetType}
         onAssetTypeChange={setAssetType}
         onSelectAsset={handleSelectAsset}
-        rightSlot={<ConnectionStatusPill state={snapshot.connectionState} />}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <ConnectionStatusPill state={snapshot.connectionState} />
+            <AlertsBellButton onClick={() => setIsAlertsOpen(true)} activeCount={activeAlertCount} />
+          </div>
+        }
         title="Live Dashboard"
       />
 
@@ -178,6 +190,9 @@ export default function DashboardPage() {
         prediction={snapshot.prediction}
         theme={theme}
       />
+
+      <AlertToastStack alerts={alertsState.newlyTriggered} onDismiss={alertsState.dismissToast} />
+      <AlertsPanel isOpen={isAlertsOpen} onClose={() => setIsAlertsOpen(false)} symbol={symbol} alertsState={alertsState} />
 
       <AIInsightsButton onClick={() => setIsAIOpen(true)} />
       <AIInsightsPanel

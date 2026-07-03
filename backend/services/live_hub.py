@@ -11,6 +11,7 @@ from models.schemas import IndicatorSet, MarketStatus, PredictionResult, PriceQu
 from prediction.engine import generate_prediction
 from prediction.history_store import history_store
 from services import price_service
+from services.alert_store import alert_store
 from services.asset_service import resolve_asset_metadata
 from services.indicator_service import compute_indicators
 from services.market_status_service import get_market_status
@@ -155,6 +156,14 @@ class LiveDataHub:
                     if now - last_analytics_refresh >= settings.hub_indicator_interval_seconds:
                         await self._refresh_analytics(watch)
                         last_analytics_refresh = now
+
+                    alert_store.evaluate(
+                        watch.symbol,
+                        quote=watch.snapshot.quote,
+                        indicators=watch.snapshot.indicators,
+                        prediction=watch.snapshot.prediction,
+                        risk=watch.snapshot.risk,
+                    )
                 except AppError as exc:
                     if watch.snapshot.error_code != exc.error_code.value or not watch.snapshot.is_stale:
                         watch.snapshot.version += 1

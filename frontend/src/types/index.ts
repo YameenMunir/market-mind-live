@@ -158,6 +158,7 @@ export type ErrorCode =
   | "data_delayed"
   | "unsupported_asset_type"
   | "ai_provider_error"
+  | "validation_error"
   | "internal_error";
 
 export interface ApiErrorPayload {
@@ -326,5 +327,48 @@ export interface SessionDetailResponse {
 }
 
 export interface DeleteSessionResponse {
+  status: string;
+}
+
+// ---------------------------------------------------------------------------
+// Price / signal alerts
+// ---------------------------------------------------------------------------
+
+export type AlertCondition =
+  | "price_above"
+  | "price_below"
+  | "rsi_overbought"
+  | "rsi_oversold"
+  | "signal_change"
+  | "risk_level_change";
+
+export type AlertStatus = "active" | "triggered" | "dismissed";
+
+export interface AlertCreateRequest {
+  symbol: string;
+  condition: AlertCondition;
+  threshold?: number | null;
+  note?: string | null;
+}
+
+export interface Alert {
+  id: string;
+  symbol: string;
+  asset_name: string | null;
+  condition: AlertCondition;
+  threshold: number | null;
+  baseline_value: string | null;
+  note: string | null;
+  status: AlertStatus;
+  created_at: string;
+  triggered_at: string | null;
+  triggered_message: string | null;
+}
+
+export interface AlertListResponse {
+  alerts: Alert[];
+}
+
+export interface AlertActionResponse {
   status: string;
 }

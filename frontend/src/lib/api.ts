@@ -1,6 +1,10 @@
 import { API_BASE_URL } from "@/lib/constants";
 import type {
   AIAssetContext,
+  Alert,
+  AlertActionResponse,
+  AlertCreateRequest,
+  AlertListResponse,
   ApiErrorPayload,
   AssetSearchResult,
   AssetType,
@@ -89,4 +93,11 @@ export const api = {
     request<SessionDetailResponse>(`/api/ai/insights/sessions/${encodeURIComponent(sessionId)}`),
   deleteAISession: (sessionId: string) =>
     request<DeleteSessionResponse>(`/api/ai/insights/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" }),
+  createAlert: (body: AlertCreateRequest) => request<Alert>(`/api/alerts`, { method: "POST", body: JSON.stringify(body) }),
+  getAlerts: (symbol?: string) =>
+    request<AlertListResponse>(`/api/alerts${symbol ? `?symbol=${encodeURIComponent(symbol)}` : ""}`),
+  deleteAlert: (alertId: string) =>
+    request<AlertActionResponse>(`/api/alerts/${encodeURIComponent(alertId)}`, { method: "DELETE" }),
+  dismissAlert: (alertId: string) =>
+    request<AlertActionResponse>(`/api/alerts/${encodeURIComponent(alertId)}/dismiss`, { method: "POST" }),
 };
