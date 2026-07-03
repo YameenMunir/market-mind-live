@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import ai_insights, assets, backtest, indicators, market, predictions, prices, risk, ws
+from api import ai_insights, assets, backtest, debug, indicators, market, predictions, prices, risk, ws
 from config import get_settings
 from services.live_hub import hub
 from utils.errors import register_error_handlers
@@ -48,6 +48,7 @@ app.include_router(predictions.router)
 app.include_router(risk.router)
 app.include_router(backtest.router)
 app.include_router(ai_insights.router)
+app.include_router(debug.router)
 app.include_router(ws.router)
 
 

@@ -7,6 +7,7 @@ interface RiskCardProps {
   risk: RiskAssessment | null;
   updatedAt?: string | null;
   isLive?: boolean;
+  isStale?: boolean;
 }
 
 const RISK_META = {
@@ -16,7 +17,7 @@ const RISK_META = {
   extreme: { label: "Extreme Risk", color: "bg-bear", text: "text-bear" },
 } as const;
 
-export function RiskCard({ risk, updatedAt, isLive }: RiskCardProps) {
+export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
   const meta = risk ? RISK_META[risk.risk_level] : null;
 
   return (
@@ -57,7 +58,7 @@ export function RiskCard({ risk, updatedAt, isLive }: RiskCardProps) {
       )}
 
       <div className="mt-3">
-        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} />
+        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} isStale={isStale} />
       </div>
     </Panel>
   );

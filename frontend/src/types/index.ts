@@ -258,7 +258,7 @@ export interface ChatResponse {
   session_id: string;
   message_id: string;
   reply: string;
-  provider: "gemini" | "mock" | "mock-fallback";
+  provider: "gemini" | "gemini-cached" | "mock" | "mock-fallback";
   context_used: AIAssetContext;
   disclaimer: string;
   created_at: string;
@@ -286,7 +286,7 @@ export interface SummariseRequest {
 export interface SummariseResponse {
   asset: string;
   summary: string;
-  provider: "gemini" | "mock" | "mock-fallback";
+  provider: "gemini" | "gemini-cached" | "mock" | "mock-fallback";
   disclaimer: string;
 }
 

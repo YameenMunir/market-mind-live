@@ -12,6 +12,7 @@ interface PredictionCardProps {
   isLoading?: boolean;
   updatedAt?: string | null;
   isLive?: boolean;
+  isStale?: boolean;
 }
 
 const DIRECTION_META = {
@@ -20,7 +21,7 @@ const DIRECTION_META = {
   neutral: { label: "Neutral", icon: Minus, color: "text-ink-muted" },
 } as const;
 
-export function PredictionCard({ prediction, isLoading, updatedAt, isLive }: PredictionCardProps) {
+export function PredictionCard({ prediction, isLoading, updatedAt, isLive, isStale }: PredictionCardProps) {
   const meta = prediction ? DIRECTION_META[prediction.direction] : null;
   const Icon = meta?.icon ?? Minus;
 
@@ -41,7 +42,7 @@ export function PredictionCard({ prediction, isLoading, updatedAt, isLive }: Pre
         {prediction && <ConfidenceMeter confidence={prediction.confidence} />}
       </div>
       <div className="mt-4">
-        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} />
+        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} isStale={isStale} />
       </div>
     </Panel>
   );

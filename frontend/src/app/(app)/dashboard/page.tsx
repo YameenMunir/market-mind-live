@@ -70,19 +70,31 @@ export default function DashboardPage() {
         {snapshot.errorMessage && <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <PriceCard quote={snapshot.quote} symbol={symbol} isLive={snapshot.connectionState === "live"} />
+          <PriceCard
+            quote={snapshot.quote}
+            symbol={symbol}
+            isLive={snapshot.connectionState === "live"}
+            isStale={snapshot.isStale}
+          />
           <MarketStatusCard
             status={snapshot.marketStatus}
             updatedAt={snapshot.marketStatusUpdatedAt}
             isLive={snapshot.connectionState === "live"}
+            isStale={snapshot.isStale}
           />
           <PredictionCard
             prediction={snapshot.prediction}
             isLoading={!snapshot.prediction}
             updatedAt={snapshot.predictionUpdatedAt}
             isLive={snapshot.connectionState === "live"}
+            isStale={snapshot.isStale}
           />
-          <RiskCard risk={snapshot.risk} updatedAt={snapshot.riskUpdatedAt} isLive={snapshot.connectionState === "live"} />
+          <RiskCard
+            risk={snapshot.risk}
+            updatedAt={snapshot.riskUpdatedAt}
+            isLive={snapshot.connectionState === "live"}
+            isStale={snapshot.isStale}
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
@@ -135,6 +147,7 @@ export default function DashboardPage() {
               price={snapshot.quote?.price ?? null}
               updatedAt={snapshot.indicatorsUpdatedAt}
               isLive={snapshot.connectionState === "live"}
+              isStale={snapshot.isStale}
             />
           </div>
         </div>

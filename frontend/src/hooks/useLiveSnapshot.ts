@@ -22,6 +22,12 @@ interface LiveSnapshotState {
   riskUpdatedAt: string | null;
   connectionState: ConnectionState;
   errorMessage: string | null;
+  /** True when the backend's poller is serving a known-stale value because its last
+   * fetch attempt failed (e.g. provider outage) - distinct from `errorMessage`, which
+   * can be cleared on the next successful poll while `isStale` reflects the same signal
+   * the backend used to decide that. Surfaced to `LastUpdated` so freshness labels
+   * genuinely reflect backend-reported staleness instead of always reading "live". */
+  isStale: boolean;
 }
 
 const MAX_WS_RETRIES = 3;
@@ -39,6 +45,7 @@ const INITIAL_STATE: LiveSnapshotState = {
   riskUpdatedAt: null,
   connectionState: "connecting",
   errorMessage: null,
+  isStale: false,
 };
 
 /**
@@ -90,11 +97,12 @@ export function useLiveSnapshot(symbol: string) {
             marketStatusUpdatedAt: now,
             connectionState: "polling",
             errorMessage: null,
+            isStale: false,
           }));
         } catch (err) {
           if (cancelled) return;
           const message = err instanceof ApiError ? err.message : "Unable to fetch live data.";
-          setState((prev) => ({ ...prev, connectionState: "error", errorMessage: message }));
+          setState((prev) => ({ ...prev, connectionState: "error", errorMessage: message, isStale: true }));
         }
       };
 
@@ -135,7 +143,7 @@ export function useLiveSnapshot(symbol: string) {
 
       socket.onopen = () => {
         retriesRef.current = 0;
-        if (!cancelled) setState((prev) => ({ ...prev, connectionState: "live", errorMessage: null }));
+        if (!cancelled) setState((prev) => ({ ...prev, connectionState: "live", errorMessage: null, isStale: false }));
       };
 
       socket.onmessage = (event) => {
@@ -143,6 +151,14 @@ export function useLiveSnapshot(symbol: string) {
         try {
           const payload = JSON.parse(event.data);
           if (payload.type !== "snapshot") return;
+
+          // The server only marks a frame `changed: false` for periodic heartbeats sent
+          // when nothing new actually happened (see api/ws.py) - skip the state update
+          // entirely rather than replacing every field with a freshly-parsed but
+          // value-identical object, which would otherwise re-render the whole dashboard
+          // every ~15s for no visible change. `changed` missing (older backend) still
+          // processes normally.
+          if (payload.changed === false) return;
 
           setState((prev) => ({
             quote: payload.quote ?? prev.quote,
@@ -157,6 +173,7 @@ export function useLiveSnapshot(symbol: string) {
             riskUpdatedAt: payload.risk_updated_at ?? prev.riskUpdatedAt,
             connectionState: "live",
             errorMessage: payload.error_message ?? null,
+            isStale: Boolean(payload.is_stale),
           }));
         } catch {
           // ignore malformed frames

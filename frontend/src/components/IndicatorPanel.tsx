@@ -9,6 +9,7 @@ interface IndicatorPanelProps {
   price?: number | null;
   updatedAt?: string | null;
   isLive?: boolean;
+  isStale?: boolean;
 }
 
 const TONE_TEXT: Record<InsightTone, string> = {
@@ -35,7 +36,7 @@ const TONE_SUMMARY_BOX: Record<InsightTone, string> = {
   muted: "border-border bg-surface-raised",
 };
 
-export function IndicatorPanel({ indicators, price, updatedAt, isLive }: IndicatorPanelProps) {
+export function IndicatorPanel({ indicators, price, updatedAt, isLive, isStale }: IndicatorPanelProps) {
   const read = buildTechnicalRead(indicators, price ?? null);
 
   return (
@@ -101,7 +102,7 @@ export function IndicatorPanel({ indicators, price, updatedAt, isLive }: Indicat
       </div>
 
       <div className="mt-3 border-t border-border pt-3">
-        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} />
+        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} isStale={isStale} />
       </div>
     </Panel>
   );

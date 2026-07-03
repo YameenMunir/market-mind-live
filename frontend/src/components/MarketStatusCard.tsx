@@ -9,6 +9,7 @@ interface MarketStatusCardProps {
   status: MarketStatus | null;
   updatedAt?: string | null;
   isLive?: boolean;
+  isStale?: boolean;
 }
 
 const SESSION_META = {
@@ -18,7 +19,7 @@ const SESSION_META = {
   after_hours: { label: "After Hours", icon: Sunset, dot: "bg-warn" },
 } as const;
 
-export function MarketStatusCard({ status, updatedAt, isLive }: MarketStatusCardProps) {
+export function MarketStatusCard({ status, updatedAt, isLive, isStale }: MarketStatusCardProps) {
   const meta = status ? SESSION_META[status.session] : null;
   const Icon = meta?.icon ?? Activity;
 
@@ -45,7 +46,7 @@ export function MarketStatusCard({ status, updatedAt, isLive }: MarketStatusCard
       )}
 
       <div className="mt-3">
-        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} />
+        <LastUpdated updatedAt={updatedAt ?? null} live={isLive} isStale={isStale} />
       </div>
     </Panel>
   );

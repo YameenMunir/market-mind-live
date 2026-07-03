@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     gemini_timeout_seconds: float = 20.0
     ai_chat_rate_limit_per_minute: int = 20
     ai_max_history_messages: int = 20
+    # Short-lived cache for identical (context + question) Gemini calls, so an accidental
+    # double-submit or an immediate retry doesn't burn a second Gemini request for an
+    # answer that would be identical anyway. Kept short since market context moves.
+    ai_response_cache_ttl_seconds: float = 30.0
 
     # LiveDataHub: one background poller per actively-watched symbol, shared across every
     # client subscribed to it, so N viewers of the same symbol still cost 1 upstream poll.

@@ -3,6 +3,7 @@ selection (Gemini vs mock), session history, and feedback recording."""
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from datetime import datetime, timezone
 
@@ -27,7 +28,7 @@ from models.schemas import (
 from services import context_builder, gemini_service, mock_ai_provider
 from services.chat_store import FeedbackEntry, chat_store, feedback_store
 from services.knowledge_base import retrieve as retrieve_knowledge
-from utils.cache import RateLimiter
+from utils.cache import RateLimiter, cache
 from utils.errors import AppError
 
 DISCLAIMER = "This is for informational purposes only and is not financial advice."
@@ -126,24 +127,34 @@ async def handle_chat(request: ChatRequest) -> ChatResponse:
     provider = "mock"
     reply: str
     if settings.gemini_api_key:
-        try:
-            reply = await gemini_service.generate_reply(
-                system_instruction=system_instruction,
-                history=history,
-                user_message=request.message,
-                model=settings.gemini_model,
-                api_key=settings.gemini_api_key,
-                timeout_seconds=settings.gemini_timeout_seconds,
-            )
-            provider = "gemini"
-        except gemini_service.GeminiRateLimitError:
-            # A hard, actionable limit - surface it rather than silently degrading,
-            # so the user knows to slow down instead of getting a confusing fallback.
-            raise
-        except AppError:
-            reply = mock_ai_provider.generate_mock_reply(context, request.message, history)
-            reply += "\n\n_(Live AI assistant temporarily unavailable - showing a local summary instead.)_"
-            provider = "mock-fallback"
+        # Identical (context + question) pairs within a short window return the cached
+        # reply instead of calling Gemini again - guards against accidental double-sends
+        # and immediate retries burning a second paid API call for the same answer.
+        cache_key = "gemini_reply:" + hashlib.sha256(f"{system_instruction}\x1f{request.message}".encode()).hexdigest()
+        cached_reply = cache.get(cache_key)
+        if cached_reply is not None:
+            reply = cached_reply
+            provider = "gemini-cached"
+        else:
+            try:
+                reply = await gemini_service.generate_reply(
+                    system_instruction=system_instruction,
+                    history=history,
+                    user_message=request.message,
+                    model=settings.gemini_model,
+                    api_key=settings.gemini_api_key,
+                    timeout_seconds=settings.gemini_timeout_seconds,
+                )
+                provider = "gemini"
+                cache.set(cache_key, reply, settings.ai_response_cache_ttl_seconds)
+            except gemini_service.GeminiRateLimitError:
+                # A hard, actionable limit - surface it rather than silently degrading,
+                # so the user knows to slow down instead of getting a confusing fallback.
+                raise
+            except AppError:
+                reply = mock_ai_provider.generate_mock_reply(context, request.message, history)
+                reply += "\n\n_(Live AI assistant temporarily unavailable - showing a local summary instead.)_"
+                provider = "mock-fallback"
     else:
         reply = mock_ai_provider.generate_mock_reply(context, request.message, history)
 

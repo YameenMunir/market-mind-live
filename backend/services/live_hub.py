@@ -47,6 +47,11 @@ class LiveSnapshot:
     error_code: str | None = None
     error_message: str | None = None
     is_stale: bool = False
+    # Monotonically-incrementing version bumped only when *any* field above actually
+    # changes value (not just re-fetched with the same value) - lets the WS layer
+    # skip pushing a frame to clients when nothing new has actually happened,
+    # instead of resending an identical snapshot every poll interval.
+    version: int = 0
 
 
 class _SymbolWatch:
@@ -122,13 +127,25 @@ class LiveDataHub:
                         return
 
                 try:
-                    quote = await asyncio.to_thread(price_service.get_quote, watch.symbol)
-                    watch.snapshot.quote = quote
-                    watch.snapshot.quote_updated_at = _now_iso()
+                    # Comparing the fetched value against what's already in the snapshot
+                    # (rather than unconditionally re-stamping `updated_at`) means the
+                    # timestamp genuinely reflects when the *data* last changed, not just
+                    # when we last polled it - and lets the WS layer skip pushing a frame
+                    # when nothing new actually happened this cycle.
+                    new_quote = await asyncio.to_thread(price_service.get_quote, watch.symbol)
+                    if new_quote != watch.snapshot.quote:
+                        watch.snapshot.quote = new_quote
+                        watch.snapshot.quote_updated_at = _now_iso()
+                        watch.snapshot.version += 1
 
-                    watch.snapshot.market_status = get_market_status(watch.symbol)
-                    watch.snapshot.market_status_updated_at = _now_iso()
+                    new_status = get_market_status(watch.symbol)
+                    if new_status != watch.snapshot.market_status:
+                        watch.snapshot.market_status = new_status
+                        watch.snapshot.market_status_updated_at = _now_iso()
+                        watch.snapshot.version += 1
 
+                    if watch.snapshot.error_code is not None or watch.snapshot.is_stale:
+                        watch.snapshot.version += 1
                     watch.snapshot.error_code = None
                     watch.snapshot.error_message = None
                     watch.snapshot.is_stale = False
@@ -139,12 +156,16 @@ class LiveDataHub:
                         await self._refresh_analytics(watch)
                         last_analytics_refresh = now
                 except AppError as exc:
+                    if watch.snapshot.error_code != exc.error_code.value or not watch.snapshot.is_stale:
+                        watch.snapshot.version += 1
                     watch.snapshot.error_code = exc.error_code.value
                     watch.snapshot.error_message = exc.message
                     watch.snapshot.is_stale = True
                     watch.backoff_seconds = min(watch.backoff_seconds * 1.5, settings.hub_error_backoff_max_seconds)
                     logger.warning("Live hub error for %s: %s", watch.symbol, exc.message)
                 except Exception:
+                    if watch.snapshot.error_code != "internal_error" or not watch.snapshot.is_stale:
+                        watch.snapshot.version += 1
                     watch.snapshot.error_code = "internal_error"
                     watch.snapshot.error_message = "Unexpected error refreshing live data."
                     watch.snapshot.is_stale = True
@@ -181,6 +202,11 @@ class LiveDataHub:
         watch.snapshot.prediction_updated_at = _now_iso()
         watch.snapshot.risk = risk
         watch.snapshot.risk_updated_at = _now_iso()
+        # This only runs every `hub_indicator_interval_seconds`, so treat each
+        # recomputation as inherently a meaningful update rather than diffing field-by-
+        # field (PredictionResult always carries a fresh `generated_at`, which would
+        # otherwise make every recompute look "changed" regardless of the actual values).
+        watch.snapshot.version += 1
 
 
 hub = LiveDataHub()

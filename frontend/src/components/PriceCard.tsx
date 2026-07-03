@@ -13,9 +13,10 @@ interface PriceCardProps {
   quote: PriceQuote | null;
   symbol: string;
   isLive?: boolean;
+  isStale?: boolean;
 }
 
-export function PriceCard({ quote, symbol, isLive }: PriceCardProps) {
+export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
   const previousPrice = useRef<number | null>(null);
 
@@ -77,7 +78,7 @@ export function PriceCard({ quote, symbol, isLive }: PriceCardProps) {
 
       {quote && (
         <div className="mt-4 flex items-center justify-between">
-          <LastUpdated updatedAt={quote.as_of} live={isLive} />
+          <LastUpdated updatedAt={quote.as_of} live={isLive} isStale={isStale} />
           {quote.is_delayed && <span className="text-[11px] text-ink-faint">Delayed data</span>}
         </div>
       )}
