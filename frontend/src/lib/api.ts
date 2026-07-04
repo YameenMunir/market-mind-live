@@ -5,6 +5,7 @@ import type {
   AlertActionResponse,
   AlertCreateRequest,
   AlertListResponse,
+  AnalystConsensus,
   ApiErrorPayload,
   AssetSearchResult,
   AssetType,
@@ -102,4 +103,5 @@ export const api = {
   dismissAlert: (alertId: string) =>
     request<AlertActionResponse>(`/api/alerts/${encodeURIComponent(alertId)}/dismiss`, { method: "POST" }),
   getFxRates: () => request<FxRates>(`/api/fx/rates`),
+  getAnalystConsensus: (symbol: string) => request<AnalystConsensus>(`/api/analysts/${encodeURIComponent(symbol)}`),
 };

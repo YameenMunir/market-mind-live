@@ -22,6 +22,10 @@ class MarketDataProvider(ABC):
     def get_history(self, symbol: str, period: str, interval: str) -> pd.DataFrame:
         ...
 
+    @abstractmethod
+    def get_analyst_consensus(self, symbol: str) -> dict:
+        ...
+
 
 def infer_asset_type(symbol: str) -> AssetType:
     s = symbol.upper().strip()

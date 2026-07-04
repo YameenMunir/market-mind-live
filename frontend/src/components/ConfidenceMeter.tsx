@@ -13,7 +13,7 @@ export function ConfidenceMeter({ confidence, size = 100 }: ConfidenceMeterProps
   const colorClass = confidence >= 70 ? "text-brand" : confidence >= 45 ? "text-warn" : "text-ink-faint";
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+    <div className="relative flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}

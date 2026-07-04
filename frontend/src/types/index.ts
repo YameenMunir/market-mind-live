@@ -156,6 +156,25 @@ export interface FxRates {
   as_of: string;
 }
 
+export type AnalystRating = "strong_buy" | "buy" | "hold" | "sell" | "strong_sell" | "not_covered";
+
+export interface AnalystConsensus {
+  symbol: string;
+  rating: AnalystRating;
+  total_analysts: number;
+  strong_buy: number;
+  buy: number;
+  hold: number;
+  sell: number;
+  strong_sell: number;
+  price_target_low: number | null;
+  price_target_high: number | null;
+  price_target_mean: number | null;
+  price_target_median: number | null;
+  currency: string;
+  as_of: string;
+}
+
 export type ErrorCode =
   | "missing_api_key"
   | "invalid_symbol"

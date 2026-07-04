@@ -95,12 +95,12 @@ export function IndicatorPanel({
       <div className="divide-y divide-border">
         {read.insights.map((insight) => (
           <div key={insight.key} className="py-2.5">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
               <span className="text-xs text-ink-muted">{insight.label}</span>
               <span className={cn("numeric font-mono text-sm font-medium", TONE_TEXT[insight.tone])}>{insight.value}</span>
             </div>
             <div className="mt-1.5 flex items-start justify-between gap-2">
-              <p className="text-[11px] leading-relaxed text-ink-faint">{insight.note}</p>
+              <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-ink-faint">{insight.note}</p>
               <span
                 className={cn(
                   "shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",

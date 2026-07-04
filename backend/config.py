@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     candle_cache_ttl_seconds: int = 30
     search_cache_ttl_seconds: int = 300
     fx_cache_ttl_seconds: int = 300
+    # Analyst ratings/price targets move at most a few times a month, not intraday -
+    # a long TTL keeps this off the hot path without going stale in any practical sense.
+    analyst_cache_ttl_seconds: int = 1800
 
     # Cadence at which each connected client receives a push over the WebSocket. This is
     # independent of how often the server actually calls out to Yahoo (see hub settings

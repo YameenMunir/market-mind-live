@@ -63,6 +63,46 @@ class YFinanceProvider(MarketDataProvider):
     def get_history(self, symbol: str, period: str = "6mo", interval: str = "1d") -> pd.DataFrame:
         return self._safe_history(symbol, period=period, interval=interval)
 
+    def get_analyst_consensus(self, symbol: str) -> dict:
+        ticker = yf.Ticker(symbol)
+
+        try:
+            targets = ticker.analyst_price_targets or {}
+        except (socket.gaierror, ConnectionError, TimeoutError) as exc:
+            raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
+        except Exception:
+            # No analyst coverage for this symbol is a normal outcome here (crypto,
+            # forex, commodities, indices, and many small caps all lack coverage),
+            # not a real error - fall back to an empty result rather than raising.
+            targets = {}
+
+        counts = {"strong_buy": 0, "buy": 0, "hold": 0, "sell": 0, "strong_sell": 0}
+        try:
+            trend = ticker.recommendations
+        except (socket.gaierror, ConnectionError, TimeoutError) as exc:
+            raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
+        except Exception:
+            trend = None
+
+        if trend is not None and not trend.empty:
+            current = trend[trend["period"] == "0m"]
+            row = current.iloc[0] if not current.empty else trend.iloc[0]
+            counts = {
+                "strong_buy": int(row.get("strongBuy", 0) or 0),
+                "buy": int(row.get("buy", 0) or 0),
+                "hold": int(row.get("hold", 0) or 0),
+                "sell": int(row.get("sell", 0) or 0),
+                "strong_sell": int(row.get("strongSell", 0) or 0),
+            }
+
+        return {
+            "price_target_low": targets.get("low"),
+            "price_target_high": targets.get("high"),
+            "price_target_mean": targets.get("mean"),
+            "price_target_median": targets.get("median"),
+            **counts,
+        }
+
     def _safe_history(self, symbol: str, period: str, interval: str) -> pd.DataFrame:
         try:
             ticker = yf.Ticker(symbol)

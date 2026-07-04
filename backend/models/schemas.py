@@ -144,6 +144,32 @@ class RiskAssessment(BaseModel):
     factors: list[str]
 
 
+class AnalystRating(str, Enum):
+    STRONG_BUY = "strong_buy"
+    BUY = "buy"
+    HOLD = "hold"
+    SELL = "sell"
+    STRONG_SELL = "strong_sell"
+    NOT_COVERED = "not_covered"
+
+
+class AnalystConsensus(BaseModel):
+    symbol: str
+    rating: AnalystRating
+    total_analysts: int = 0
+    strong_buy: int = 0
+    buy: int = 0
+    hold: int = 0
+    sell: int = 0
+    strong_sell: int = 0
+    price_target_low: float | None = None
+    price_target_high: float | None = None
+    price_target_mean: float | None = None
+    price_target_median: float | None = None
+    currency: str = "USD"
+    as_of: str
+
+
 class PredictionHistoryEntry(BaseModel):
     symbol: str
     direction: PredictionDirection

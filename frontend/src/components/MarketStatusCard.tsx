@@ -24,7 +24,7 @@ export function MarketStatusCard({ status, updatedAt, isLive, isStale }: MarketS
   const Icon = meta?.icon ?? Activity;
 
   return (
-    <Panel eyebrow="Market Status" title={status?.symbol ?? "--"}>
+    <Panel eyebrow="Market Status" title={status?.symbol ?? "--"} className="flex h-full flex-col gap-3">
       <div className="flex items-center gap-3">
         <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised")}>
           <Icon size={18} className="text-ink-muted" />
@@ -46,13 +46,13 @@ export function MarketStatusCard({ status, updatedAt, isLive, isStale }: MarketS
       </div>
 
       {status?.asset_type && (
-        <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-border pt-3 text-xs">
           <span className="text-ink-faint">Asset class</span>
           <span className="font-medium capitalize text-ink">{status.asset_type}</span>
         </div>
       )}
 
-      <div className="mt-3">
+      <div className="mt-auto">
         <LastUpdated updatedAt={updatedAt ?? null} live={isLive} isStale={isStale} />
       </div>
     </Panel>

@@ -21,7 +21,7 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
   const meta = risk ? RISK_META[risk.risk_level] : null;
 
   return (
-    <Panel eyebrow="Risk Assessment" title={meta?.label ?? "--"}>
+    <Panel eyebrow="Risk Assessment" title={meta?.label ?? "--"} className="flex h-full flex-col">
       <div
         role="meter"
         aria-label="Risk score"
@@ -43,13 +43,13 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
         <div aria-hidden className="mt-2.5 h-3 w-28 animate-pulse rounded bg-surface-raised" />
       )}
 
-      <div className="mt-4 flex items-center justify-between text-xs">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
         <span className="text-ink-faint">Annualized volatility</span>
         <span className="numeric font-medium text-ink">
           {risk ? `${risk.volatility_annualized_pct.toFixed(1)}%` : "--"}
         </span>
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs">
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
         <span className="text-ink-faint">Max drawdown</span>
         <span className="numeric font-medium text-ink">
           {risk?.max_drawdown_pct !== null && risk?.max_drawdown_pct !== undefined
@@ -68,7 +68,7 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
         </ul>
       )}
 
-      <div className="mt-3">
+      <div className="mt-auto pt-3">
         <LastUpdated updatedAt={updatedAt ?? null} live={isLive} isStale={isStale} />
       </div>
     </Panel>

@@ -108,6 +108,18 @@ label {
   letter-spacing: -0.01em;
 }
 
+.sidebar-panel {
+  width: 228px;
+  transition: width 300ms ease-in-out, opacity 250ms ease-in-out, border-color 300ms ease-in-out;
+}
+
+html.sidebar-collapsed .sidebar-panel {
+  width: 0px;
+  opacity: 0;
+  border-color: transparent;
+  pointer-events: none;
+}
+
 .bg-noise {
   position: relative;
 }

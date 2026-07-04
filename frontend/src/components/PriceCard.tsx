@@ -38,7 +38,7 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
   const isFlat = (quote?.change ?? 0) === 0;
 
   return (
-    <Panel eyebrow="Live Price" title={symbol} className="relative overflow-hidden">
+    <Panel eyebrow="Live Price" title={symbol} className="relative flex h-full flex-col overflow-hidden">
       <div
         className={cn(
           "absolute inset-0 pointer-events-none",
@@ -47,18 +47,24 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
         )}
       />
       {quote ? (
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="numeric font-mono text-3xl font-semibold text-ink sm:text-4xl">
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="numeric truncate font-mono text-[clamp(1.5rem,4vw,2.25rem)] font-semibold leading-tight text-ink">
               {formatPrice(convert(quote.price, quote.currency), currency)}
             </p>
             <div
               className={cn(
-                "mt-2 flex items-center gap-1.5 text-sm font-medium",
+                "mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-medium",
                 isFlat ? "text-ink-muted" : isPositive ? "text-bull" : "text-bear"
               )}
             >
-              {isFlat ? <Minus size={15} /> : isPositive ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
+              {isFlat ? (
+                <Minus size={15} className="shrink-0" />
+              ) : isPositive ? (
+                <ArrowUpRight size={15} className="shrink-0" />
+              ) : (
+                <ArrowDownRight size={15} className="shrink-0" />
+              )}
               <span className="numeric">{formatPrice(convert(quote.change, quote.currency), currency)}</span>
               <span className="numeric">({formatPercent(quote.change_percent)})</span>
             </div>
@@ -77,10 +83,10 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
           { label: "Day Low", value: quote ? formatPrice(convert(quote.day_low, quote.currency), currency) : null },
           { label: "Volume", value: quote ? formatCompactNumber(quote.volume) : null },
         ].map((item) => (
-          <div key={item.label}>
-            <p className="text-ink-faint">{item.label}</p>
+          <div key={item.label} className="min-w-0">
+            <p className="truncate text-ink-faint">{item.label}</p>
             {item.value !== null ? (
-              <p className="numeric mt-1 font-medium text-ink">{item.value}</p>
+              <p className="numeric mt-1 truncate font-medium text-ink">{item.value}</p>
             ) : (
               <div aria-hidden className="mt-1.5 h-3.5 w-14 animate-pulse rounded bg-surface-raised" />
             )}
@@ -89,15 +95,17 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
       </div>
 
       {quote && (
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <LastUpdated updatedAt={quote.as_of} live={isLive} isStale={isStale} />
-          {quote.is_delayed && <span className="text-[11px] text-ink-faint">Delayed data</span>}
+        <div className="mt-auto pt-4">
+          <div className="flex items-center justify-between gap-2">
+            <LastUpdated updatedAt={quote.as_of} live={isLive} isStale={isStale} />
+            {quote.is_delayed && <span className="text-[11px] text-ink-faint">Delayed data</span>}
+          </div>
+          {isConverted && (
+            <p className="mt-2 text-[10px] leading-relaxed text-ink-faint">
+              Converted from {quote.currency} at the live FX rate - not this asset's native trading currency.
+            </p>
+          )}
         </div>
-      )}
-      {isConverted && (
-        <p className="mt-2 text-[10px] leading-relaxed text-ink-faint">
-          Converted from {quote!.currency} at the live FX rate - not this asset's native trading currency.
-        </p>
       )}
     </Panel>
   );

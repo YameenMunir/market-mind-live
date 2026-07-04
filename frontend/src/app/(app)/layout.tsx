@@ -1,5 +1,6 @@
 import { MobileNav } from "@/components/MobileNav";
 import { Sidebar } from "@/components/Sidebar";
+import { SidebarExpandButton } from "@/components/SidebarExpandButton";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -7,6 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <CurrencyProvider>
       <div className="flex min-h-screen">
         <Sidebar />
+        <SidebarExpandButton />
         <div className="flex min-w-0 flex-1 flex-col">
           <MobileNav />
           {children}

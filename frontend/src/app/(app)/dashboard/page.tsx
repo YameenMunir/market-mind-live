@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LineChart, Maximize2 } from "lucide-react";
 
 import { AIInsightsButton } from "@/components/AIInsightsButton";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AlertsBellButton } from "@/components/AlertsBellButton";
+import { AnalystConsensusCard } from "@/components/AnalystConsensusCard";
 import { AlertsPanel } from "@/components/AlertsPanel";
 import { AlertToastStack } from "@/components/AlertToastStack";
 import { AssetTypeSelector } from "@/components/AssetTypeSelector";
 import { BeginnerSummary } from "@/components/BeginnerSummary";
 import { ChartOverlayToggles } from "@/components/ChartOverlayToggles";
 import { ConnectionStatusPill } from "@/components/ConnectionStatusPill";
+import { DashboardViewMenu } from "@/components/DashboardViewMenu";
 import { ExplanationPanel } from "@/components/ExplanationPanel";
 import { FullscreenChartModal } from "@/components/FullscreenChartModal";
 import { IndicatorPanel } from "@/components/IndicatorPanel";
@@ -26,7 +28,9 @@ import { Topbar } from "@/components/Topbar";
 import { LiveCandlestickChart } from "@/charts/LiveCandlestickChart";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useAlerts } from "@/hooks/useAlerts";
+import { useAnalystConsensus } from "@/hooks/useAnalystConsensus";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
+import { useFullscreenToggle } from "@/hooks/useFullscreenToggle";
 import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
 import { useTheme } from "@/hooks/useTheme";
@@ -48,6 +52,9 @@ export default function DashboardPage() {
   const [isChartFullscreen, setIsChartFullscreen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
 
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, enter: enterFullscreen, exit: exitFullscreen } = useFullscreenToggle(dashboardRef);
+
   useEffect(() => {
     setSymbol(prefs.defaultSymbol);
   }, [prefs.defaultSymbol]);
@@ -55,6 +62,7 @@ export default function DashboardPage() {
   const snapshot = useLiveSnapshot(symbol);
   const candles = useCandles(symbol, interval);
   const alertsState = useAlerts(symbol);
+  const analyst = useAnalystConsensus(symbol);
   const isLive = snapshot.connectionState === "live" || snapshot.connectionState === "polling";
   const activeAlertCount = alertsState.alerts.filter((a) => a.status === "active" || a.status === "triggered").length;
 
@@ -90,15 +98,23 @@ export default function DashboardPage() {
   };
 
   return (
-    <>
+    <div
+      ref={dashboardRef}
+      className={isFullscreen ? "fixed inset-0 z-[70] flex flex-col bg-canvas" : "contents"}
+    >
       <Topbar
         assetType={assetType}
         onAssetTypeChange={setAssetType}
         onSelectAsset={handleSelectAsset}
         rightSlot={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ConnectionStatusPill state={snapshot.connectionState} />
             <AlertsBellButton onClick={() => setIsAlertsOpen(true)} activeCount={activeAlertCount} />
+            <DashboardViewMenu
+              isFullscreen={isFullscreen}
+              onEnterFullscreen={enterFullscreen}
+              onExitFullscreen={exitFullscreen}
+            />
           </div>
         }
         title="Live Dashboard"
@@ -107,7 +123,7 @@ export default function DashboardPage() {
       <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">
         {snapshot.errorMessage && <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <PriceCard
             quote={snapshot.quote}
             symbol={symbol}
@@ -128,6 +144,7 @@ export default function DashboardPage() {
             isStale={snapshot.isStale}
             nativeCurrency={nativeCurrency}
           />
+          <AnalystConsensusCard consensus={analyst.data} isLoading={analyst.isLoading} symbol={symbol} />
           <RiskCard
             risk={snapshot.risk}
             updatedAt={snapshot.riskUpdatedAt}
@@ -252,6 +269,6 @@ export default function DashboardPage() {
           })
         }
       />
-    </>
+    </div>
   );
 }
