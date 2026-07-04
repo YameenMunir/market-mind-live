@@ -17,7 +17,7 @@ interface TopbarProps {
 
 export function Topbar({ assetType, onAssetTypeChange, onSelectAsset, rightSlot, title }: TopbarProps) {
   return (
-    <header className="flex flex-col gap-4 border-b border-border bg-canvas px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+    <header className="flex flex-col gap-3 border-b border-border bg-canvas px-4 py-3.5 sm:gap-4 sm:px-6 sm:py-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-col gap-3 lg:flex-1">
         {title && <h1 className="text-sm font-semibold uppercase tracking-wider text-ink-faint">{title}</h1>}
         <div className="flex flex-col gap-3 md:flex-row md:items-center">

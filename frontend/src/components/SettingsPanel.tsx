@@ -16,24 +16,30 @@ export function SettingsPanel() {
   return (
     <div className="flex flex-col gap-5">
       <Panel eyebrow="Appearance" title="Theme">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Theme">
           <button
             onClick={() => setTheme("dark")}
+            aria-pressed={theme === "dark"}
             className={cn(
               "flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors",
-              theme === "dark" ? "border-brand bg-brand/10 text-ink" : "border-border text-ink-muted hover:text-ink"
+              theme === "dark"
+                ? "border-brand bg-brand/10 text-ink"
+                : "border-border text-ink-muted hover:border-ink-faint/40 hover:text-ink"
             )}
           >
-            <Moon size={16} /> Dark mode
+            <Moon size={16} aria-hidden /> Dark mode
           </button>
           <button
             onClick={() => setTheme("light")}
+            aria-pressed={theme === "light"}
             className={cn(
               "flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors",
-              theme === "light" ? "border-brand bg-brand/10 text-ink" : "border-border text-ink-muted hover:text-ink"
+              theme === "light"
+                ? "border-brand bg-brand/10 text-ink"
+                : "border-border text-ink-muted hover:border-ink-faint/40 hover:text-ink"
             )}
           >
-            <Sun size={16} /> Light mode
+            <Sun size={16} aria-hidden /> Light mode
           </button>
         </div>
       </Panel>
@@ -56,10 +62,17 @@ export function SettingsPanel() {
       </Panel>
 
       <Panel eyebrow="Default Asset" title="Startup symbol">
+        <label htmlFor="settings-default-symbol" className="sr-only">
+          Startup symbol
+        </label>
         <input
+          id="settings-default-symbol"
           value={prefs.defaultSymbol}
           onChange={(e) => updatePrefs({ defaultSymbol: e.target.value.toUpperCase() })}
-          className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 font-mono text-sm text-ink focus:border-brand/60 focus:outline-none"
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-brand/60 focus:outline-none"
           placeholder="AAPL"
         />
         <p className="mt-2 text-xs text-ink-muted">The dashboard will load this symbol on your next visit.</p>

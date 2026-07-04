@@ -27,8 +27,12 @@ const DOT_STYLES: Record<ConnectionState, string> = {
 
 export function ConnectionStatusPill({ state }: { state: ConnectionState }) {
   return (
-    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface-raised px-3 py-1.5 text-xs font-medium text-ink-muted">
-      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", DOT_STYLES[state])} />
+    <div
+      role="status"
+      aria-label={`Data connection: ${LABELS[state]}`}
+      className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface-raised px-3 py-1.5 text-xs font-medium text-ink-muted"
+    >
+      <span aria-hidden className={cn("h-1.5 w-1.5 shrink-0 rounded-full", DOT_STYLES[state])} />
       <span className="sm:hidden">{SHORT_LABELS[state]}</span>
       <span className="hidden sm:inline">{LABELS[state]}</span>
     </div>

@@ -22,15 +22,26 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
 
   return (
     <Panel eyebrow="Risk Assessment" title={meta?.label ?? "--"}>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
+      <div
+        role="meter"
+        aria-label="Risk score"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={risk ? Math.round(risk.risk_score) : undefined}
+        className={cn("h-1.5 w-full overflow-hidden rounded-full bg-surface-raised", !risk && "animate-pulse")}
+      >
         <div
           className={cn("h-full rounded-full transition-all duration-700", meta?.color ?? "bg-ink-faint")}
           style={{ width: `${risk?.risk_score ?? 0}%` }}
         />
       </div>
-      <p className={cn("mt-2 numeric text-xs font-medium", meta?.text ?? "text-ink-muted")}>
-        Risk score {risk ? Math.round(risk.risk_score) : "--"} / 100
-      </p>
+      {risk ? (
+        <p className={cn("mt-2 numeric text-xs font-medium", meta?.text ?? "text-ink-muted")}>
+          Risk score {Math.round(risk.risk_score)} / 100
+        </p>
+      ) : (
+        <div aria-hidden className="mt-2.5 h-3 w-28 animate-pulse rounded bg-surface-raised" />
+      )}
 
       <div className="mt-4 flex items-center justify-between text-xs">
         <span className="text-ink-faint">Annualized volatility</span>

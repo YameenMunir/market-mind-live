@@ -52,9 +52,10 @@ export function AIChatMessage({ message, onFeedback, feedbackGiven }: AIChatMess
             type="button"
             aria-label="Good response"
             onClick={() => onFeedback("up")}
+            aria-pressed={feedbackGiven === "up"}
             className={cn(
-              "flex h-6 w-6 items-center justify-center rounded-md transition-colors",
-              feedbackGiven === "up" ? "bg-bull/15 text-bull" : "text-ink-faint hover:text-ink-muted"
+              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+              feedbackGiven === "up" ? "bg-bull/15 text-bull" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
             )}
           >
             <ThumbsUp size={12} />
@@ -63,9 +64,10 @@ export function AIChatMessage({ message, onFeedback, feedbackGiven }: AIChatMess
             type="button"
             aria-label="Poor response"
             onClick={() => onFeedback("down")}
+            aria-pressed={feedbackGiven === "down"}
             className={cn(
-              "flex h-6 w-6 items-center justify-center rounded-md transition-colors",
-              feedbackGiven === "down" ? "bg-bear/15 text-bear" : "text-ink-faint hover:text-ink-muted"
+              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+              feedbackGiven === "down" ? "bg-bear/15 text-bear" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
             )}
           >
             <ThumbsDown size={12} />

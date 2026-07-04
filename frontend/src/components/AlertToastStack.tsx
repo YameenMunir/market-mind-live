@@ -26,7 +26,7 @@ function Toast({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) => 
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 40, scale: 0.95 }}
       transition={{ type: "spring", damping: 28, stiffness: 320 }}
-      className="pointer-events-auto flex w-80 items-start gap-2.5 rounded-xl border border-brand/30 bg-surface p-3.5 shadow-panel"
+      className="pointer-events-auto flex w-full max-w-80 items-start gap-2.5 rounded-xl border border-brand/30 bg-surface p-3.5 shadow-panel"
     >
       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand/10">
         <Bell size={14} className="text-brand" />
@@ -38,7 +38,7 @@ function Toast({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) => 
       <button
         onClick={() => onDismiss(alert.id)}
         aria-label="Dismiss notification"
-        className="shrink-0 text-ink-faint hover:text-ink-muted"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
       >
         <X size={13} />
       </button>
@@ -48,7 +48,11 @@ function Toast({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) => 
 
 export function AlertToastStack({ alerts, onDismiss }: AlertToastStackProps) {
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-[60] flex flex-col gap-2 sm:right-6 sm:top-6">
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed left-4 right-4 top-4 z-[60] flex flex-col items-end gap-2 sm:left-auto sm:right-6 sm:top-6"
+    >
       <AnimatePresence>
         {alerts.map((alert) => (
           <Toast key={alert.id} alert={alert} onDismiss={onDismiss} />

@@ -111,15 +111,16 @@ export function AIChatConversation({
                 handleSend();
               }
             }}
+            aria-label={`Ask the AI assistant about ${asset}`}
             placeholder="Ask about this asset's data..."
             rows={1}
-            className="max-h-28 flex-1 resize-none rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand/60 focus:outline-none"
+            className="max-h-28 min-h-[40px] flex-1 resize-none rounded-lg border border-border bg-surface-raised px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-brand/60 focus:outline-none"
           />
           <button
             onClick={handleSend}
             disabled={isSending || isLoadingSession || !input.trim()}
             aria-label="Send message"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Send size={15} />
           </button>

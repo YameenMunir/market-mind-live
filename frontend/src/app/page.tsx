@@ -69,7 +69,8 @@ export default function LandingPage() {
 
       <section className="relative mx-auto max-w-7xl overflow-hidden px-6 pb-24 pt-16 sm:pt-24">
         <div
-          className="pointer-events-none absolute left-1/2 top-0 h-[560px] w-[900px] -translate-x-1/2 rounded-full opacity-20 blur-[140px]"
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-0 h-[560px] w-[900px] max-w-[100vw] -translate-x-1/2 rounded-full opacity-20 blur-[140px]"
           style={{ background: "radial-gradient(closest-side, rgb(var(--color-brand)), transparent)" }}
         />
 

@@ -46,6 +46,15 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
     if (isOpen) requestNotificationPermission();
   }, [isOpen, requestNotificationPermission]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   const needsThreshold = NEEDS_THRESHOLD.includes(condition);
   const optionalThreshold = OPTIONAL_THRESHOLD.includes(condition);
 
@@ -95,30 +104,51 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
               </button>
             </div>
 
-            <div className="space-y-3 border-b border-border p-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreate();
+              }}
+              className="space-y-3 border-b border-border p-4"
+            >
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">New alert</p>
-              <select
-                value={condition}
-                onChange={(e) => setCondition(e.target.value as AlertCondition)}
-                className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-ink focus:border-brand/60 focus:outline-none"
-              >
-                {(Object.keys(CONDITION_LABELS) as AlertCondition[]).map((c) => (
-                  <option key={c} value={c}>
-                    {CONDITION_LABELS[c]}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label htmlFor="alert-condition" className="mb-1.5 block text-xs font-medium text-ink-muted">
+                  Notify me when
+                </label>
+                <select
+                  id="alert-condition"
+                  value={condition}
+                  onChange={(e) => setCondition(e.target.value as AlertCondition)}
+                  className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 text-sm text-ink focus:border-brand/60 focus:outline-none"
+                >
+                  {(Object.keys(CONDITION_LABELS) as AlertCondition[]).map((c) => (
+                    <option key={c} value={c}>
+                      {CONDITION_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               {(needsThreshold || optionalThreshold) && (
-                <input
-                  type="number"
-                  value={threshold}
-                  onChange={(e) => setThreshold(e.target.value)}
-                  placeholder={
-                    needsThreshold ? "Price level" : condition === "rsi_overbought" ? "Threshold (default 70)" : "Threshold (default 30)"
-                  }
-                  className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand/60 focus:outline-none"
-                />
+                <div>
+                  <label htmlFor="alert-threshold" className="mb-1.5 block text-xs font-medium text-ink-muted">
+                    {needsThreshold ? "Price level" : "RSI threshold"}
+                    {optionalThreshold && <span className="ml-1 font-normal text-ink-faint">(optional)</span>}
+                  </label>
+                  <input
+                    id="alert-threshold"
+                    type="number"
+                    step="any"
+                    inputMode="decimal"
+                    value={threshold}
+                    onChange={(e) => setThreshold(e.target.value)}
+                    placeholder={
+                      needsThreshold ? "e.g. 250.00" : condition === "rsi_overbought" ? "Default 70" : "Default 30"
+                    }
+                    className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 text-sm text-ink placeholder:text-ink-faint focus:border-brand/60 focus:outline-none"
+                  />
+                </div>
               )}
 
               {!needsThreshold && !optionalThreshold && (
@@ -129,14 +159,14 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
               )}
 
               <button
-                onClick={handleCreate}
+                type="submit"
                 disabled={isSubmitting || (needsThreshold && !threshold.trim())}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                Create alert
+                {isSubmitting ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <Plus size={14} aria-hidden />}
+                {isSubmitting ? "Creating..." : "Create alert"}
               </button>
-            </div>
+            </form>
 
             <div className="flex-1 space-y-2 overflow-y-auto p-4">
               {isLoading && alerts.length === 0 && (
@@ -146,10 +176,14 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                 </div>
               )}
 
-              {!isLoading && alerts.length === 0 && (
-                <p className="text-xs leading-relaxed text-ink-faint">
-                  No alerts yet for {symbol}. Create one above to get notified when conditions change.
-                </p>
+              {!isLoading && alerts.length === 0 && !error && (
+                <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-4 py-8 text-center">
+                  <Bell size={18} className="text-ink-faint" aria-hidden />
+                  <p className="text-xs font-medium text-ink-muted">No alerts for {symbol} yet</p>
+                  <p className="max-w-[240px] text-[11px] leading-relaxed text-ink-faint">
+                    Create one above and we'll notify you the moment the condition is met.
+                  </p>
+                </div>
               )}
 
               {error && <StatusBanner message={error} tone="error" icon="warning" />}
@@ -177,21 +211,22 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                         <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", meta.className)}>
                           {meta.label}
                         </span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5">
                           {alert.status === "triggered" && (
                             <button
                               onClick={() => dismissAlert(alert.id)}
-                              className="text-[10px] font-medium text-ink-faint hover:text-ink-muted"
+                              className="rounded-md px-1.5 py-1 text-[10px] font-medium text-ink-faint transition-colors hover:text-ink-muted"
                             >
                               Dismiss
                             </button>
                           )}
                           <button
                             onClick={() => deleteAlert(alert.id)}
-                            aria-label="Delete alert"
-                            className="text-ink-faint hover:text-bear"
+                            aria-label={`Delete alert: ${CONDITION_LABELS[alert.condition]}`}
+                            title="Delete alert"
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-bear/10 hover:text-bear"
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </div>

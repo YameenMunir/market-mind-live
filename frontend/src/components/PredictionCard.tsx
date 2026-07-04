@@ -26,20 +26,32 @@ export function PredictionCard({ prediction, isLoading, updatedAt, isLive, isSta
   const Icon = meta?.icon ?? Minus;
 
   return (
-    <Panel eyebrow="Model Prediction" title={prediction ? `${prediction.horizon}` : "Analyzing..."}>
+    <Panel eyebrow="Model Prediction" title={prediction ? `${prediction.horizon}` : isLoading ? "Analyzing..." : "--"}>
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <div className={cn("flex items-center gap-2 text-lg font-semibold", meta?.color ?? "text-ink-muted")}>
-            <Icon size={20} />
-            {meta?.label ?? (isLoading ? "Analyzing" : "--")}
+        {prediction ? (
+          <div>
+            <div className={cn("flex items-center gap-2 text-lg font-semibold", meta?.color ?? "text-ink-muted")}>
+              <Icon size={20} />
+              {meta?.label ?? "--"}
+            </div>
+            {prediction.target_price && (
+              <p className="mt-2 text-xs text-ink-muted">
+                Indicative target:{" "}
+                <span className="numeric font-medium text-ink">{formatPrice(prediction.target_price)}</span>
+              </p>
+            )}
           </div>
-          {prediction?.target_price && (
-            <p className="mt-2 text-xs text-ink-muted">
-              Indicative target: <span className="numeric font-medium text-ink">{formatPrice(prediction.target_price)}</span>
-            </p>
-          )}
-        </div>
-        {prediction && <ConfidenceMeter confidence={prediction.confidence} />}
+        ) : (
+          <div aria-hidden className="animate-pulse">
+            <div className="h-5 w-24 rounded bg-surface-raised" />
+            <div className="mt-2.5 h-3 w-32 rounded bg-surface-raised" />
+          </div>
+        )}
+        {prediction ? (
+          <ConfidenceMeter confidence={prediction.confidence} />
+        ) : (
+          <div aria-hidden className="h-[100px] w-[100px] shrink-0 animate-pulse rounded-full border-[7px] border-surface-raised" />
+        )}
       </div>
       <div className="mt-4">
         <LastUpdated updatedAt={updatedAt ?? null} live={isLive} isStale={isStale} />

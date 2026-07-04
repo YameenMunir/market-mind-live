@@ -29,10 +29,12 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const isExpanded = isOpen && query.length > 0;
+
   return (
     <div ref={containerRef} className="relative w-full max-w-md">
-      <div className="relative z-50 flex items-center gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2 transition-colors focus-within:border-brand/60">
-        <Search size={16} className="shrink-0 text-ink-faint" />
+      <div className="relative z-50 flex items-center gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2.5 transition-colors focus-within:border-brand/60 sm:py-2">
+        <Search size={16} className="shrink-0 text-ink-faint" aria-hidden />
         <input
           value={query}
           onChange={(e) => {
@@ -40,8 +42,21 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setQuery("");
+              setIsOpen(false);
+              e.currentTarget.blur();
+            }
+          }}
+          type="search"
+          role="combobox"
+          aria-label="Search assets by symbol or name"
+          aria-expanded={isExpanded}
+          aria-controls="asset-search-results"
+          autoComplete="off"
           placeholder="Search symbol or name (AAPL, Bitcoin, EUR/USD...)"
-          className="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none"
+          className="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
           <kbd className="hidden shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-ink-faint sm:block">
@@ -50,27 +65,41 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
         )}
       </div>
 
-      {isOpen && query.length > 0 && (
+      {isExpanded && (
         <>
           {/* Backdrop dims the rest of the dashboard so the dropdown reads as a
               floating layer above the page instead of appearing to collide with
               the cards behind it. */}
           <div className="fixed inset-0 z-40 bg-canvas/70 backdrop-blur-[2px]" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 right-0 z-50 mt-2 max-h-80 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20">
-            {isLoading && <div className="px-3 py-3 text-xs text-ink-faint">Searching...</div>}
+          <div
+            id="asset-search-results"
+            role="listbox"
+            aria-label="Asset search results"
+            className="absolute left-0 right-0 z-50 mt-2 max-h-80 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20"
+          >
+            {isLoading && (
+              <div className="flex items-center gap-2 px-3 py-3 text-xs text-ink-faint" role="status">
+                <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-ink-faint border-t-transparent" aria-hidden />
+                Searching...
+              </div>
+            )}
             {!isLoading && results.length === 0 && (
-              <div className="px-3 py-3 text-xs text-ink-faint">No matching assets found.</div>
+              <div className="px-3 py-3 text-xs text-ink-faint">
+                No matches for &ldquo;{query}&rdquo;. Try a ticker symbol like AAPL or BTC-USD.
+              </div>
             )}
             {!isLoading &&
               results.map((asset) => (
                 <button
                   key={asset.symbol}
+                  role="option"
+                  aria-selected={false}
                   onClick={() => {
                     onSelect(asset);
                     setQuery("");
                     setIsOpen(false);
                   }}
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-surface"
+                  className="flex min-h-[44px] w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-surface focus-visible:bg-surface"
                 >
                   <span className="flex min-w-0 items-center gap-2.5">
                     <span className="shrink-0 font-mono text-sm font-medium text-ink">{asset.symbol}</span>

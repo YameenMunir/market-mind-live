@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Maximize2 } from "lucide-react";
+import { LineChart, Maximize2 } from "lucide-react";
 
 import { AIInsightsButton } from "@/components/AIInsightsButton";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
@@ -78,7 +78,7 @@ export default function DashboardPage() {
         title="Live Dashboard"
       />
 
-      <main className="flex-1 space-y-5 overflow-y-auto p-6">
+      <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">
         {snapshot.errorMessage && <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -120,7 +120,8 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setIsChartFullscreen(true)}
                   aria-label="Expand chart to full screen"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-raised text-ink-muted transition-colors hover:text-ink"
+                  title="Expand chart"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface-raised text-ink-muted transition-colors hover:border-ink-faint/40 hover:text-ink"
                 >
                   <Maximize2 size={14} />
                 </button>
@@ -133,7 +134,7 @@ export default function DashboardPage() {
                 <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" className="ml-auto" />
               )}
             </div>
-            <div className="h-[440px]">
+            <div className="h-[320px] sm:h-[400px] xl:h-[440px]">
               {candles.data && candles.data.candles.length > 0 ? (
                 <LiveCandlestickChart
                   candles={candles.data.candles}
@@ -145,9 +146,21 @@ export default function DashboardPage() {
                   showMovingAverages={showMA}
                   showBollinger={showBB}
                 />
+              ) : candles.isLoading ? (
+                <div aria-hidden className="flex h-full animate-pulse flex-col justify-end gap-2 rounded-xl bg-surface-raised/50 p-4">
+                  <div className="flex h-full items-end gap-1.5 sm:gap-2">
+                    {[35, 55, 45, 70, 60, 80, 50, 65, 75, 58, 68, 85].map((h, i) => (
+                      <div key={i} className="flex-1 rounded-sm bg-surface-raised" style={{ height: `${h}%` }} />
+                    ))}
+                  </div>
+                </div>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-ink-faint">
-                  {candles.isLoading ? "Loading chart data..." : "No chart data available for this symbol."}
+                <div className="flex h-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border text-center">
+                  <LineChart size={22} className="text-ink-faint" aria-hidden />
+                  <p className="text-sm font-medium text-ink-muted">No chart data for {symbol}</p>
+                  <p className="max-w-xs px-4 text-xs leading-relaxed text-ink-faint">
+                    Try a different timeframe, or search for another symbol above.
+                  </p>
                 </div>
               )}
             </div>

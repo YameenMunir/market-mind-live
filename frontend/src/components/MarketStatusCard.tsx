@@ -26,16 +26,23 @@ export function MarketStatusCard({ status, updatedAt, isLive, isStale }: MarketS
   return (
     <Panel eyebrow="Market Status" title={status?.symbol ?? "--"}>
       <div className="flex items-center gap-3">
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-surface-raised")}>
+        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised")}>
           <Icon size={18} className="text-ink-muted" />
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className={cn("h-1.5 w-1.5 rounded-full", meta?.dot ?? "bg-ink-faint")} />
-            <p className="text-sm font-semibold text-ink">{meta?.label ?? "Unknown"}</p>
+        {status ? (
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", meta?.dot ?? "bg-ink-faint")} />
+              <p className="text-sm font-semibold text-ink">{meta?.label ?? "Unknown"}</p>
+            </div>
+            <p className="mt-0.5 text-xs text-ink-muted">{status.message}</p>
           </div>
-          <p className="mt-0.5 text-xs text-ink-muted">{status?.message ?? "Awaiting market data..."}</p>
-        </div>
+        ) : (
+          <div aria-hidden className="flex-1 animate-pulse">
+            <div className="h-4 w-28 rounded bg-surface-raised" />
+            <div className="mt-2 h-3 w-40 max-w-full rounded bg-surface-raised" />
+          </div>
+        )}
       </div>
 
       {status?.asset_type && (

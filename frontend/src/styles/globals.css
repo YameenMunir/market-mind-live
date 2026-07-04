@@ -38,6 +38,7 @@
 
 html {
   color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html.light {
@@ -49,6 +50,33 @@ body {
   color: rgb(var(--color-ink));
   font-feature-settings: "ss01", "ss02", "cv01";
   -webkit-font-smoothing: antialiased;
+}
+
+/* Keyboard-visible focus ring on every interactive element; pointer users are unaffected. */
+:focus-visible {
+  outline: 2px solid rgb(var(--color-brand) / 0.9);
+  outline-offset: 2px;
+}
+
+button,
+[role="button"],
+a,
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 ::selection {

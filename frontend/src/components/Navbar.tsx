@@ -17,18 +17,19 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-canvas/80 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-        <Link href="/">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6 sm:py-4">
+        <Link href="/" aria-label="Market Mind Live home">
           <BrandMark />
         </Link>
 
-        <nav className="hidden items-center gap-1 sm:flex">
+        <nav className="hidden items-center gap-1 sm:flex" aria-label="Site navigation">
           {NAV_LINKS.map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive ? "text-ink" : "text-ink-muted hover:text-ink"
@@ -44,7 +45,7 @@ export function Navbar() {
           <ThemeToggle />
           <Link
             href="/dashboard"
-            className="whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 sm:px-4"
+            className="whitespace-nowrap rounded-lg bg-brand px-3 py-2.5 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 sm:px-4"
           >
             <span className="sm:hidden">Launch</span>
             <span className="hidden sm:inline">Launch Dashboard</span>

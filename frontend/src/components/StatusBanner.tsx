@@ -29,8 +29,11 @@ const ICONS = {
 export function StatusBanner({ message, tone = "muted", icon = "clock", className }: StatusBannerProps) {
   const Icon = ICONS[icon];
   return (
-    <div className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium", TONE_STYLES[tone], className)}>
-      <Icon size={14} className={icon === "loading" ? "animate-spin" : ""} />
+    <div
+      role={tone === "error" ? "alert" : "status"}
+      className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium", TONE_STYLES[tone], className)}
+    >
+      <Icon size={14} aria-hidden className={cn("shrink-0", icon === "loading" && "animate-spin")} />
       <span>{message}</span>
     </div>
   );

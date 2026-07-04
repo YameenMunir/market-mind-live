@@ -50,26 +50,41 @@ export default function BacktestingPage() {
 
   return (
     <>
-      <header className="flex items-center justify-between border-b border-border bg-canvas px-6 py-4">
+      <header className="flex items-center justify-between border-b border-border bg-canvas px-4 py-3.5 sm:px-6 sm:py-4">
         <h1 className="text-sm font-semibold uppercase tracking-wider text-ink-faint">Backtesting</h1>
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 space-y-5 overflow-y-auto p-6">
+      <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">
         <Panel eyebrow="Strategy Backtest" title="SMA 20/50 + MACD trend-following">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:flex-wrap">
-            <div className="flex-1 min-w-[220px]">
-              <label className="mb-1.5 block text-xs font-medium text-ink-muted">Asset</label>
+          <p className="mb-4 text-xs leading-relaxed text-ink-muted">
+            Simulates going long when SMA-20 crosses above SMA-50 with positive MACD momentum, and moving to
+            cash otherwise. Pick an asset, a window, and a starting balance.
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              runBacktest();
+            }}
+            className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end"
+          >
+            <div className="min-w-[220px] flex-1">
+              <p className="mb-1.5 block text-xs font-medium text-ink-muted">Asset</p>
               <AssetSearch assetType={null} onSelect={(asset: AssetSearchResult) => setSymbol(asset.symbol)} />
-              <p className="mt-1.5 font-mono text-xs text-ink-faint">Selected: {symbol}</p>
+              <p className="mt-1.5 text-xs text-ink-faint">
+                Selected: <span className="font-mono font-medium text-ink-muted">{symbol}</span>
+              </p>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-ink-muted">Lookback period</label>
+              <label htmlFor="backtest-lookback" className="mb-1.5 block text-xs font-medium text-ink-muted">
+                Lookback period
+              </label>
               <select
+                id="backtest-lookback"
                 value={lookbackDays}
                 onChange={(e) => setLookbackDays(Number(e.target.value))}
-                className="rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-ink focus:border-brand/60 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 text-sm text-ink focus:border-brand/60 focus:outline-none md:w-auto"
               >
                 {LOOKBACK_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -80,25 +95,29 @@ export default function BacktestingPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-ink-muted">Initial capital</label>
+              <label htmlFor="backtest-capital" className="mb-1.5 block text-xs font-medium text-ink-muted">
+                Initial capital ($)
+              </label>
               <input
+                id="backtest-capital"
                 type="number"
                 min={100}
+                inputMode="numeric"
                 value={initialCapital}
                 onChange={(e) => setInitialCapital(Number(e.target.value))}
-                className="w-32 rounded-lg border border-border bg-surface-raised px-3 py-2 font-mono text-sm text-ink focus:border-brand/60 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 font-mono text-sm text-ink focus:border-brand/60 focus:outline-none md:w-36"
               />
             </div>
 
             <button
-              onClick={runBacktest}
+              type="submit"
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-60"
+              className="flex h-10 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isLoading ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
-              Run Backtest
+              {isLoading ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <PlayCircle size={16} aria-hidden />}
+              {isLoading ? "Running..." : "Run Backtest"}
             </button>
-          </div>
+          </form>
         </Panel>
 
         {error && <StatusBanner {...describeError(error)} />}

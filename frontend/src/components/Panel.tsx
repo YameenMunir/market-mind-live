@@ -12,7 +12,10 @@ interface PanelProps {
 
 export function Panel({ children, className, title, eyebrow, action }: PanelProps) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-surface p-5 shadow-panel", className)}>
+    <section
+      aria-label={title ?? eyebrow}
+      className={cn("rounded-2xl border border-border bg-surface p-4 shadow-panel sm:p-5", className)}
+    >
       {(title || eyebrow || action) && (
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
@@ -23,6 +26,6 @@ export function Panel({ children, className, title, eyebrow, action }: PanelProp
         </div>
       )}
       {children}
-    </div>
+    </section>
   );
 }

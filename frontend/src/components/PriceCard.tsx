@@ -43,37 +43,46 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
           flash === "down" && "animate-ticker-flash-down"
         )}
       />
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="numeric font-mono text-4xl font-semibold text-ink">
-            {quote ? formatPrice(quote.price, quote.currency) : "--"}
-          </p>
-          <div
-            className={cn(
-              "mt-2 flex items-center gap-1.5 text-sm font-medium",
-              isFlat ? "text-ink-muted" : isPositive ? "text-bull" : "text-bear"
-            )}
-          >
-            {isFlat ? <Minus size={15} /> : isPositive ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
-            <span className="numeric">{quote ? formatPrice(quote.change, quote.currency) : "--"}</span>
-            <span className="numeric">({quote ? formatPercent(quote.change_percent) : "--"})</span>
+      {quote ? (
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="numeric font-mono text-3xl font-semibold text-ink sm:text-4xl">
+              {formatPrice(quote.price, quote.currency)}
+            </p>
+            <div
+              className={cn(
+                "mt-2 flex items-center gap-1.5 text-sm font-medium",
+                isFlat ? "text-ink-muted" : isPositive ? "text-bull" : "text-bear"
+              )}
+            >
+              {isFlat ? <Minus size={15} /> : isPositive ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
+              <span className="numeric">{formatPrice(quote.change, quote.currency)}</span>
+              <span className="numeric">({formatPercent(quote.change_percent)})</span>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div aria-hidden className="animate-pulse">
+          <div className="h-9 w-36 rounded-lg bg-surface-raised sm:h-10" />
+          <div className="mt-2.5 h-4 w-28 rounded bg-surface-raised" />
+        </div>
+      )}
 
       <div className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4 text-xs">
-        <div>
-          <p className="text-ink-faint">Day High</p>
-          <p className="numeric mt-1 font-medium text-ink">{quote ? formatPrice(quote.day_high, quote.currency) : "--"}</p>
-        </div>
-        <div>
-          <p className="text-ink-faint">Day Low</p>
-          <p className="numeric mt-1 font-medium text-ink">{quote ? formatPrice(quote.day_low, quote.currency) : "--"}</p>
-        </div>
-        <div>
-          <p className="text-ink-faint">Volume</p>
-          <p className="numeric mt-1 font-medium text-ink">{quote ? formatCompactNumber(quote.volume) : "--"}</p>
-        </div>
+        {[
+          { label: "Day High", value: quote ? formatPrice(quote.day_high, quote.currency) : null },
+          { label: "Day Low", value: quote ? formatPrice(quote.day_low, quote.currency) : null },
+          { label: "Volume", value: quote ? formatCompactNumber(quote.volume) : null },
+        ].map((item) => (
+          <div key={item.label}>
+            <p className="text-ink-faint">{item.label}</p>
+            {item.value !== null ? (
+              <p className="numeric mt-1 font-medium text-ink">{item.value}</p>
+            ) : (
+              <div aria-hidden className="mt-1.5 h-3.5 w-14 animate-pulse rounded bg-surface-raised" />
+            )}
+          </div>
+        ))}
       </div>
 
       {quote && (

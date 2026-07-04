@@ -104,7 +104,8 @@ export default function AboutPage() {
         {/* Hero */}
         <section className="relative mx-auto max-w-7xl overflow-hidden px-6 pb-20 pt-12 sm:pt-16">
           <div
-            className="pointer-events-none absolute left-1/2 top-0 h-[480px] w-[820px] -translate-x-1/2 rounded-full opacity-20 blur-[140px]"
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-0 h-[480px] w-[820px] max-w-[100vw] -translate-x-1/2 rounded-full opacity-20 blur-[140px]"
             style={{ background: "radial-gradient(closest-side, rgb(var(--color-brand)), transparent)" }}
           />
 

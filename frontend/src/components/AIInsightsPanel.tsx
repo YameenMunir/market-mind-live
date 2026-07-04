@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { History, Maximize2, MessageSquarePlus, Sparkles, X } from "lucide-react";
 
@@ -28,6 +28,15 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
   const chat = useAIChat({ asset, enabled: isOpen, buildContext });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || isFullscreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isFullscreen, onClose]);
 
   const context = isOpen ? buildContext() : null;
   const signalMeta = context?.prediction ? SIGNAL_META[context.prediction.signal] : null;
