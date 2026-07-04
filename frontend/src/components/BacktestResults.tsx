@@ -2,6 +2,7 @@ import { BarChart3 } from "lucide-react";
 
 import { Panel } from "@/components/Panel";
 import { EquityCurveChart } from "@/charts/EquityCurveChart";
+import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { cn, formatPercent, formatPrice } from "@/lib/utils";
 import type { BacktestResult } from "@/types";
 
@@ -40,23 +41,36 @@ export function BacktestResults({ result, theme }: { result: BacktestResult | nu
   }
 
   const isProfitable = result.total_return_pct >= 0;
+  const { currency, convert } = useCurrencyContext();
+  const nativeCurrency = result.currency;
+  const isConverted = nativeCurrency !== currency;
+
+  const convertedEquityCurve = result.equity_curve.map((p) => ({
+    ...p,
+    equity: convert(p.equity, nativeCurrency) ?? p.equity,
+  }));
 
   return (
     <div className="flex flex-col gap-5">
+      {isConverted && (
+        <p className="text-xs leading-relaxed text-ink-faint">
+          Showing results converted from {nativeCurrency} to {currency} at the live FX rate.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile
           label="Total Return"
           value={formatPercent(result.total_return_pct)}
           tone={isProfitable ? "bull" : "bear"}
         />
-        <StatTile label="Final Equity" value={formatPrice(result.final_equity)} />
+        <StatTile label="Final Equity" value={formatPrice(convert(result.final_equity, nativeCurrency), currency)} />
         <StatTile label="Win Rate" value={`${result.win_rate_pct.toFixed(1)}%`} />
         <StatTile label="Max Drawdown" value={`${result.max_drawdown_pct.toFixed(1)}%`} tone="bear" />
       </div>
 
       <Panel eyebrow="Equity Curve" title={`${result.symbol} · ${result.total_trades} trades`}>
         <div className="h-56 sm:h-64">
-          <EquityCurveChart points={result.equity_curve} theme={theme} />
+          <EquityCurveChart points={convertedEquityCurve} theme={theme} currency={currency} />
         </div>
       </Panel>
 
@@ -77,8 +91,12 @@ export function BacktestResults({ result, theme }: { result: BacktestResult | nu
                 <tr key={i} className="transition-colors hover:bg-surface-raised/50">
                   <td className="py-2.5 pr-3 text-ink-muted">{new Date(trade.entry_time * 1000).toLocaleDateString()}</td>
                   <td className="py-2.5 pr-3 text-ink-muted">{new Date(trade.exit_time * 1000).toLocaleDateString()}</td>
-                  <td className="numeric py-2.5 pr-3 text-right text-ink">{formatPrice(trade.entry_price)}</td>
-                  <td className="numeric py-2.5 pr-3 text-right text-ink">{formatPrice(trade.exit_price)}</td>
+                  <td className="numeric py-2.5 pr-3 text-right text-ink">
+                    {formatPrice(convert(trade.entry_price, nativeCurrency), currency)}
+                  </td>
+                  <td className="numeric py-2.5 pr-3 text-right text-ink">
+                    {formatPrice(convert(trade.exit_price, nativeCurrency), currency)}
+                  </td>
                   <td
                     className={cn(
                       "numeric py-2.5 text-right font-medium",

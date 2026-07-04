@@ -1,17 +1,19 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
+import { Check, Moon, Sun } from "lucide-react";
 
 import { Panel } from "@/components/Panel";
 import { Toggle } from "@/components/Toggle";
+import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
 import { useTheme } from "@/hooks/useTheme";
-import { API_BASE_URL, INDICATOR_POLL_MS, QUOTE_POLL_FALLBACK_MS, WS_BASE_URL } from "@/lib/constants";
+import { API_BASE_URL, INDICATOR_POLL_MS, QUOTE_POLL_FALLBACK_MS, SUPPORTED_CURRENCIES, WS_BASE_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function SettingsPanel() {
   const { theme, setTheme } = useTheme();
   const { prefs, updatePrefs } = useChartPreferences();
+  const { currency, setCurrency } = useCurrencyContext();
 
   return (
     <div className="flex flex-col gap-5">
@@ -59,6 +61,33 @@ export function SettingsPanel() {
             description="Show volatility bands overlay on the live chart by default."
           />
         </div>
+      </Panel>
+
+      <Panel eyebrow="Display" title="Currency">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="Display currency">
+          {SUPPORTED_CURRENCIES.map((c) => (
+            <button
+              key={c.code}
+              onClick={() => setCurrency(c.code)}
+              aria-pressed={currency === c.code}
+              className={cn(
+                "flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-xs font-medium transition-colors",
+                currency === c.code
+                  ? "border-brand bg-brand/10 text-ink"
+                  : "border-border text-ink-muted hover:border-ink-faint/40 hover:text-ink"
+              )}
+            >
+              <span>
+                <span className="font-mono text-ink-faint">{c.symbol}</span> {c.code}
+              </span>
+              {currency === c.code && <Check size={13} className="shrink-0 text-brand" aria-hidden />}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-ink-muted">
+          Prices, charts, predictions, and backtests are converted to this currency using a live FX rate.
+          Numbers are still calculated from the asset's native-currency data - only the display is converted.
+        </p>
       </Panel>
 
       <Panel eyebrow="Default Asset" title="Startup symbol">

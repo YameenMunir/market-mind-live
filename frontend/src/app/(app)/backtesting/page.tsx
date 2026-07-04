@@ -7,6 +7,7 @@ import { AIInsightsButton } from "@/components/AIInsightsButton";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AssetSearch } from "@/components/AssetSearch";
 import { BacktestResults } from "@/components/BacktestResults";
+import { CurrencySelector } from "@/components/CurrencySelector";
 import { Panel } from "@/components/Panel";
 import { StatusBanner } from "@/components/StatusBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -52,7 +53,10 @@ export default function BacktestingPage() {
     <>
       <header className="flex items-center justify-between border-b border-border bg-canvas px-4 py-3.5 sm:px-6 sm:py-4">
         <h1 className="text-sm font-semibold uppercase tracking-wider text-ink-faint">Backtesting</h1>
-        <ThemeToggle />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <CurrencySelector />
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">

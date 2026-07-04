@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { AssetSearch } from "@/components/AssetSearch";
 import { AssetTypeSelector } from "@/components/AssetTypeSelector";
+import { CurrencySelector } from "@/components/CurrencySelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import type { AssetSearchResult, AssetType } from "@/types";
 
@@ -27,6 +28,7 @@ export function Topbar({ assetType, onAssetTypeChange, onSelectAsset, rightSlot,
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {rightSlot}
+        <CurrencySelector />
         <ThemeToggle />
       </div>
     </header>

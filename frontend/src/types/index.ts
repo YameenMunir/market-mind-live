@@ -147,6 +147,13 @@ export interface BacktestResult {
   total_trades: number;
   equity_curve: EquityPoint[];
   trades: BacktestTrade[];
+  currency: string;
+}
+
+export interface FxRates {
+  base: string;
+  rates: Record<string, number>;
+  as_of: string;
 }
 
 export type ErrorCode =

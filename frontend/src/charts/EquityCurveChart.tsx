@@ -5,7 +5,13 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { formatPrice } from "@/lib/utils";
 import type { EquityPoint } from "@/types";
 
-export function EquityCurveChart({ points, theme }: { points: EquityPoint[]; theme: "dark" | "light" }) {
+interface EquityCurveChartProps {
+  points: EquityPoint[];
+  theme: "dark" | "light";
+  currency?: string;
+}
+
+export function EquityCurveChart({ points, theme, currency = "USD" }: EquityCurveChartProps) {
   const brandColor = "#f5a623";
   const gridColor = theme === "dark" ? "#1a2030" : "#eeeeea";
   const textColor = theme === "dark" ? "#9ca6b6" : "#5b606b";
@@ -30,7 +36,7 @@ export function EquityCurveChart({ points, theme }: { points: EquityPoint[]; the
           stroke={textColor}
           tick={{ fontSize: 11 }}
           domain={["auto", "auto"]}
-          tickFormatter={(v) => formatPrice(v)}
+          tickFormatter={(v) => formatPrice(v, currency)}
           width={80}
         />
         <Tooltip
@@ -41,7 +47,7 @@ export function EquityCurveChart({ points, theme }: { points: EquityPoint[]; the
             fontSize: 12,
             color: textColor,
           }}
-          formatter={(value: number) => [formatPrice(value), "Equity"]}
+          formatter={(value: number) => [formatPrice(value, currency), "Equity"]}
         />
         <Area type="monotone" dataKey="equity" stroke={brandColor} strokeWidth={2} fill="url(#equityFill)" />
       </AreaChart>

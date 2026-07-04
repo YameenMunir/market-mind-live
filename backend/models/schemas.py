@@ -50,6 +50,14 @@ class CandleSeries(BaseModel):
     candles: list[Candle]
 
 
+class FxRates(BaseModel):
+    base: str = "USD"
+    # USD value of 1 unit of each currency (e.g. rates["GBP"] == 1.27 means 1 GBP = 1.27 USD).
+    # rates["USD"] is always 1.0.
+    rates: dict[str, float]
+    as_of: str
+
+
 class MarketSession(str, Enum):
     OPEN = "open"
     CLOSED = "closed"
@@ -175,6 +183,7 @@ class BacktestResult(BaseModel):
     total_trades: int
     equity_curve: list[EquityPoint]
     trades: list[BacktestTrade]
+    currency: str = "USD"
 
 
 class ErrorCode(str, Enum):

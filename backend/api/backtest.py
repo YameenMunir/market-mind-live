@@ -13,7 +13,12 @@ router = APIRouter(prefix="/api/backtest", tags=["backtest"])
 def backtest(request: BacktestRequest):
     period = _lookback_to_period(request.lookback_days)
     df = price_service.get_history_df(request.symbol, period=period, interval="1d")
-    return run_backtest(request.symbol, df, request.initial_capital)
+    result = run_backtest(request.symbol, df, request.initial_capital)
+    try:
+        result.currency = price_service.get_quote(request.symbol).currency
+    except Exception:
+        pass  # keep the schema default ("USD") if the quote fetch fails
+    return result
 
 
 def _lookback_to_period(days: int) -> str:

@@ -5,6 +5,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
+import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { formatCompactNumber, formatPercent, formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { PriceQuote } from "@/types";
@@ -19,6 +20,8 @@ interface PriceCardProps {
 export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
   const previousPrice = useRef<number | null>(null);
+  const { currency, convert } = useCurrencyContext();
+  const isConverted = !!quote && quote.currency !== currency;
 
   useEffect(() => {
     if (!quote) return;
@@ -47,7 +50,7 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
         <div className="flex items-end justify-between">
           <div>
             <p className="numeric font-mono text-3xl font-semibold text-ink sm:text-4xl">
-              {formatPrice(quote.price, quote.currency)}
+              {formatPrice(convert(quote.price, quote.currency), currency)}
             </p>
             <div
               className={cn(
@@ -56,7 +59,7 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
               )}
             >
               {isFlat ? <Minus size={15} /> : isPositive ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
-              <span className="numeric">{formatPrice(quote.change, quote.currency)}</span>
+              <span className="numeric">{formatPrice(convert(quote.change, quote.currency), currency)}</span>
               <span className="numeric">({formatPercent(quote.change_percent)})</span>
             </div>
           </div>
@@ -70,8 +73,8 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
 
       <div className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4 text-xs">
         {[
-          { label: "Day High", value: quote ? formatPrice(quote.day_high, quote.currency) : null },
-          { label: "Day Low", value: quote ? formatPrice(quote.day_low, quote.currency) : null },
+          { label: "Day High", value: quote ? formatPrice(convert(quote.day_high, quote.currency), currency) : null },
+          { label: "Day Low", value: quote ? formatPrice(convert(quote.day_low, quote.currency), currency) : null },
           { label: "Volume", value: quote ? formatCompactNumber(quote.volume) : null },
         ].map((item) => (
           <div key={item.label}>
@@ -86,10 +89,15 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
       </div>
 
       {quote && (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex items-center justify-between gap-2">
           <LastUpdated updatedAt={quote.as_of} live={isLive} isStale={isStale} />
           {quote.is_delayed && <span className="text-[11px] text-ink-faint">Delayed data</span>}
         </div>
+      )}
+      {isConverted && (
+        <p className="mt-2 text-[10px] leading-relaxed text-ink-faint">
+          Converted from {quote!.currency} at the live FX rate - not this asset's native trading currency.
+        </p>
       )}
     </Panel>
   );

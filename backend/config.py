@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     quote_cache_ttl_seconds: int = 10
     candle_cache_ttl_seconds: int = 30
     search_cache_ttl_seconds: int = 300
+    fx_cache_ttl_seconds: int = 300
 
     # Cadence at which each connected client receives a push over the WebSocket. This is
     # independent of how often the server actually calls out to Yahoo (see hub settings

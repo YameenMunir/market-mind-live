@@ -25,6 +25,30 @@ export const QUOTE_POLL_FALLBACK_MS = 8000;
 export const CANDLE_POLL_MS = 30000;
 export const INDICATOR_POLL_MS = 60000;
 
+export interface CurrencyMeta {
+  code: string;
+  label: string;
+  symbol: string;
+}
+
+export const SUPPORTED_CURRENCIES: CurrencyMeta[] = [
+  { code: "USD", label: "US Dollar", symbol: "$" },
+  { code: "GBP", label: "British Pound", symbol: "£" },
+  { code: "EUR", label: "Euro", symbol: "€" },
+  { code: "CAD", label: "Canadian Dollar", symbol: "CA$" },
+  { code: "AUD", label: "Australian Dollar", symbol: "A$" },
+  { code: "JPY", label: "Japanese Yen", symbol: "¥" },
+  { code: "CHF", label: "Swiss Franc", symbol: "CHF" },
+  { code: "INR", label: "Indian Rupee", symbol: "₹" },
+  { code: "CNY", label: "Chinese Yuan", symbol: "¥" },
+  { code: "SGD", label: "Singapore Dollar", symbol: "S$" },
+];
+
+// Currencies conventionally shown with no decimal places (e.g. JPY).
+export const ZERO_DECIMAL_CURRENCIES = ["JPY"];
+
+export const FX_POLL_MS = 5 * 60 * 1000;
+
 export const AI_SUGGESTED_QUESTIONS = [
   "Why is this asset showing this risk level?",
   "What does this prediction mean?",

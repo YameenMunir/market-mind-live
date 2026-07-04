@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LineChart, Maximize2 } from "lucide-react";
 
 import { AIInsightsButton } from "@/components/AIInsightsButton";
@@ -24,6 +24,7 @@ import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { Topbar } from "@/components/Topbar";
 import { LiveCandlestickChart } from "@/charts/LiveCandlestickChart";
+import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
 import { useCandles } from "@/hooks/useMarketData";
@@ -56,6 +57,31 @@ export default function DashboardPage() {
   const alertsState = useAlerts(symbol);
   const isLive = snapshot.connectionState === "live" || snapshot.connectionState === "polling";
   const activeAlertCount = alertsState.alerts.filter((a) => a.status === "active" || a.status === "triggered").length;
+
+  const { currency, convert } = useCurrencyContext();
+  const nativeCurrency = snapshot.quote?.currency ?? "USD";
+
+  const convertedCandles = useMemo(() => {
+    if (!candles.data) return null;
+    if (nativeCurrency === currency) return candles.data;
+    return {
+      ...candles.data,
+      candles: candles.data.candles.map((c) => ({
+        ...c,
+        open: convert(c.open, nativeCurrency) ?? c.open,
+        high: convert(c.high, nativeCurrency) ?? c.high,
+        low: convert(c.low, nativeCurrency) ?? c.low,
+        close: convert(c.close, nativeCurrency) ?? c.close,
+      })),
+    };
+  }, [candles.data, currency, nativeCurrency, convert]);
+
+  const convertedSupport = (snapshot.indicators?.support_resistance.support ?? []).map(
+    (v) => convert(v, nativeCurrency) ?? v
+  );
+  const convertedResistance = (snapshot.indicators?.support_resistance.resistance ?? []).map(
+    (v) => convert(v, nativeCurrency) ?? v
+  );
 
   const handleSelectAsset = (asset: AssetSearchResult) => {
     setSymbol(asset.symbol);
@@ -100,6 +126,7 @@ export default function DashboardPage() {
             updatedAt={snapshot.predictionUpdatedAt}
             isLive={snapshot.connectionState === "live"}
             isStale={snapshot.isStale}
+            nativeCurrency={nativeCurrency}
           />
           <RiskCard
             risk={snapshot.risk}
@@ -135,12 +162,12 @@ export default function DashboardPage() {
               )}
             </div>
             <div className="h-[320px] sm:h-[400px] xl:h-[440px]">
-              {candles.data && candles.data.candles.length > 0 ? (
+              {convertedCandles && convertedCandles.candles.length > 0 ? (
                 <LiveCandlestickChart
-                  candles={candles.data.candles}
-                  livePrice={interval === "1d" ? snapshot.quote?.price ?? null : null}
-                  supportLevels={snapshot.indicators?.support_resistance.support ?? []}
-                  resistanceLevels={snapshot.indicators?.support_resistance.resistance ?? []}
+                  candles={convertedCandles.candles}
+                  livePrice={interval === "1d" ? convert(snapshot.quote?.price ?? null, nativeCurrency) : null}
+                  supportLevels={convertedSupport}
+                  resistanceLevels={convertedResistance}
                   prediction={snapshot.prediction}
                   theme={theme}
                   showMovingAverages={showMA}
@@ -173,6 +200,7 @@ export default function DashboardPage() {
               updatedAt={snapshot.indicatorsUpdatedAt}
               isLive={snapshot.connectionState === "live"}
               isStale={snapshot.isStale}
+              nativeCurrency={nativeCurrency}
             />
           </div>
         </div>

@@ -3,6 +3,7 @@ import { TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { ConfidenceMeter } from "@/components/ConfidenceMeter";
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
+import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { PredictionResult } from "@/types";
@@ -13,6 +14,8 @@ interface PredictionCardProps {
   updatedAt?: string | null;
   isLive?: boolean;
   isStale?: boolean;
+  /** Currency the underlying quote/target price is denominated in (e.g. `quote.currency`). */
+  nativeCurrency?: string;
 }
 
 const DIRECTION_META = {
@@ -21,9 +24,17 @@ const DIRECTION_META = {
   neutral: { label: "Neutral", icon: Minus, color: "text-ink-muted" },
 } as const;
 
-export function PredictionCard({ prediction, isLoading, updatedAt, isLive, isStale }: PredictionCardProps) {
+export function PredictionCard({
+  prediction,
+  isLoading,
+  updatedAt,
+  isLive,
+  isStale,
+  nativeCurrency = "USD",
+}: PredictionCardProps) {
   const meta = prediction ? DIRECTION_META[prediction.direction] : null;
   const Icon = meta?.icon ?? Minus;
+  const { currency, convert } = useCurrencyContext();
 
   return (
     <Panel eyebrow="Model Prediction" title={prediction ? `${prediction.horizon}` : isLoading ? "Analyzing..." : "--"}>
@@ -37,7 +48,9 @@ export function PredictionCard({ prediction, isLoading, updatedAt, isLive, isSta
             {prediction.target_price && (
               <p className="mt-2 text-xs text-ink-muted">
                 Indicative target:{" "}
-                <span className="numeric font-medium text-ink">{formatPrice(prediction.target_price)}</span>
+                <span className="numeric font-medium text-ink">
+                  {formatPrice(convert(prediction.target_price, nativeCurrency), currency)}
+                </span>
               </p>
             )}
           </div>

@@ -1,13 +1,15 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import { ZERO_DECIMAL_CURRENCIES } from "@/lib/constants";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export function formatPrice(value: number | null | undefined, currency = "USD"): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "--";
-  const fractionDigits = Math.abs(value) < 5 ? 4 : 2;
+  const fractionDigits = ZERO_DECIMAL_CURRENCIES.includes(currency) ? 0 : Math.abs(value) < 5 ? 4 : 2;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,

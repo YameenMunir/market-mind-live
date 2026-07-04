@@ -16,6 +16,7 @@ import type {
   ChatResponse,
   DeleteSessionResponse,
   FeedbackRequest,
+  FxRates,
   IndicatorSet,
   MarketStatus,
   NewSessionRequest,
@@ -100,4 +101,5 @@ export const api = {
     request<AlertActionResponse>(`/api/alerts/${encodeURIComponent(alertId)}`, { method: "DELETE" }),
   dismissAlert: (alertId: string) =>
     request<AlertActionResponse>(`/api/alerts/${encodeURIComponent(alertId)}/dismiss`, { method: "POST" }),
+  getFxRates: () => request<FxRates>(`/api/fx/rates`),
 };

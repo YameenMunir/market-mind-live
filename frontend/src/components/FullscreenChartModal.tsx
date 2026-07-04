@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowDownRight, ArrowUpRight, Camera, Minus, Moon, RotateCcw, Sunrise, Sunset, X } from "lucide-react";
 
@@ -8,6 +8,7 @@ import { ChartOverlayToggles } from "@/components/ChartOverlayToggles";
 import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { LiveCandlestickChart, type LiveCandlestickChartHandle } from "@/charts/LiveCandlestickChart";
+import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { CANDLE_INTERVALS } from "@/lib/constants";
 import { cn, formatPercent, formatPrice } from "@/lib/utils";
 import type { CandleSeries, MarketStatus, PredictionResult, PriceQuote } from "@/types";
@@ -61,6 +62,26 @@ export function FullscreenChartModal({
   theme,
 }: FullscreenChartModalProps) {
   const chartHandleRef = useRef<LiveCandlestickChartHandle>(null);
+  const { currency, convert } = useCurrencyContext();
+  const nativeCurrency = quote?.currency ?? "USD";
+
+  const convertedCandles = useMemo(() => {
+    if (!candles) return null;
+    if (nativeCurrency === currency) return candles;
+    return {
+      ...candles,
+      candles: candles.candles.map((c) => ({
+        ...c,
+        open: convert(c.open, nativeCurrency) ?? c.open,
+        high: convert(c.high, nativeCurrency) ?? c.high,
+        low: convert(c.low, nativeCurrency) ?? c.low,
+        close: convert(c.close, nativeCurrency) ?? c.close,
+      })),
+    };
+  }, [candles, currency, nativeCurrency, convert]);
+
+  const convertedSupport = supportLevels.map((v) => convert(v, nativeCurrency) ?? v);
+  const convertedResistance = resistanceLevels.map((v) => convert(v, nativeCurrency) ?? v);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -123,7 +144,9 @@ export function FullscreenChartModal({
 
               {quote && (
                 <div>
-                  <p className="numeric font-mono text-lg font-semibold text-ink">{formatPrice(quote.price, quote.currency)}</p>
+                  <p className="numeric font-mono text-lg font-semibold text-ink">
+                    {formatPrice(convert(quote.price, nativeCurrency), currency)}
+                  </p>
                   <div
                     className={cn(
                       "flex items-center gap-1 text-xs font-medium",
@@ -131,7 +154,7 @@ export function FullscreenChartModal({
                     )}
                   >
                     {isFlat ? <Minus size={12} /> : isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                    <span className="numeric">{formatPrice(quote.change, quote.currency)}</span>
+                    <span className="numeric">{formatPrice(convert(quote.change, nativeCurrency), currency)}</span>
                     <span className="numeric">({formatPercent(quote.change_percent)})</span>
                   </div>
                 </div>
@@ -169,13 +192,13 @@ export function FullscreenChartModal({
           </div>
 
           <div className="min-h-0 flex-1 p-4 sm:p-6">
-            {candles && candles.candles.length > 0 ? (
+            {convertedCandles && convertedCandles.candles.length > 0 ? (
               <LiveCandlestickChart
                 ref={chartHandleRef}
-                candles={candles.candles}
-                livePrice={interval === "1d" ? quote?.price ?? null : null}
-                supportLevels={supportLevels}
-                resistanceLevels={resistanceLevels}
+                candles={convertedCandles.candles}
+                livePrice={interval === "1d" ? convert(quote?.price ?? null, nativeCurrency) : null}
+                supportLevels={convertedSupport}
+                resistanceLevels={convertedResistance}
                 prediction={prediction}
                 theme={theme}
                 showMovingAverages={showMA}
