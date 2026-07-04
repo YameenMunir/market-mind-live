@@ -9,7 +9,7 @@ import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { LiveCandlestickChart, type LiveCandlestickChartHandle } from "@/charts/LiveCandlestickChart";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
-import { CANDLE_INTERVALS } from "@/lib/constants";
+import { CHART_RANGES } from "@/lib/constants";
 import { cn, formatPercent, formatPrice } from "@/lib/utils";
 import type { CandleSeries, MarketStatus, PredictionResult, PriceQuote } from "@/types";
 
@@ -137,7 +137,7 @@ export function FullscreenChartModal({
                 <h2 className="mt-0.5 text-lg font-semibold text-ink">
                   {assetName ? `${assetName} · ${symbol}` : symbol}
                   <span className="ml-2 text-sm font-medium text-ink-faint">
-                    {CANDLE_INTERVALS.find((i) => i.value === interval)?.label}
+                    {CHART_RANGES.find((r) => r.value === interval)?.label}
                   </span>
                 </h2>
               </div>

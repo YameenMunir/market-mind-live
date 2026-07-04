@@ -35,7 +35,7 @@ import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
 import { useTheme } from "@/hooks/useTheme";
 import { buildAssetContext } from "@/lib/aiContext";
-import { CANDLE_INTERVALS } from "@/lib/constants";
+import { CHART_RANGES } from "@/lib/constants";
 import type { AssetSearchResult, AssetType } from "@/types";
 
 export default function DashboardPage() {
@@ -157,7 +157,7 @@ export default function DashboardPage() {
           <Panel
             className="xl:col-span-8"
             eyebrow="Live Chart"
-            title={`${symbol} · ${CANDLE_INTERVALS.find((i) => i.value === interval)?.label}`}
+            title={`${symbol} · ${CHART_RANGES.find((r) => r.value === interval)?.label}`}
             action={
               <div className="flex flex-wrap items-center gap-3">
                 <TimeframeSelector value={interval} onChange={setInterval_} />

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -13,14 +13,28 @@ from utils.errors import RateLimitedError
 settings = get_settings()
 _rate_limiter = RateLimiter(max_per_minute=settings.provider_rate_limit_per_minute)
 
-INTERVAL_TO_PERIOD = {
-    "1m": "1d",
-    "5m": "5d",
-    "15m": "5d",
-    "1h": "1mo",
-    "1d": "1y",
-    "1wk": "5y",
+# Chart time-range options -> how far back to fetch and what candle size to request.
+# "period" values map directly to yfinance's native period shorthand (Yahoo supports
+# these exactly). "days" ranges (1wk/2wk) have no native Yahoo period string, so they're
+# fetched via an explicit start/end window instead. "ytd"/"max" are also native Yahoo
+# periods, so YTD always starts from the first trading day of the current calendar year
+# and MAX returns the full history Yahoo has for the symbol - both handled by yfinance
+# itself, not computed here.
+RANGE_CONFIG: dict[str, dict] = {
+    "1d": {"period": "1d", "bar_interval": "5m"},
+    "5d": {"period": "5d", "bar_interval": "15m"},
+    "1wk": {"days": 7, "bar_interval": "30m"},
+    "2wk": {"days": 14, "bar_interval": "1h"},
+    "1mo": {"period": "1mo", "bar_interval": "1d"},
+    "3mo": {"period": "3mo", "bar_interval": "1d"},
+    "6mo": {"period": "6mo", "bar_interval": "1d"},
+    "ytd": {"period": "ytd", "bar_interval": "1d"},
+    "1y": {"period": "1y", "bar_interval": "1d"},
+    "2y": {"period": "2y", "bar_interval": "1wk"},
+    "5y": {"period": "5y", "bar_interval": "1wk"},
+    "max": {"period": "max", "bar_interval": "1mo"},
 }
+DEFAULT_RANGE = "1d"
 
 
 def _check_rate_limit(symbol: str) -> None:
@@ -54,16 +68,22 @@ def get_quote(symbol: str) -> PriceQuote:
     return cache.get_or_set(f"quote:{symbol.upper()}", settings.quote_cache_ttl_seconds, _fetch)
 
 
-def get_candles(symbol: str, interval: str = "1d") -> CandleSeries:
-    interval = interval if interval in INTERVAL_TO_PERIOD else "1d"
-    period = INTERVAL_TO_PERIOD[interval]
+def get_candles(symbol: str, interval: str = DEFAULT_RANGE) -> CandleSeries:
+    range_key = interval if interval in RANGE_CONFIG else DEFAULT_RANGE
+    config = RANGE_CONFIG[range_key]
+    bar_interval = config["bar_interval"]
 
     def _fetch() -> CandleSeries:
         _check_rate_limit(symbol)
-        df = provider.get_history(symbol, period=period, interval=interval)
-        return CandleSeries(symbol=symbol.upper(), interval=interval, candles=_dataframe_to_candles(df))
+        if "days" in config:
+            end = datetime.now(timezone.utc)
+            start = end - timedelta(days=config["days"])
+            df = provider.get_history(symbol, interval=bar_interval, start=start, end=end)
+        else:
+            df = provider.get_history(symbol, period=config["period"], interval=bar_interval)
+        return CandleSeries(symbol=symbol.upper(), interval=range_key, candles=_dataframe_to_candles(df))
 
-    key = f"candles:{symbol.upper()}:{interval}"
+    key = f"candles:{symbol.upper()}:{range_key}"
     return cache.get_or_set(key, settings.candle_cache_ttl_seconds, _fetch)
 
 

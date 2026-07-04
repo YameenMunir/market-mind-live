@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import socket
+from datetime import datetime
 
 import pandas as pd
 import yfinance as yf
@@ -60,8 +61,15 @@ class YFinanceProvider(MarketDataProvider):
             "currency": currency,
         }
 
-    def get_history(self, symbol: str, period: str = "6mo", interval: str = "1d") -> pd.DataFrame:
-        return self._safe_history(symbol, period=period, interval=interval)
+    def get_history(
+        self,
+        symbol: str,
+        period: str = "6mo",
+        interval: str = "1d",
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> pd.DataFrame:
+        return self._safe_history(symbol, period=period, interval=interval, start=start, end=end)
 
     def get_analyst_consensus(self, symbol: str) -> dict:
         ticker = yf.Ticker(symbol)
@@ -103,10 +111,20 @@ class YFinanceProvider(MarketDataProvider):
             **counts,
         }
 
-    def _safe_history(self, symbol: str, period: str, interval: str) -> pd.DataFrame:
+    def _safe_history(
+        self,
+        symbol: str,
+        period: str,
+        interval: str,
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> pd.DataFrame:
         try:
             ticker = yf.Ticker(symbol)
-            df = ticker.history(period=period, interval=interval, auto_adjust=False)
+            if start is not None or end is not None:
+                df = ticker.history(start=start, end=end, interval=interval, auto_adjust=False)
+            else:
+                df = ticker.history(period=period, interval=interval, auto_adjust=False)
         except (socket.gaierror, ConnectionError, TimeoutError) as exc:
             raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
         except Exception as exc:

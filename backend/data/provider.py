@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 import pandas as pd
 
@@ -19,7 +20,17 @@ class MarketDataProvider(ABC):
         ...
 
     @abstractmethod
-    def get_history(self, symbol: str, period: str, interval: str) -> pd.DataFrame:
+    def get_history(
+        self,
+        symbol: str,
+        period: str = "6mo",
+        interval: str = "1d",
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> pd.DataFrame:
+        # When start/end are given they take precedence over period - needed for
+        # chart ranges (e.g. 1 week, 2 weeks) that Yahoo has no native `period`
+        # shorthand for.
         ...
 
     @abstractmethod

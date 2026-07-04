@@ -12,12 +12,22 @@ export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   index: "Indices",
 };
 
-export const CANDLE_INTERVALS = [
+// Chart time-range options, ordered shortest to longest. Each `value` is sent to
+// the backend as the `interval` query param, which now picks both how far back to
+// fetch and what candle size to render server-side (see backend/services/price_service.py).
+export const CHART_RANGES = [
   { label: "1D", value: "1d" },
-  { label: "1H", value: "1h" },
-  { label: "15M", value: "15m" },
-  { label: "5M", value: "5m" },
-  { label: "1WK", value: "1wk" },
+  { label: "5D", value: "5d" },
+  { label: "1W", value: "1wk" },
+  { label: "2W", value: "2wk" },
+  { label: "1M", value: "1mo" },
+  { label: "3M", value: "3mo" },
+  { label: "6M", value: "6mo" },
+  { label: "YTD", value: "ytd" },
+  { label: "1Y", value: "1y" },
+  { label: "2Y", value: "2y" },
+  { label: "5Y", value: "5y" },
+  { label: "MAX", value: "max" },
 ] as const;
 
 export const DEFAULT_SYMBOL = "AAPL";
