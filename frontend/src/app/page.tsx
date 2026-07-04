@@ -13,8 +13,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { BrandMark } from "@/components/BrandMark";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
 
 const ASSET_CLASSES = ["Stocks", "ETFs", "Crypto", "Forex", "Commodities", "Indices"];
 
@@ -65,19 +65,7 @@ const fadeUp = {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-canvas">
-      <header className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-5 sm:px-6 sm:py-6">
-        <BrandMark />
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <ThemeToggle />
-          <Link
-            href="/dashboard"
-            className="whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 sm:px-4"
-          >
-            <span className="sm:hidden">Launch</span>
-            <span className="hidden sm:inline">Launch Dashboard</span>
-          </Link>
-        </div>
-      </header>
+      <Navbar />
 
       <section className="relative mx-auto max-w-7xl overflow-hidden px-6 pb-24 pt-16 sm:pt-24">
         <div
@@ -197,14 +185,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-border px-6 py-10">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <BrandMark />
-          <p className="text-xs text-ink-faint">
-            Market data is delayed and for informational purposes only. Not financial advice.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
