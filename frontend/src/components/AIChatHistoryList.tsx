@@ -124,7 +124,7 @@ export function AIChatHistoryList({
                     <button
                       onClick={() => setConfirmingId(session.session_id)}
                       aria-label="Delete conversation"
-                      className="absolute right-2 top-2.5 flex h-5 w-5 items-center justify-center rounded text-ink-faint opacity-0 transition-opacity hover:text-bear group-hover:opacity-100"
+                      className="absolute right-2 top-2.5 flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:text-bear sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       <Trash2 size={12} />
                     </button>

@@ -9,6 +9,14 @@ const LABELS: Record<ConnectionState, string> = {
   error: "Connection issue",
 };
 
+const SHORT_LABELS: Record<ConnectionState, string> = {
+  connecting: "Connecting...",
+  live: "Live",
+  polling: "Live",
+  reconnecting: "Reconnecting...",
+  error: "Error",
+};
+
 const DOT_STYLES: Record<ConnectionState, string> = {
   connecting: "bg-warn animate-pulse-soft",
   live: "bg-bull",
@@ -19,9 +27,10 @@ const DOT_STYLES: Record<ConnectionState, string> = {
 
 export function ConnectionStatusPill({ state }: { state: ConnectionState }) {
   return (
-    <div className="flex items-center gap-2 rounded-full border border-border bg-surface-raised px-3 py-1.5 text-xs font-medium text-ink-muted">
-      <span className={cn("h-1.5 w-1.5 rounded-full", DOT_STYLES[state])} />
-      {LABELS[state]}
+    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface-raised px-3 py-1.5 text-xs font-medium text-ink-muted">
+      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", DOT_STYLES[state])} />
+      <span className="sm:hidden">{SHORT_LABELS[state]}</span>
+      <span className="hidden sm:inline">{LABELS[state]}</span>
     </div>
   );
 }

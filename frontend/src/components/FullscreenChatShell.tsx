@@ -133,10 +133,10 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
             </button>
           </div>
 
-          <div className="flex min-h-0 flex-1">
+          <div className="relative flex min-h-0 flex-1">
             {showHistory && (
               <AIChatHistoryList
-                className="w-80 shrink-0 border-r border-border"
+                className="absolute inset-0 z-10 bg-canvas sm:static sm:z-auto sm:w-80 sm:shrink-0 sm:border-r sm:border-border"
                 sessions={chat.sessions}
                 isLoading={chat.isLoadingSessions}
                 activeSessionId={chat.sessionId}

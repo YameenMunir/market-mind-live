@@ -25,7 +25,7 @@ export function Topbar({ assetType, onAssetTypeChange, onSelectAsset, rightSlot,
           <AssetTypeSelector value={assetType} onChange={onAssetTypeChange} />
         </div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {rightSlot}
         <ThemeToggle />
       </div>
