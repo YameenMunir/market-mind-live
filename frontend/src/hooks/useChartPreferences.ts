@@ -8,12 +8,17 @@ export interface ChartPreferences {
   showMovingAverages: boolean;
   showBollinger: boolean;
   defaultSymbol: string;
+  showPricePredictor: boolean;
+  predictionHorizonDays: number;
 }
 
 const DEFAULTS: ChartPreferences = {
   showMovingAverages: true,
   showBollinger: true,
   defaultSymbol: "AAPL",
+  // Opt-in, unlike MA/Bollinger which default on - this is a more speculative overlay.
+  showPricePredictor: false,
+  predictionHorizonDays: 7,
 };
 
 export function useChartPreferences() {

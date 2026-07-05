@@ -22,6 +22,7 @@ import { MarketStatusCard } from "@/components/MarketStatusCard";
 import { Panel } from "@/components/Panel";
 import { PredictionCard } from "@/components/PredictionCard";
 import { PriceCard } from "@/components/PriceCard";
+import { PricePredictorControls } from "@/components/PricePredictorControls";
 import { RiskCard } from "@/components/RiskCard";
 import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
@@ -34,14 +35,15 @@ import { useChartPreferences } from "@/hooks/useChartPreferences";
 import { useFullscreenToggle } from "@/hooks/useFullscreenToggle";
 import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
+import { usePriceForecast } from "@/hooks/usePriceForecast";
 import { useTheme } from "@/hooks/useTheme";
 import { buildAssetContext } from "@/lib/aiContext";
 import { CHART_RANGES } from "@/lib/constants";
-import type { AssetSearchResult, AssetType } from "@/types";
+import type { AssetSearchResult, AssetType, PriceForecast } from "@/types";
 
 export default function DashboardPage() {
   const { theme } = useTheme();
-  const { prefs } = useChartPreferences();
+  const { prefs, updatePrefs } = useChartPreferences();
 
   const [symbol, setSymbol] = useState(prefs.defaultSymbol);
   const [assetType, setAssetType] = useState<AssetType | null>(null);
@@ -49,6 +51,8 @@ export default function DashboardPage() {
   const [interval, setInterval_] = useState("1d");
   const [showMA, setShowMA] = useState(prefs.showMovingAverages);
   const [showBB, setShowBB] = useState(prefs.showBollinger);
+  const [showPricePredictor, setShowPricePredictor] = useState(prefs.showPricePredictor);
+  const [horizonDays, setHorizonDays] = useState(prefs.predictionHorizonDays);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isChartFullscreen, setIsChartFullscreen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
@@ -60,8 +64,18 @@ export default function DashboardPage() {
     setSymbol(prefs.defaultSymbol);
   }, [prefs.defaultSymbol]);
 
+  const handleTogglePricePredictor = (value: boolean) => {
+    setShowPricePredictor(value);
+    updatePrefs({ showPricePredictor: value });
+  };
+  const handleHorizonChange = (value: number) => {
+    setHorizonDays(value);
+    updatePrefs({ predictionHorizonDays: value });
+  };
+
   const snapshot = useLiveSnapshot(symbol);
   const candles = useCandles(symbol, interval);
+  const forecast = usePriceForecast(symbol, horizonDays, showPricePredictor);
   const alertsState = useAlerts(symbol);
   const analyst = useAnalystConsensus(symbol);
   const isLive = snapshot.connectionState === "live" || snapshot.connectionState === "polling";
@@ -91,6 +105,21 @@ export default function DashboardPage() {
   const convertedResistance = (snapshot.indicators?.support_resistance.resistance ?? []).map(
     (v) => convert(v, nativeCurrency) ?? v
   );
+
+  const convertedForecast: PriceForecast | null = useMemo(() => {
+    if (!forecast.data) return null;
+    if (nativeCurrency === currency) return forecast.data;
+    return {
+      ...forecast.data,
+      last_actual_price: convert(forecast.data.last_actual_price, nativeCurrency) ?? forecast.data.last_actual_price,
+      points: forecast.data.points.map((p) => ({
+        ...p,
+        predicted_price: convert(p.predicted_price, nativeCurrency) ?? p.predicted_price,
+        lower_bound: convert(p.lower_bound, nativeCurrency) ?? p.lower_bound,
+        upper_bound: convert(p.upper_bound, nativeCurrency) ?? p.upper_bound,
+      })),
+    };
+  }, [forecast.data, currency, nativeCurrency, convert]);
 
   const handleSelectAsset = (asset: AssetSearchResult) => {
     setSymbol(asset.symbol);
@@ -176,10 +205,22 @@ export default function DashboardPage() {
           >
             <div className="mb-3 flex flex-wrap items-center gap-5">
               <ChartOverlayToggles showMA={showMA} onToggleMA={setShowMA} showBB={showBB} onToggleBB={setShowBB} />
+              <PricePredictorControls
+                enabled={showPricePredictor}
+                onToggle={handleTogglePricePredictor}
+                horizonDays={horizonDays}
+                onHorizonChange={handleHorizonChange}
+              />
               {candles.isLoading && !candles.data && (
                 <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" className="ml-auto" />
               )}
             </div>
+            {showPricePredictor && forecast.isLoading && !forecast.data && (
+              <StatusBanner message="Generating price forecast..." tone="muted" icon="loading" className="mb-3" />
+            )}
+            {showPricePredictor && forecast.error && (
+              <StatusBanner message={forecast.error.message} tone="warning" icon="warning" className="mb-3" />
+            )}
             <div className="h-[320px] sm:h-[400px] xl:h-[440px]">
               {convertedCandles && convertedCandles.candles.length > 0 ? (
                 <LiveCandlestickChart
@@ -191,6 +232,8 @@ export default function DashboardPage() {
                   theme={theme}
                   showMovingAverages={showMA}
                   showBollinger={showBB}
+                  forecast={convertedForecast}
+                  showForecast={showPricePredictor}
                 />
               ) : candles.isLoading ? (
                 <div aria-hidden className="flex h-full animate-pulse flex-col justify-end gap-2 rounded-xl bg-surface-raised/50 p-4">
@@ -241,6 +284,12 @@ export default function DashboardPage() {
         onToggleMA={setShowMA}
         showBB={showBB}
         onToggleBB={setShowBB}
+        showPricePredictor={showPricePredictor}
+        onTogglePricePredictor={handleTogglePricePredictor}
+        horizonDays={horizonDays}
+        onHorizonChange={handleHorizonChange}
+        forecast={forecast.data}
+        isLoadingForecast={forecast.isLoading}
         candles={candles.data ?? null}
         isLoadingCandles={candles.isLoading}
         quote={snapshot.quote}

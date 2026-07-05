@@ -13,13 +13,19 @@ interface PolledResourceState<T> {
 export function usePolledResource<T>(
   fetcher: () => Promise<T>,
   deps: React.DependencyList,
-  intervalMs: number
+  intervalMs: number,
+  enabled: boolean = true
 ): PolledResourceState<T> {
   const [state, setState] = useState<PolledResourceState<T>>({ data: null, isLoading: true, error: null });
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
 
   useEffect(() => {
+    if (!enabled) {
+      setState({ data: null, isLoading: false, error: null });
+      return;
+    }
+
     let cancelled = false;
     setState({ data: null, isLoading: true, error: null });
 
@@ -44,7 +50,7 @@ export function usePolledResource<T>(
       clearInterval(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [...deps, enabled]);
 
   return state;
 }

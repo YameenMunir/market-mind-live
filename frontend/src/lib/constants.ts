@@ -35,6 +35,21 @@ export const QUOTE_POLL_FALLBACK_MS = 8000;
 export const CANDLE_POLL_MS = 30000;
 export const INDICATOR_POLL_MS = 60000;
 
+// Price Predictor forecast horizon options, ordered shortest to longest. `value` is sent
+// to the backend as the `horizon_days` query param (see backend/services/prediction_service.py::ALLOWED_HORIZONS).
+export const FORECAST_HORIZONS = [
+  { label: "1D", value: 1 },
+  { label: "3D", value: 3 },
+  { label: "7D", value: 7 },
+  { label: "14D", value: 14 },
+  { label: "30D", value: 30 },
+] as const;
+
+// Slower than CANDLE_POLL_MS - a daily-bar-derived forecast is also cached server-side for
+// 5 minutes (forecast_cache_ttl_seconds), so polling faster would just re-fetch the same
+// cached response.
+export const FORECAST_POLL_MS = 5 * 60 * 1000;
+
 export interface CurrencyMeta {
   code: string;
   label: string;

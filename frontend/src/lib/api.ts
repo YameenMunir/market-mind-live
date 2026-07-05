@@ -24,6 +24,7 @@ import type {
   NewSessionResponse,
   PredictionHistoryEntry,
   PredictionResult,
+  PriceForecast,
   PriceQuote,
   RiskAssessment,
   SessionDetailResponse,
@@ -82,6 +83,8 @@ export const api = {
   getPrediction: (symbol: string) => request<PredictionResult>(`/api/predictions/${encodeURIComponent(symbol)}`),
   getPredictionHistory: (symbol: string) =>
     request<PredictionHistoryEntry[]>(`/api/predictions/${encodeURIComponent(symbol)}/history`),
+  getPriceForecast: (symbol: string, horizonDays: number) =>
+    request<PriceForecast>(`/api/predictions/${encodeURIComponent(symbol)}/forecast?horizon_days=${horizonDays}`),
   getRisk: (symbol: string) => request<RiskAssessment>(`/api/risk/${encodeURIComponent(symbol)}`),
   runBacktest: (body: BacktestRequest) =>
     request<BacktestResult>(`/api/backtest`, { method: "POST", body: JSON.stringify(body) }),

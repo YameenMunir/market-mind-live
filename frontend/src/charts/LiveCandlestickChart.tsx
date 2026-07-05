@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 import {
   ColorType,
   CrosshairMode,
+  LineStyle,
   type IChartApi,
   type ISeriesApi,
   type SeriesMarker,
@@ -12,7 +13,7 @@ import {
 } from "lightweight-charts";
 
 import { bollingerBands, sma } from "@/charts/indicatorMath";
-import type { Candle, PredictionResult } from "@/types";
+import type { Candle, ForecastPoint, PredictionResult, PriceForecast } from "@/types";
 
 interface LiveCandlestickChartProps {
   candles: Candle[];
@@ -26,6 +27,10 @@ interface LiveCandlestickChartProps {
   theme: "dark" | "light";
   showMovingAverages: boolean;
   showBollinger: boolean;
+  /** Multi-day statistical forecast (services/prediction_service.py) - rendered as a
+   * dashed continuation line plus dotted confidence-band lines when `showForecast` is on. */
+  forecast: PriceForecast | null;
+  showForecast: boolean;
 }
 
 export interface LiveCandlestickChartHandle {
@@ -47,6 +52,8 @@ const THEME_COLORS = {
     sma20: "#f5a623",
     sma50: "#60a5fa",
     bollinger: "#9ca6b64d",
+    forecastLine: "#a78bfa",
+    forecastBand: "#a78bfa66",
   },
   light: {
     background: "#ffffff",
@@ -58,15 +65,33 @@ const THEME_COLORS = {
     sma20: "#c47a0c",
     sma50: "#2563eb",
     bollinger: "#5b606b33",
+    forecastLine: "#7c3aed",
+    forecastBand: "#7c3aed4d",
   },
 };
 
+function toUnixSeconds(isoDate: string): number {
+  return Math.floor(new Date(`${isoDate}T00:00:00Z`).getTime() / 1000);
+}
+
 export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveCandlestickChartProps>(
   function LiveCandlestickChart(
-    { candles, livePrice, supportLevels, resistanceLevels, prediction, theme, showMovingAverages, showBollinger },
+    {
+      candles,
+      livePrice,
+      supportLevels,
+      resistanceLevels,
+      prediction,
+      theme,
+      showMovingAverages,
+      showBollinger,
+      forecast,
+      showForecast,
+    },
     ref
   ) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
@@ -74,10 +99,22 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
   const sma50SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const bbUpperRef = useRef<ISeriesApi<"Line"> | null>(null);
   const bbLowerRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const forecastLineRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const forecastUpperRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const forecastLowerRef = useRef<ISeriesApi<"Line"> | null>(null);
   const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
   const lastBaseCandleRef = useRef<{ time: Time; open: number; high: number; low: number } | null>(null);
   const hasFitContentRef = useRef(false);
+  // Maps a forecast point's Unix-seconds date to its full ForecastPoint, so the
+  // crosshair-move handler (registered once, on mount) can look up hover details without
+  // needing to be re-subscribed every time the `forecast` prop changes.
+  const forecastMapRef = useRef<Map<number, ForecastPoint>>(new Map());
   const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    forecastMapRef.current =
+      showForecast && forecast ? new Map(forecast.points.map((p) => [toUnixSeconds(p.date), p])) : new Map();
+  }, [forecast, showForecast]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -125,6 +162,25 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
     const bbUpper = chart.addLineSeries({ color: colors.bollinger, lineWidth: 1, ...overlaySeriesOptions });
     const bbLower = chart.addLineSeries({ color: colors.bollinger, lineWidth: 1, ...overlaySeriesOptions });
 
+    const forecastLine = chart.addLineSeries({
+      color: colors.forecastLine,
+      lineWidth: 2,
+      lineStyle: LineStyle.Dashed,
+      ...overlaySeriesOptions,
+    });
+    const forecastUpper = chart.addLineSeries({
+      color: colors.forecastBand,
+      lineWidth: 1,
+      lineStyle: LineStyle.Dotted,
+      ...overlaySeriesOptions,
+    });
+    const forecastLower = chart.addLineSeries({
+      color: colors.forecastBand,
+      lineWidth: 1,
+      lineStyle: LineStyle.Dotted,
+      ...overlaySeriesOptions,
+    });
+
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
@@ -132,8 +188,44 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
     sma50SeriesRef.current = sma50Series;
     bbUpperRef.current = bbUpper;
     bbLowerRef.current = bbLower;
+    forecastLineRef.current = forecastLine;
+    forecastUpperRef.current = forecastUpper;
+    forecastLowerRef.current = forecastLower;
     hasFitContentRef.current = false;
     setIsReady(true);
+
+    // Custom hover tooltip for forecast points - this chart has no other crosshair-move
+    // subscription today, so this is purely additive alongside the library's own crosshair.
+    chart.subscribeCrosshairMove((param) => {
+      const tooltipEl = tooltipRef.current;
+      if (!tooltipEl) return;
+      const point = param.time !== undefined ? forecastMapRef.current.get(param.time as number) : undefined;
+      if (!param.point || !point) {
+        tooltipEl.style.display = "none";
+        return;
+      }
+      const dateLabel = new Date(`${point.date}T00:00:00Z`).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+      tooltipEl.innerHTML = `
+        <div class="font-semibold text-ink">${dateLabel}</div>
+        <div class="mt-1 numeric">Predicted: <span class="font-semibold text-ink">${point.predicted_price.toFixed(2)}</span></div>
+        <div class="numeric text-ink-muted">Range: ${point.lower_bound.toFixed(2)} - ${point.upper_bound.toFixed(2)}</div>
+        <div class="mt-1 text-ink-muted">Confidence: ${Math.round(point.confidence)}%</div>
+      `;
+      tooltipEl.style.display = "block";
+      const container = containerRef.current;
+      const containerWidth = container?.clientWidth ?? 0;
+      // Flip to the left of the cursor near the right edge so the tooltip never clips
+      // outside the chart container.
+      const showLeft = param.point.x > containerWidth - 160;
+      tooltipEl.style.left = showLeft ? "" : `${param.point.x + 14}px`;
+      tooltipEl.style.right = showLeft ? `${containerWidth - param.point.x + 14}px` : "";
+      tooltipEl.style.top = `${param.point.y + 14}px`;
+    });
 
     return () => {
       chart.remove();
@@ -243,6 +335,31 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
       candleSeriesRef.current?.setMarkers([]);
     }
 
+    if (showForecast && forecast && forecast.points.length > 0 && candles.length > 0) {
+      // Anchor from the last *rendered* candle (not forecast.last_actual_price/date) so the
+      // dashed line visually continues from where the solid series ends, staying aligned
+      // even if the forecast response was cached slightly earlier than the latest candle poll.
+      const lastCandle = candles[candles.length - 1];
+      const anchor = { time: lastCandle.time as Time, value: lastCandle.close };
+
+      forecastLineRef.current?.setData([
+        anchor,
+        ...forecast.points.map((p) => ({ time: toUnixSeconds(p.date) as Time, value: p.predicted_price })),
+      ]);
+      forecastUpperRef.current?.setData([
+        anchor,
+        ...forecast.points.map((p) => ({ time: toUnixSeconds(p.date) as Time, value: p.upper_bound })),
+      ]);
+      forecastLowerRef.current?.setData([
+        anchor,
+        ...forecast.points.map((p) => ({ time: toUnixSeconds(p.date) as Time, value: p.lower_bound })),
+      ]);
+    } else {
+      forecastLineRef.current?.setData([]);
+      forecastUpperRef.current?.setData([]);
+      forecastLowerRef.current?.setData([]);
+    }
+
     // Only fit the visible range on the first load - refitting on every subsequent
     // refresh would reset any zoom/pan the user has done, which reads as a jarring
     // "jump" rather than a smooth live update.
@@ -250,7 +367,18 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
       chartRef.current?.timeScale().fitContent();
       hasFitContentRef.current = true;
     }
-  }, [candles, isReady, showMovingAverages, showBollinger, supportLevels, resistanceLevels, prediction, theme]);
+  }, [
+    candles,
+    isReady,
+    showMovingAverages,
+    showBollinger,
+    supportLevels,
+    resistanceLevels,
+    prediction,
+    theme,
+    forecast,
+    showForecast,
+  ]);
 
   // Ticks the last bar's close (and high/low if the live price extends them) in place
   // on every quote update, without touching the rest of the series or the viewport.
@@ -280,6 +408,16 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
     []
   );
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+      <div
+        ref={tooltipRef}
+        aria-hidden
+        className="pointer-events-none absolute z-10 rounded-lg border border-border bg-surface-raised/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm"
+        style={{ display: "none" }}
+      />
+    </div>
+  );
   }
 );

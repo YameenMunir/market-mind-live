@@ -128,6 +128,27 @@ class PredictionResult(BaseModel):
     generated_at: str
 
 
+class ForecastPoint(BaseModel):
+    date: str
+    predicted_price: float
+    lower_bound: float
+    upper_bound: float
+    confidence: float = Field(ge=0, le=100)
+
+
+class PriceForecast(BaseModel):
+    symbol: str
+    horizon_days: int
+    generated_at: str
+    last_actual_price: float
+    last_actual_date: str
+    is_market_open: bool
+    data_is_delayed: bool
+    methodology: str
+    disclaimer: str
+    points: list[ForecastPoint]
+
+
 class RiskLevel(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
@@ -223,6 +244,7 @@ class ErrorCode(str, Enum):
     AI_PROVIDER_ERROR = "ai_provider_error"
     VALIDATION_ERROR = "validation_error"
     INTERNAL_ERROR = "internal_error"
+    INSUFFICIENT_HISTORY = "insufficient_history"
 
 
 class ErrorResponse(BaseModel):

@@ -97,6 +97,27 @@ export interface PredictionResult {
   generated_at: string;
 }
 
+export interface ForecastPoint {
+  date: string;
+  predicted_price: number;
+  lower_bound: number;
+  upper_bound: number;
+  confidence: number;
+}
+
+export interface PriceForecast {
+  symbol: string;
+  horizon_days: number;
+  generated_at: string;
+  last_actual_price: number;
+  last_actual_date: string;
+  is_market_open: boolean;
+  data_is_delayed: boolean;
+  methodology: string;
+  disclaimer: string;
+  points: ForecastPoint[];
+}
+
 export type RiskLevel = "low" | "medium" | "high" | "extreme";
 
 export interface RiskAssessment {
@@ -185,7 +206,8 @@ export type ErrorCode =
   | "unsupported_asset_type"
   | "ai_provider_error"
   | "validation_error"
-  | "internal_error";
+  | "internal_error"
+  | "insufficient_history";
 
 export interface ApiErrorPayload {
   error_code: ErrorCode;

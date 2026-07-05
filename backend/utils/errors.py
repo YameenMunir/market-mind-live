@@ -56,6 +56,11 @@ class ValidationError(AppError):
     error_code = ErrorCode.VALIDATION_ERROR
 
 
+class InsufficientHistoryError(AppError):
+    status_code = 422
+    error_code = ErrorCode.INSUFFICIENT_HISTORY
+
+
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     payload = ErrorResponse(error_code=exc.error_code, message=exc.message, detail=exc.detail)
     return JSONResponse(status_code=exc.status_code, content=payload.model_dump(mode="json"))

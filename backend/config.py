@@ -74,6 +74,12 @@ class Settings(BaseSettings):
     hub_idle_shutdown_seconds: float = 45.0
     hub_error_backoff_max_seconds: float = 30.0
 
+    # Price Predictor forecast (services/prediction_service.py). A daily-bar-derived
+    # forecast doesn't meaningfully change minute-to-minute, so this is cached far longer
+    # than candle_cache_ttl_seconds - recomputing it on every poll would be wasted work.
+    forecast_cache_ttl_seconds: float = 300.0
+    forecast_max_horizon_days: int = 30
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
