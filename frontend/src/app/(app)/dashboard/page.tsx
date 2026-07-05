@@ -19,6 +19,7 @@ import { ExplanationPanel } from "@/components/ExplanationPanel";
 import { FullscreenChartModal } from "@/components/FullscreenChartModal";
 import { IndicatorPanel } from "@/components/IndicatorPanel";
 import { MarketStatusCard } from "@/components/MarketStatusCard";
+import { OnboardingTour } from "@/components/OnboardingTour";
 import { Panel } from "@/components/Panel";
 import { PredictionCard } from "@/components/PredictionCard";
 import { PriceCard } from "@/components/PriceCard";
@@ -35,6 +36,7 @@ import { useChartPreferences } from "@/hooks/useChartPreferences";
 import { useFullscreenToggle } from "@/hooks/useFullscreenToggle";
 import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
+import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { usePriceForecast } from "@/hooks/usePriceForecast";
 import { useTheme } from "@/hooks/useTheme";
 import { buildAssetContext } from "@/lib/aiContext";
@@ -59,6 +61,7 @@ export default function DashboardPage() {
 
   const dashboardRef = useRef<HTMLDivElement>(null);
   const { isFullscreen, enter: enterFullscreen, exit: exitFullscreen } = useFullscreenToggle(dashboardRef);
+  const onboardingTour = useOnboardingTour();
 
   useEffect(() => {
     setSymbol(prefs.defaultSymbol);
@@ -144,6 +147,7 @@ export default function DashboardPage() {
               isFullscreen={isFullscreen}
               onEnterFullscreen={enterFullscreen}
               onExitFullscreen={exitFullscreen}
+              onRestartTour={onboardingTour.restart}
             />
           </div>
         }
@@ -153,7 +157,7 @@ export default function DashboardPage() {
       <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">
         {snapshot.errorMessage && <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+        <div data-tour="stat-cards" className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <PriceCard
             quote={snapshot.quote}
             symbol={symbol}
@@ -186,6 +190,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <Panel
             className="xl:col-span-8"
+            dataTour="live-chart"
             eyebrow="Live Chart"
             title={`${symbol} · ${CHART_RANGES.find((r) => r.value === interval)?.label}`}
             action={
@@ -255,7 +260,7 @@ export default function DashboardPage() {
             </div>
           </Panel>
 
-          <div className="xl:col-span-4">
+          <div data-tour="indicator-panel" className="xl:col-span-4">
             <IndicatorPanel
               indicators={snapshot.indicators}
               price={snapshot.quote?.price ?? null}
@@ -267,7 +272,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div data-tour="beginner-explanation" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <BeginnerSummary prediction={snapshot.prediction} />
           <ExplanationPanel prediction={snapshot.prediction} />
         </div>
@@ -320,6 +325,8 @@ export default function DashboardPage() {
           })
         }
       />
+
+      <OnboardingTour tour={onboardingTour} />
     </div>
   );
 }

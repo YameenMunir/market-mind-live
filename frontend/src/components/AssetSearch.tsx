@@ -32,7 +32,7 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
   const isExpanded = isOpen && query.length > 0;
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-md">
+    <div ref={containerRef} data-tour="asset-search" className="relative w-full max-w-md">
       <div className="relative z-50 flex items-center gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2.5 transition-colors focus-within:border-brand/60 sm:py-2">
         <Search size={16} className="shrink-0 text-ink-faint" aria-hidden />
         <input
