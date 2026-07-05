@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/lib/constants";
+import { getDeviceId } from "@/lib/deviceId";
 import type {
   AIAssetContext,
   Alert,
@@ -39,7 +40,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+      headers: { "Content-Type": "application/json", "X-Device-Id": getDeviceId(), ...(init?.headers || {}) },
       cache: "no-store",
     });
   } catch (err) {

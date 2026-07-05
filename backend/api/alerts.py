@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from api.deps import get_device_id
 from models.schemas import (
     Alert,
     AlertActionResponse,
@@ -21,7 +22,7 @@ _THRESHOLD_CONDITIONS = (AlertCondition.PRICE_ABOVE, AlertCondition.PRICE_BELOW)
 
 
 @router.post("", response_model=Alert)
-def create_alert(request: AlertCreateRequest):
+def create_alert(request: AlertCreateRequest, device_id: str = Depends(get_device_id)):
     symbol = request.symbol.upper()
 
     if request.condition in _THRESHOLD_CONDITIONS and request.threshold is None:
@@ -46,6 +47,7 @@ def create_alert(request: AlertCreateRequest):
             baseline_value = context.risk.level.value
 
     return alert_store.create(
+        device_id=device_id,
         symbol=symbol,
         asset_name=asset_name,
         condition=request.condition,
@@ -56,8 +58,8 @@ def create_alert(request: AlertCreateRequest):
 
 
 @router.get("", response_model=AlertListResponse)
-def list_alerts(symbol: str | None = Query(default=None)):
-    return AlertListResponse(alerts=alert_store.list_all(symbol))
+def list_alerts(symbol: str | None = Query(default=None), device_id: str = Depends(get_device_id)):
+    return AlertListResponse(alerts=alert_store.list_all(device_id, symbol))
 
 
 @router.delete("/{alert_id}", response_model=AlertActionResponse)

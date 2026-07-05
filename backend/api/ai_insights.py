@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from api.deps import get_device_id
 from models.schemas import (
     AIAssetContext,
     ChatHistoryResponse,
@@ -23,8 +24,8 @@ router = APIRouter(prefix="/api/ai/insights", tags=["ai-insights"])
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    return await ai_insights_service.handle_chat(request)
+async def chat(request: ChatRequest, device_id: str = Depends(get_device_id)):
+    return await ai_insights_service.handle_chat(request, device_id)
 
 
 @router.get("/context/{asset}", response_model=AIAssetContext)
@@ -49,13 +50,13 @@ async def summarise(request: SummariseRequest):
 
 
 @router.post("/new-session", response_model=NewSessionResponse)
-def new_session(request: NewSessionRequest):
-    return ai_insights_service.create_new_session(request)
+def new_session(request: NewSessionRequest, device_id: str = Depends(get_device_id)):
+    return ai_insights_service.create_new_session(request, device_id)
 
 
 @router.get("/sessions", response_model=SessionListResponse)
-def sessions():
-    return ai_insights_service.list_sessions()
+def sessions(device_id: str = Depends(get_device_id)):
+    return ai_insights_service.list_sessions(device_id)
 
 
 @router.get("/sessions/{session_id}", response_model=SessionDetailResponse)

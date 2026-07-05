@@ -11,6 +11,12 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:3000"
 
+    # SQLite by default - zero-config for local dev, no separate DB server to run.
+    # Swap for a Postgres URL (e.g. postgresql+psycopg://...) in production if the
+    # deployment target has an ephemeral filesystem, since a SQLite file won't survive
+    # a redeploy there.
+    database_url: str = "sqlite:///./market_mind.db"
+
     quote_cache_ttl_seconds: int = 10
     candle_cache_ttl_seconds: int = 30
     search_cache_ttl_seconds: int = 300

@@ -8,7 +8,8 @@ Market Mind Live is a fintech market intelligence dashboard: live quotes/charts,
 rule-based prediction engine, risk scoring, strategy backtesting, and a Gemini-backed AI Insights chat
 assistant, across stocks/ETFs/crypto/forex/commodities/indices. Two independent apps in one repo:
 
-- `backend/` - FastAPI + yfinance, Python 3.12, no database (in-memory caches/stores only).
+- `backend/` - FastAPI + yfinance, Python 3.12, SQLite (via SQLModel/Alembic) for alerts, AI chat
+  sessions, and prediction history; everything else is still in-memory caches only.
 - `frontend/` - Next.js 16 (App Router, Turbopack) + React 18 + TypeScript + Tailwind.
 
 ## Commands
@@ -65,8 +66,8 @@ the provider directly, or you'll bypass caching and rate limiting.
 - `prediction/engine.py` - transparent rule-based scoring (trend + momentum + volatility position), **not**
   a black-box ML model, despite "AI/ML predictions" language in some docs/UI copy. Outputs direction
   (bullish/bearish/neutral), confidence, and plain-English reasoning strings.
-- `prediction/history_store.py` - in-memory (resets on restart) per-symbol prediction log, capped at 100
-  entries; swap for a real DB table if predictions need to survive restarts.
+- `prediction/history_store.py` - SQLite-backed per-symbol prediction log, capped at 100 entries per
+  symbol; survives restarts (global data, not scoped per device).
 - `backtesting/engine.py` - simulates exactly one strategy (long when SMA-20 > SMA-50 and MACD histogram >
   0, flat otherwise) over historical bars. Not a general backtesting framework.
 - `services/live_hub.py` (`LiveDataHub`) - one background asyncio poller per actively-*subscribed* symbol,
@@ -99,6 +100,12 @@ the provider directly, or you'll bypass caching and rate limiting.
 - `models/schemas.py` - single source of truth for every Pydantic model shared across routers/services;
   frontend `types/index.ts` is a hand-maintained TypeScript mirror of these (snake_case field names
   preserved, no case conversion at the API boundary).
+- `db/session.py` / `db/models.py` - SQLite (via SQLModel), migrated with Alembic (`migrations/`, run
+  automatically at startup by `main.py`'s lifespan via `db/migrate.py` - no manual migration step needed
+  for local dev). Backs alerts, AI chat sessions, and prediction history; everything else in the app is
+  still in-memory only. `api/deps.py: get_device_id` resolves an anonymous per-browser `Device` row from
+  the `X-Device-Id` header the frontend sends on every call (see `frontend/src/lib/deviceId.ts`), so alerts
+  and chat sessions are scoped to the browser that created them without requiring a login.
 
 ### AI Insights Assistant (backend)
 Self-contained subsystem under `api/ai_insights.py` + `services/{ai_insights_service,context_builder,
@@ -114,8 +121,11 @@ gemini_service,mock_ai_provider,chat_store,knowledge_base}.py`:
   same `AIAssetContext`, never a hard error for the end user except on a genuine rate limit.
 - `knowledge_base.py` is a keyword-retrieval "RAG" layer (no embeddings/vector DB) of static articles on
   indicator/risk/backtest methodology, injected into the Gemini system prompt when relevant.
-- `chat_store.py` holds sessions/history/feedback in memory only; feedback is captured for future manual
-  review, never used to auto-retrain or auto-alter prompts.
+- `chat_store.py` is SQLite-backed (sessions/messages/feedback survive restarts); `list_sessions()` is
+  scoped to the calling device (see `db/session.py` above), though an individual `session_id` is still
+  sufficient on its own to read/append/delete that session directly - no additional authorization beyond
+  device-scoped listing. Feedback is captured for future manual review, never used to auto-retrain or
+  auto-alter prompts.
 
 ### Frontend
 App Router with a route group: `src/app/(app)/{dashboard,backtesting,settings}` share

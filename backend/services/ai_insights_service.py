@@ -115,7 +115,7 @@ def _build_system_instruction(context: AIAssetContext, user_message: str) -> str
     )
 
 
-async def handle_chat(request: ChatRequest) -> ChatResponse:
+async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
     if not _get_chat_rate_limiter().check(request.session_id):
         raise ChatRateLimitedError()
 
@@ -172,6 +172,7 @@ async def handle_chat(request: ChatRequest) -> ChatResponse:
         preview=request.message,  # the user's question reads better in a history list than the full reply
         signal=context.prediction.signal if context.prediction else None,
         risk_level=context.risk.level if context.risk else None,
+        device_id=device_id,
     )
 
     return ChatResponse(
@@ -241,7 +242,7 @@ def _build_welcome_message(context: AIAssetContext) -> str:
     return "\n\n".join(lines)
 
 
-def create_new_session(request: NewSessionRequest) -> NewSessionResponse:
+def create_new_session(request: NewSessionRequest, device_id: str) -> NewSessionResponse:
     """Starts a fresh, asset-scoped chat session with a deterministic welcome message
     (no Gemini/mock call needed just to say hello - keeps this instant and free)."""
     session_id = str(uuid.uuid4())
@@ -259,13 +260,14 @@ def create_new_session(request: NewSessionRequest) -> NewSessionResponse:
         preview=welcome_text,
         signal=context.prediction.signal if context.prediction else None,
         risk_level=context.risk.level if context.risk else None,
+        device_id=device_id,
     )
 
     return NewSessionResponse(session_id=session_id, asset=context.asset, welcome_message=welcome_msg, disclaimer=DISCLAIMER)
 
 
-def list_sessions() -> SessionListResponse:
-    return SessionListResponse(sessions=chat_store.list_sessions())
+def list_sessions(device_id: str) -> SessionListResponse:
+    return SessionListResponse(sessions=chat_store.list_sessions(device_id))
 
 
 def get_session(session_id: str) -> SessionDetailResponse:

@@ -22,6 +22,8 @@ from api import (
     ws,
 )
 from config import get_settings
+from db.migrate import run_migrations
+from db.session import engine
 from services.live_hub import hub
 from utils.errors import register_error_handlers
 from utils.logging import configure_logging
@@ -36,6 +38,7 @@ def _log_startup_config() -> None:
     misconfigured deployment (e.g. an unset Gemini key, or an interval edited to
     something unsafe) is visible in the logs immediately rather than discovered later.
     """
+    logger.info("Database: %s (migrations applied at startup).", settings.database_url)
     logger.info(
         "Market data provider: yfinance (unofficial Yahoo Finance API, no API key required)."
     )
@@ -57,11 +60,13 @@ def _log_startup_config() -> None:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    run_migrations()
     _log_startup_config()
     yield
     # Cancel every live-hub background poller on shutdown so reloads/restarts don't
     # leak asyncio tasks holding open Yahoo connections.
     await hub.shutdown()
+    engine.dispose()
 
 
 app = FastAPI(
