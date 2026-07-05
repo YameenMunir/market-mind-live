@@ -1,5 +1,18 @@
 import { Fragment } from "react";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Clock,
+  Minus,
+  ShieldAlert,
+  Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+  TrendingDown,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { ChatMessage, FeedbackRating } from "@/types";
@@ -8,12 +21,99 @@ interface AIChatMessageProps {
   message: ChatMessage;
   onFeedback?: (rating: FeedbackRating) => void;
   feedbackGiven?: FeedbackRating;
+  /** Slightly larger type/spacing in full-screen mode where there's room to breathe. */
+  size?: "compact" | "fullscreen";
+}
+
+interface InsightSection {
+  label: string;
+  body: string;
+}
+
+interface ParsedInsight {
+  intro: string;
+  sections: InsightSection[];
+  footer: string;
+}
+
+// Matches the AI's own consistent reply shape: "* **Label**: description" bullet
+// lines. The model produces this structure naturally when summarizing an asset
+// (Market Status, AI Prediction, Technical Trends, Risk Level, ...) - this only
+// *detects* that existing shape to render it as cards instead of changing what the
+// model is asked to say. Free-form conversational replies (no bullets) fall back to
+// plain prose further down, so nothing about the AI's actual output is altered.
+const SECTION_LINE = /^\*\s+\*\*([^*]+)\*\*:?\s*(.*)$/;
+
+function parseInsightSections(content: string): ParsedInsight | null {
+  const lines = content.split("\n").map((line) => line.trim());
+  const intro: string[] = [];
+  const sections: InsightSection[] = [];
+  const footer: string[] = [];
+  let seenBullet = false;
+
+  for (const line of lines) {
+    if (!line) continue;
+    const match = line.match(SECTION_LINE);
+    if (match) {
+      seenBullet = true;
+      sections.push({ label: match[1].trim(), body: match[2].trim() });
+    } else if (!seenBullet) {
+      intro.push(line);
+    } else {
+      footer.push(line);
+    }
+  }
+
+  if (sections.length === 0) return null;
+  return { intro: intro.join(" "), sections, footer: footer.join(" ") };
+}
+
+interface SectionMeta {
+  icon: LucideIcon;
+  iconClass: string;
+  badgeClass: string;
+}
+
+/** Presentation-only: picks an icon + color for a section based on its label and,
+ * where useful, keywords already present in the model's own wording (e.g. "sell" /
+ * "bearish" / "high risk") - never invents or alters the underlying analysis. */
+function getSectionMeta(label: string, body: string): SectionMeta {
+  const l = label.toLowerCase();
+  const b = body.toLowerCase();
+
+  if (l.includes("risk")) {
+    if (b.includes("extreme")) return { icon: ShieldAlert, iconClass: "text-bear", badgeClass: "bg-bear/10" };
+    if (b.includes("high")) return { icon: ShieldAlert, iconClass: "text-brand", badgeClass: "bg-brand/10" };
+    if (b.includes("low")) return { icon: ShieldAlert, iconClass: "text-bull", badgeClass: "bg-bull/10" };
+    return { icon: ShieldAlert, iconClass: "text-warn", badgeClass: "bg-warn/10" };
+  }
+
+  if (l.includes("predict") || l.includes("signal") || l.includes("forecast")) {
+    if (b.includes("sell") || b.includes("bearish")) {
+      return { icon: TrendingDown, iconClass: "text-bear", badgeClass: "bg-bear/10" };
+    }
+    if (b.includes("buy") || b.includes("bullish")) {
+      return { icon: TrendingUp, iconClass: "text-bull", badgeClass: "bg-bull/10" };
+    }
+    return { icon: Minus, iconClass: "text-ink-muted", badgeClass: "bg-surface-raised" };
+  }
+
+  if (l.includes("technical") || l.includes("trend")) {
+    return { icon: BarChart3, iconClass: "text-brand", badgeClass: "bg-brand/10" };
+  }
+
+  if (l.includes("market") || l.includes("status") || l.includes("data")) {
+    return { icon: Clock, iconClass: "text-ink-muted", badgeClass: "bg-surface-raised" };
+  }
+
+  return { icon: Activity, iconClass: "text-ink-muted", badgeClass: "bg-surface-raised" };
 }
 
 /** Renders `**bold**` spans and line breaks from AI replies without a markdown
  * dependency or `dangerouslySetInnerHTML` - splits into React text nodes only. */
 function renderRichText(content: string) {
-  return content.split("\n").map((line, lineIndex) => {
+  const lines = content.split("\n");
+  return lines.map((line, lineIndex) => {
     const segments = line.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
     return (
       <Fragment key={lineIndex}>
@@ -26,25 +126,86 @@ function renderRichText(content: string) {
             <Fragment key={i}>{segment}</Fragment>
           )
         )}
-        {lineIndex < content.split("\n").length - 1 && <br />}
+        {lineIndex < lines.length - 1 && <br />}
       </Fragment>
     );
   });
 }
 
-export function AIChatMessage({ message, onFeedback, feedbackGiven }: AIChatMessageProps) {
+function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact" | "fullscreen" }) {
+  const isFullscreen = size === "fullscreen";
+
+  return (
+    <div
+      className={cn(
+        "w-full rounded-2xl border border-border bg-surface-raised shadow-sm",
+        isFullscreen ? "max-w-2xl p-5" : "max-w-[92%] p-4"
+      )}
+    >
+      <div className="mb-3 flex items-center gap-2 text-ink-faint">
+        <Sparkles size={13} className="text-brand" />
+        <p className="text-[11px] font-semibold uppercase tracking-wider">AI Insights</p>
+      </div>
+
+      {insight.intro && (
+        <p className={cn("mb-4 leading-relaxed text-ink", isFullscreen ? "text-[15px]" : "text-sm")}>
+          {renderRichText(insight.intro)}
+        </p>
+      )}
+
+      <div className="space-y-2.5">
+        {insight.sections.map((section, i) => {
+          const meta = getSectionMeta(section.label, section.body);
+          const Icon = meta.icon;
+          return (
+            <div
+              key={i}
+              className="flex gap-3 rounded-xl border border-border/70 bg-surface p-3 sm:p-3.5"
+            >
+              <div className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", meta.badgeClass)}>
+                <Icon size={14} className={meta.iconClass} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{section.label}</p>
+                <p className={cn("mt-1 leading-relaxed text-ink-muted", isFullscreen ? "text-sm" : "text-[13px]")}>
+                  {renderRichText(section.body)}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {insight.footer && (
+        <div className="mt-4 flex items-start gap-2 border-t border-border/60 pt-3 text-[11px] leading-relaxed text-ink-faint">
+          <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+          <p>{renderRichText(insight.footer)}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function AIChatMessage({ message, onFeedback, feedbackGiven, size = "compact" }: AIChatMessageProps) {
   const isUser = message.role === "user";
+  const isFullscreen = size === "fullscreen";
+  const insight = !isUser ? parseInsightSections(message.content) : null;
 
   return (
     <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
-      <div
-        className={cn(
-          "max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
-          isUser ? "bg-brand text-canvas" : "border border-border bg-surface-raised text-ink-muted"
-        )}
-      >
-        {renderRichText(message.content)}
-      </div>
+      {insight ? (
+        <InsightCard insight={insight} size={size} />
+      ) : (
+        <div
+          className={cn(
+            "rounded-2xl leading-relaxed",
+            isFullscreen ? "max-w-2xl px-4 py-3 text-[15px]" : "max-w-[92%] px-3.5 py-2.5 text-[13px]",
+            isUser ? "bg-brand text-canvas" : "border border-border bg-surface-raised text-ink-muted"
+          )}
+        >
+          {renderRichText(message.content)}
+        </div>
+      )}
 
       {!isUser && onFeedback && (
         <div className="flex items-center gap-1 px-1">

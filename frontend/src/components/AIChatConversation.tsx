@@ -87,6 +87,7 @@ export function AIChatConversation({
             message={message}
             onFeedback={message.role === "assistant" ? (rating) => onFeedback(message.message_id, rating) : undefined}
             feedbackGiven={feedbackGiven[message.message_id]}
+            size={size}
           />
         ))}
 
