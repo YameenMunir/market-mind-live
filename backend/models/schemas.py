@@ -467,3 +467,13 @@ class AlertListResponse(BaseModel):
 
 class AlertActionResponse(BaseModel):
     status: str
+
+
+class KnowledgeArticle(BaseModel):
+    """A static methodology explanation from services/knowledge_base.py, exposed for
+    dashboard tooltips as well as the AI chat assistant's system prompt. Omits the
+    article's `keywords` - that's an internal retrieval-scoring detail callers don't need."""
+
+    id: str
+    title: str
+    body: str

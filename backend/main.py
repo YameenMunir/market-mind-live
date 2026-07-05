@@ -15,6 +15,7 @@ from api import (
     debug,
     fx,
     indicators,
+    knowledge,
     market,
     predictions,
     prices,
@@ -97,6 +98,7 @@ app.include_router(ai_insights.router)
 app.include_router(alerts.router)
 app.include_router(fx.router)
 app.include_router(analysts.router)
+app.include_router(knowledge.router)
 app.include_router(debug.router)
 app.include_router(ws.router)
 

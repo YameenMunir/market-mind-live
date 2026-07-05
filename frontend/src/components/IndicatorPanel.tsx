@@ -1,9 +1,11 @@
 import { useMemo } from "react";
 
 import { Badge, type BadgeTone } from "@/components/Badge";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
+import { GLOSSARY_ID_BY_INDICATOR_KEY, SUPPORT_RESISTANCE_GLOSSARY_ID } from "@/lib/indicatorGlossary";
 import { buildTechnicalRead, type InsightTone } from "@/lib/indicatorInsights";
 import { cn, formatPrice } from "@/lib/utils";
 import type { IndicatorSet } from "@/types";
@@ -112,7 +114,10 @@ export function IndicatorPanel({
         {read.insights.map((insight) => (
           <div key={insight.key} className="py-2.5">
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-              <span className="text-xs text-ink-muted">{insight.label}</span>
+              <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+                {insight.label}
+                <InfoTooltip articleId={GLOSSARY_ID_BY_INDICATOR_KEY[insight.key]} />
+              </span>
               <span className={cn("numeric font-mono text-sm font-medium", TONE_TEXT[insight.tone])}>{insight.value}</span>
             </div>
             <div className="mt-1.5 flex items-start justify-between gap-2">
@@ -132,7 +137,10 @@ export function IndicatorPanel({
 
       <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">Support</p>
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-ink-faint">
+            Support
+            <InfoTooltip articleId={SUPPORT_RESISTANCE_GLOSSARY_ID} />
+          </span>
           <div className="mt-1.5 flex flex-col gap-1">
             {convertedIndicators?.support_resistance.support.length ? (
               convertedIndicators.support_resistance.support.map((v, i) => (
@@ -147,7 +155,10 @@ export function IndicatorPanel({
           <p className="mt-1.5 text-[10px] leading-relaxed text-ink-faint">{read.support.note}</p>
         </div>
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">Resistance</p>
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-ink-faint">
+            Resistance
+            <InfoTooltip articleId={SUPPORT_RESISTANCE_GLOSSARY_ID} />
+          </span>
           <div className="mt-1.5 flex flex-col gap-1">
             {convertedIndicators?.support_resistance.resistance.length ? (
               convertedIndicators.support_resistance.resistance.map((v, i) => (

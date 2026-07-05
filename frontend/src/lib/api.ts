@@ -20,6 +20,7 @@ import type {
   FeedbackRequest,
   FxRates,
   IndicatorSet,
+  KnowledgeArticle,
   MarketStatus,
   NewSessionRequest,
   NewSessionResponse,
@@ -115,4 +116,5 @@ export const api = {
     request<AlertActionResponse>(`/api/alerts/${encodeURIComponent(alertId)}/dismiss`, { method: "POST" }),
   getFxRates: () => request<FxRates>(`/api/fx/rates`),
   getAnalystConsensus: (symbol: string) => request<AnalystConsensus>(`/api/analysts/${encodeURIComponent(symbol)}`),
+  getKnowledgeArticles: () => request<KnowledgeArticle[]>(`/api/knowledge/articles`),
 };

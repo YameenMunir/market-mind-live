@@ -420,3 +420,9 @@ export interface AlertListResponse {
 export interface AlertActionResponse {
   status: string;
 }
+
+export interface KnowledgeArticle {
+  id: string;
+  title: string;
+  body: string;
+}
