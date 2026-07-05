@@ -34,6 +34,7 @@ const config: Config = {
         "pulse-soft": "pulse-soft 2.4s ease-in-out infinite",
         "ticker-flash-up": "ticker-flash-up 0.6s ease-out",
         "ticker-flash-down": "ticker-flash-down 0.6s ease-out",
+        "dropdown-in": "dropdown-in 120ms ease-out",
       },
       keyframes: {
         "pulse-soft": {
@@ -47,6 +48,10 @@ const config: Config = {
         "ticker-flash-down": {
           "0%": { backgroundColor: "rgb(var(--color-bear) / 0.25)" },
           "100%": { backgroundColor: "transparent" },
+        },
+        "dropdown-in": {
+          "0%": { opacity: "0", transform: "translateY(-4px) scale(0.98)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
         },
       },
     },

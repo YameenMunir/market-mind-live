@@ -6,16 +6,13 @@ import { History, Maximize2, MessageSquarePlus, Sparkles, X } from "lucide-react
 
 import { AIChatConversation } from "@/components/AIChatConversation";
 import { AIChatHistoryList } from "@/components/AIChatHistoryList";
+import { Badge } from "@/components/Badge";
+import { Button } from "@/components/Button";
 import { FullscreenChatShell } from "@/components/FullscreenChatShell";
 import { useAIChat } from "@/hooks/useAIChat";
+import { SIGNAL_META } from "@/lib/signalMeta";
 import { cn } from "@/lib/utils";
 import type { AIAssetContext } from "@/types";
-
-const SIGNAL_META: Record<string, { label: string; className: string }> = {
-  buy: { label: "Buy signal", className: "bg-bull/15 text-bull" },
-  sell: { label: "Sell signal", className: "bg-bear/15 text-bear" },
-  hold: { label: "Hold signal", className: "bg-warn/15 text-warn" },
-};
 
 interface AIInsightsPanelProps {
   isOpen: boolean;
@@ -78,52 +75,33 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => (showHistory ? setShowHistory(false) : openHistory())}
                     aria-label="Chat history"
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                      showHistory ? "bg-brand/10 text-brand" : "text-ink-muted hover:bg-surface-raised hover:text-ink"
-                    )}
+                    className={cn(showHistory && "bg-brand/10 text-brand hover:bg-brand/10 hover:text-brand")}
                   >
                     <History size={15} />
-                  </button>
-                  <button
-                    onClick={() => chat.startNewChat()}
-                    aria-label="New chat"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-raised hover:text-ink"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" onClick={() => chat.startNewChat()} aria-label="New chat">
                     <MessageSquarePlus size={15} />
-                  </button>
-                  <button
-                    onClick={() => setIsFullscreen(true)}
-                    aria-label="Expand to full screen"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-raised hover:text-ink"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" onClick={() => setIsFullscreen(true)} aria-label="Expand to full screen">
                     <Maximize2 size={15} />
-                  </button>
-                  <button
-                    onClick={onClose}
-                    aria-label="Close AI Insights"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-raised hover:text-ink"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close AI Insights">
                     <X size={16} />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {signalMeta && context?.risk && (
                 <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
-                  <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", signalMeta.className)}>
-                    {signalMeta.label}
-                  </span>
-                  <span className="rounded-full bg-surface-raised px-2 py-0.5 text-[11px] font-medium text-ink-muted">
-                    {context.risk.level} risk
-                  </span>
+                  <Badge tone={signalMeta.tone}>{signalMeta.label}</Badge>
+                  <Badge className="font-medium">{context.risk.level} risk</Badge>
                   {context.data_is_delayed && (
-                    <span className="rounded-full bg-surface-raised px-2 py-0.5 text-[11px] font-medium text-ink-faint">
-                      Delayed data
-                    </span>
+                    <Badge className="font-medium text-ink-faint">Delayed data</Badge>
                   )}
                 </div>
               )}

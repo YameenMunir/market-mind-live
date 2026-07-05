@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 
+import { Badge } from "@/components/Badge";
 import { useAssetSearch } from "@/hooks/useAssetSearch";
 import { ASSET_TYPE_LABELS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import type { AssetSearchResult, AssetType } from "@/types";
 
 interface AssetSearchProps {
@@ -75,7 +75,7 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
             id="asset-search-results"
             role="listbox"
             aria-label="Asset search results"
-            className="absolute left-0 right-0 z-50 mt-2 max-h-80 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20"
+            className="animate-dropdown-in absolute left-0 right-0 z-50 mt-2 max-h-80 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20"
           >
             {isLoading && (
               <div className="flex items-center gap-2 px-3 py-3 text-xs text-ink-faint" role="status">
@@ -105,13 +105,9 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
                     <span className="shrink-0 font-mono text-sm font-medium text-ink">{asset.symbol}</span>
                     <span className="truncate text-xs text-ink-muted">{asset.name}</span>
                   </span>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint"
-                    )}
-                  >
+                  <Badge size="sm" uppercase className="bg-surface text-ink-faint">
                     {ASSET_TYPE_LABELS[asset.asset_type]}
-                  </span>
+                  </Badge>
                 </button>
               ))}
           </div>

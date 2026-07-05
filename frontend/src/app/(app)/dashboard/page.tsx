@@ -11,6 +11,7 @@ import { AlertsPanel } from "@/components/AlertsPanel";
 import { AlertToastStack } from "@/components/AlertToastStack";
 import { AssetTypeSelector } from "@/components/AssetTypeSelector";
 import { BeginnerSummary } from "@/components/BeginnerSummary";
+import { Button } from "@/components/Button";
 import { ChartOverlayToggles } from "@/components/ChartOverlayToggles";
 import { ConnectionStatusPill } from "@/components/ConnectionStatusPill";
 import { DashboardViewMenu } from "@/components/DashboardViewMenu";
@@ -123,7 +124,7 @@ export default function DashboardPage() {
       <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">
         {snapshot.errorMessage && <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <PriceCard
             quote={snapshot.quote}
             symbol={symbol}
@@ -161,14 +162,15 @@ export default function DashboardPage() {
             action={
               <div className="flex flex-wrap items-center gap-3">
                 <TimeframeSelector value={interval} onChange={setInterval_} />
-                <button
+                <Button
+                  variant="secondary"
+                  size="icon"
                   onClick={() => setIsChartFullscreen(true)}
                   aria-label="Expand chart to full screen"
                   title="Expand chart"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface-raised text-ink-muted transition-colors hover:border-ink-faint/40 hover:text-ink"
                 >
                   <Maximize2 size={14} />
-                </button>
+                </Button>
               </div>
             }
           >

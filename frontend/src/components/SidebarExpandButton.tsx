@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { Home, PanelLeftOpen } from "lucide-react";
 
+import { BUTTON_SIZE_STYLES, BUTTON_VARIANT_STYLES, Button } from "@/components/Button";
 import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
+import { cn } from "@/lib/utils";
 
 /** Sidebar visibility is a persisted, app-wide preference (not just a dashboard
  * setting), so this floating control cluster lives in the shared (app) layout rather
@@ -22,18 +24,24 @@ export function SidebarExpandButton() {
         href="/"
         aria-label="Back to homepage"
         title="Back to homepage"
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface-raised text-ink-muted shadow-panel transition-colors hover:border-ink-faint/40 hover:text-ink"
+        className={cn(
+          BUTTON_VARIANT_STYLES.secondary,
+          BUTTON_SIZE_STYLES.icon,
+          "flex items-center justify-center shadow-panel transition-colors duration-150"
+        )}
       >
         <Home size={16} />
       </Link>
-      <button
+      <Button
+        variant="secondary"
+        size="icon"
         onClick={() => setIsCollapsed(false)}
         aria-label="Show sidebar"
         title="Show sidebar"
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface-raised text-ink-muted shadow-panel transition-colors hover:border-ink-faint/40 hover:text-ink"
+        className="shadow-panel"
       >
         <PanelLeftOpen size={16} />
-      </button>
+      </Button>
     </div>
   );
 }

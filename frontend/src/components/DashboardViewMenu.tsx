@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
+import { Button } from "@/components/Button";
 import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
 import { cn } from "@/lib/utils";
 
@@ -42,32 +43,36 @@ export function DashboardViewMenu({ isFullscreen, onEnterFullscreen, onExitFulls
 
   if (isFullscreen) {
     return (
-      <button
+      <Button
+        variant="secondary"
+        size="md"
         onClick={onExitFullscreen}
         aria-label="Exit fullscreen dashboard"
         title="Exit fullscreen"
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-3 text-xs font-semibold text-ink-muted transition-colors hover:border-ink-faint/40 hover:text-ink"
+        className="gap-1.5 text-xs font-semibold text-ink-muted hover:text-ink"
       >
         <Minimize2 size={13} aria-hidden />
         <span className="hidden sm:inline">Exit Fullscreen</span>
-      </button>
+      </Button>
     );
   }
 
   return (
     <div ref={containerRef} className="relative">
-      <button
+      <Button
+        variant="secondary"
+        size="md"
         onClick={() => setIsOpen((v) => !v)}
         aria-label="Dashboard view options"
         aria-expanded={isOpen}
         aria-haspopup="menu"
         title="View options"
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-3 text-xs font-semibold text-ink-muted transition-colors hover:border-ink-faint/40 hover:text-ink"
+        className="gap-1.5 text-xs font-semibold text-ink-muted hover:text-ink"
       >
         <Maximize2 size={13} aria-hidden />
         <span className="hidden sm:inline">View</span>
-        <ChevronDown size={13} aria-hidden className={cn("transition-transform", isOpen && "rotate-180")} />
-      </button>
+        <ChevronDown size={13} aria-hidden className={cn("transition-transform duration-150", isOpen && "rotate-180")} />
+      </Button>
 
       {isOpen && (
         <>
@@ -75,7 +80,7 @@ export function DashboardViewMenu({ isFullscreen, onEnterFullscreen, onExitFulls
           <div
             role="menu"
             aria-label="Dashboard view options"
-            className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20"
+            className="animate-dropdown-in absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20"
           >
             <button
               role="menuitem"

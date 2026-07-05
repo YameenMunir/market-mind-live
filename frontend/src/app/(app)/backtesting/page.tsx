@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, PlayCircle } from "lucide-react";
+import { PlayCircle } from "lucide-react";
 
 import { AIInsightsButton } from "@/components/AIInsightsButton";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AssetSearch } from "@/components/AssetSearch";
 import { BacktestResults } from "@/components/BacktestResults";
+import { Button } from "@/components/Button";
 import { CurrencySelector } from "@/components/CurrencySelector";
+import { Input, Select } from "@/components/Input";
 import { Panel } from "@/components/Panel";
 import { StatusBanner } from "@/components/StatusBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -92,49 +94,45 @@ export default function BacktestingPage() {
               <label htmlFor="backtest-lookback" className="mb-1.5 block text-xs font-medium text-ink-muted">
                 Lookback period
               </label>
-              <select
+              <Select
                 id="backtest-lookback"
                 value={lookbackDays}
                 onChange={(e) => setLookbackDays(Number(e.target.value))}
-                className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 text-sm text-ink focus:border-brand/60 focus:outline-none md:w-auto"
+                className="md:w-auto"
               >
                 {LOOKBACK_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             <div>
               <label htmlFor="backtest-capital" className="mb-1.5 block text-xs font-medium text-ink-muted">
                 Initial capital ($)
               </label>
-              <input
+              <Input
                 id="backtest-capital"
                 type="number"
                 min={100}
                 inputMode="numeric"
                 value={initialCapital}
                 onChange={(e) => setInitialCapital(Number(e.target.value))}
-                className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 font-mono text-sm text-ink focus:border-brand/60 focus:outline-none md:w-36"
+                className="font-mono md:w-36"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex h-10 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isLoading ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <PlayCircle size={16} aria-hidden />}
+            <Button type="submit" variant="primary" size="lg" loading={isLoading}>
+              {!isLoading && <PlayCircle size={16} aria-hidden />}
               {isLoading ? "Running..." : "Run Backtest"}
-            </button>
+            </Button>
           </form>
         </Panel>
 
         {error && <StatusBanner {...describeError(error)} />}
 
-        <BacktestResults result={result} theme={theme} />
+        <BacktestResults result={result} theme={theme} isLoading={isLoading} />
       </main>
 
       <AIInsightsButton onClick={() => setIsAIOpen(true)} />

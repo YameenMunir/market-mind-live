@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, Loader2, Plus, Trash2, X } from "lucide-react";
 
+import { Badge, type BadgeTone } from "@/components/Badge";
+import { Button } from "@/components/Button";
+import { Input, Select } from "@/components/Input";
 import { StatusBanner } from "@/components/StatusBanner";
 import type { useAlerts } from "@/hooks/useAlerts";
-import { cn, timeAgo } from "@/lib/utils";
+import { timeAgo } from "@/lib/utils";
 import type { AlertCondition } from "@/types";
 
 const CONDITION_LABELS: Record<AlertCondition, string> = {
@@ -21,10 +24,10 @@ const CONDITION_LABELS: Record<AlertCondition, string> = {
 const NEEDS_THRESHOLD: AlertCondition[] = ["price_above", "price_below"];
 const OPTIONAL_THRESHOLD: AlertCondition[] = ["rsi_overbought", "rsi_oversold"];
 
-const STATUS_META: Record<string, { label: string; className: string }> = {
-  active: { label: "Watching", className: "bg-surface-raised text-ink-muted" },
-  triggered: { label: "Triggered", className: "bg-brand/15 text-brand" },
-  dismissed: { label: "Dismissed", className: "bg-surface-raised text-ink-faint" },
+const STATUS_META: Record<string, { label: string; tone: BadgeTone; className?: string }> = {
+  active: { label: "Watching", tone: "neutral" },
+  triggered: { label: "Triggered", tone: "brand" },
+  dismissed: { label: "Dismissed", tone: "neutral", className: "text-ink-faint" },
 };
 
 interface AlertsPanelProps {
@@ -95,13 +98,9 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                   <p className="truncate text-[11px] text-ink-faint">{symbol}</p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                aria-label="Close alerts"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-raised hover:text-ink"
-              >
+              <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close alerts">
                 <X size={16} />
-              </button>
+              </Button>
             </div>
 
             <form
@@ -116,18 +115,17 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                 <label htmlFor="alert-condition" className="mb-1.5 block text-xs font-medium text-ink-muted">
                   Notify me when
                 </label>
-                <select
+                <Select
                   id="alert-condition"
                   value={condition}
                   onChange={(e) => setCondition(e.target.value as AlertCondition)}
-                  className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 text-sm text-ink focus:border-brand/60 focus:outline-none"
                 >
                   {(Object.keys(CONDITION_LABELS) as AlertCondition[]).map((c) => (
                     <option key={c} value={c}>
                       {CONDITION_LABELS[c]}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               {(needsThreshold || optionalThreshold) && (
@@ -136,7 +134,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                     {needsThreshold ? "Price level" : "RSI threshold"}
                     {optionalThreshold && <span className="ml-1 font-normal text-ink-faint">(optional)</span>}
                   </label>
-                  <input
+                  <Input
                     id="alert-threshold"
                     type="number"
                     step="any"
@@ -146,7 +144,6 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                     placeholder={
                       needsThreshold ? "e.g. 250.00" : condition === "rsi_overbought" ? "Default 70" : "Default 30"
                     }
-                    className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 text-sm text-ink placeholder:text-ink-faint focus:border-brand/60 focus:outline-none"
                   />
                 </div>
               )}
@@ -158,14 +155,17 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
-                disabled={isSubmitting || (needsThreshold && !threshold.trim())}
-                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                variant="primary"
+                size="lg"
+                loading={isSubmitting}
+                disabled={needsThreshold && !threshold.trim()}
+                className="w-full"
               >
-                {isSubmitting ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <Plus size={14} aria-hidden />}
+                {!isSubmitting && <Plus size={14} aria-hidden />}
                 {isSubmitting ? "Creating..." : "Create alert"}
-              </button>
+              </Button>
             </form>
 
             <div className="flex-1 space-y-2 overflow-y-auto p-4">
@@ -208,26 +208,30 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1.5">
-                        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", meta.className)}>
+                        <Badge size="sm" tone={meta.tone} className={meta.className}>
                           {meta.label}
-                        </span>
+                        </Badge>
                         <div className="flex items-center gap-0.5">
                           {alert.status === "triggered" && (
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => dismissAlert(alert.id)}
-                              className="rounded-md px-1.5 py-1 text-[10px] font-medium text-ink-faint transition-colors hover:text-ink-muted"
+                              className="h-auto px-1.5 py-1 text-[10px] text-ink-faint hover:text-ink-muted"
                             >
                               Dismiss
-                            </button>
+                            </Button>
                           )}
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             onClick={() => deleteAlert(alert.id)}
                             aria-label={`Delete alert: ${CONDITION_LABELS[alert.condition]}`}
                             title="Delete alert"
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-bear/10 hover:text-bear"
+                            className="h-7 w-7 text-ink-faint hover:bg-bear/10 hover:text-bear"
                           >
                             <Trash2 size={13} />
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>

@@ -2,6 +2,7 @@
 
 import { Check, Moon, Sun } from "lucide-react";
 
+import { Input } from "@/components/Input";
 import { Panel } from "@/components/Panel";
 import { Toggle } from "@/components/Toggle";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
@@ -71,7 +72,7 @@ export function SettingsPanel() {
               onClick={() => setCurrency(c.code)}
               aria-pressed={currency === c.code}
               className={cn(
-                "flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-xs font-medium transition-colors",
+                "flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-medium transition-colors",
                 currency === c.code
                   ? "border-brand bg-brand/10 text-ink"
                   : "border-border text-ink-muted hover:border-ink-faint/40 hover:text-ink"
@@ -94,14 +95,14 @@ export function SettingsPanel() {
         <label htmlFor="settings-default-symbol" className="sr-only">
           Startup symbol
         </label>
-        <input
+        <Input
           id="settings-default-symbol"
           value={prefs.defaultSymbol}
           onChange={(e) => updatePrefs({ defaultSymbol: e.target.value.toUpperCase() })}
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
-          className="h-10 w-full rounded-lg border border-border bg-surface-raised px-3 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-brand/60 focus:outline-none"
+          className="font-mono"
           placeholder="AAPL"
         />
         <p className="mt-2 text-xs text-ink-muted">The dashboard will load this symbol on your next visit.</p>

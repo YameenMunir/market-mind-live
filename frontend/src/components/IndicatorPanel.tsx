@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { Badge, type BadgeTone } from "@/components/Badge";
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
@@ -25,12 +26,12 @@ const TONE_TEXT: Record<InsightTone, string> = {
   muted: "text-ink-faint",
 };
 
-const TONE_BADGE: Record<InsightTone, string> = {
-  bull: "bg-bull/15 text-bull",
-  bear: "bg-bear/15 text-bear",
-  warn: "bg-warn/15 text-warn",
-  neutral: "bg-surface-raised text-ink-muted",
-  muted: "bg-surface-raised text-ink-faint",
+const TONE_BADGE: Record<InsightTone, { tone: BadgeTone; className?: string }> = {
+  bull: { tone: "bull" },
+  bear: { tone: "bear" },
+  warn: { tone: "warn" },
+  neutral: { tone: "neutral" },
+  muted: { tone: "neutral", className: "text-ink-faint" },
 };
 
 const TONE_SUMMARY_BOX: Record<InsightTone, string> = {
@@ -90,6 +91,21 @@ export function IndicatorPanel({
   const convertedPrice = price == null ? null : convert(price, nativeCurrency);
   const read = buildTechnicalRead(convertedIndicators, convertedPrice ?? null);
 
+  if (!indicators) {
+    return (
+      <Panel eyebrow="Technical Indicators" title="Signal Breakdown">
+        <div aria-hidden className="animate-pulse divide-y divide-border">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-3 py-3">
+              <div className="h-3 w-24 rounded bg-surface-raised" />
+              <div className="h-3 w-16 rounded bg-surface-raised" />
+            </div>
+          ))}
+        </div>
+      </Panel>
+    );
+  }
+
   return (
     <Panel eyebrow="Technical Indicators" title="Signal Breakdown">
       <div className="divide-y divide-border">
@@ -101,14 +117,14 @@ export function IndicatorPanel({
             </div>
             <div className="mt-1.5 flex items-start justify-between gap-2">
               <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-ink-faint">{insight.note}</p>
-              <span
-                className={cn(
-                  "shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                  TONE_BADGE[insight.tone]
-                )}
+              <Badge
+                size="sm"
+                uppercase
+                tone={TONE_BADGE[insight.tone].tone}
+                className={cn("shrink-0", TONE_BADGE[insight.tone].className)}
               >
                 {insight.badge}
-              </span>
+              </Badge>
             </div>
           </div>
         ))}

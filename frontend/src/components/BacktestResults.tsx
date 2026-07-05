@@ -1,4 +1,4 @@
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Loader2 } from "lucide-react";
 
 import { Panel } from "@/components/Panel";
 import { EquityCurveChart } from "@/charts/EquityCurveChart";
@@ -24,7 +24,27 @@ function StatTile({ label, value, tone }: { label: string; value: string; tone?:
   );
 }
 
-export function BacktestResults({ result, theme }: { result: BacktestResult | null; theme: "dark" | "light" }) {
+interface BacktestResultsProps {
+  result: BacktestResult | null;
+  theme: "dark" | "light";
+  isLoading?: boolean;
+}
+
+export function BacktestResults({ result, theme, isLoading }: BacktestResultsProps) {
+  if (isLoading) {
+    return (
+      <Panel eyebrow="Backtest" title="Running simulation...">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-10 text-center">
+          <Loader2 size={22} className="animate-spin text-brand" aria-hidden />
+          <p className="text-sm font-medium text-ink-muted">Simulating trades over the selected window</p>
+          <p className="max-w-sm text-xs leading-relaxed text-ink-faint">
+            This usually takes a few seconds - results will appear here automatically.
+          </p>
+        </div>
+      </Panel>
+    );
+  }
+
   if (!result) {
     return (
       <Panel eyebrow="Backtest" title="No results yet">

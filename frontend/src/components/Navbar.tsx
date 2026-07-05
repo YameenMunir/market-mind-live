@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { BrandMark } from "@/components/BrandMark";
+import { BUTTON_SIZE_STYLES, BUTTON_VARIANT_STYLES } from "@/components/Button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +46,11 @@ export function Navbar() {
           <ThemeToggle />
           <Link
             href="/dashboard"
-            className="whitespace-nowrap rounded-lg bg-brand px-3 py-2.5 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 sm:px-4"
+            className={cn(
+              BUTTON_VARIANT_STYLES.primary,
+              BUTTON_SIZE_STYLES.lg,
+              "inline-flex items-center justify-center whitespace-nowrap transition-colors duration-150"
+            )}
           >
             <span className="sm:hidden">Launch</span>
             <span className="hidden sm:inline">Launch Dashboard</span>

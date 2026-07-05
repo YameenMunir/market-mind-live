@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowDownRight, ArrowUpRight, Camera, Minus, Moon, RotateCcw, Sunrise, Sunset, X } from "lucide-react";
 
+import { Button } from "@/components/Button";
 import { ChartOverlayToggles } from "@/components/ChartOverlayToggles";
 import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
@@ -123,13 +124,15 @@ export function FullscreenChartModal({
           className="fixed inset-0 z-50 flex flex-col bg-canvas"
         >
           <div className="relative shrink-0 border-b border-border px-4 py-3.5 sm:px-6">
-            <button
+            <Button
+              variant="secondary"
+              size="icon"
               onClick={onClose}
               aria-label="Close full-screen chart"
-              className="absolute right-4 top-3.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-raised text-ink-muted transition-colors hover:text-ink sm:right-6"
+              className="absolute right-4 top-3.5 sm:right-6"
             >
               <X size={17} />
-            </button>
+            </Button>
 
             <div className="flex flex-wrap items-start gap-x-6 gap-y-2 pr-12">
               <div>
@@ -174,20 +177,14 @@ export function FullscreenChartModal({
             <TimeframeSelector value={interval} onChange={onIntervalChange} />
             <ChartOverlayToggles showMA={showMA} onToggleMA={onToggleMA} showBB={showBB} onToggleBB={onToggleBB} />
             <div className="ml-auto flex items-center gap-2">
-              <button
-                onClick={() => chartHandleRef.current?.fitContent()}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2.5 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:text-ink"
-              >
+              <Button variant="secondary" size="sm" onClick={() => chartHandleRef.current?.fitContent()}>
                 <RotateCcw size={13} />
                 Reset zoom
-              </button>
-              <button
-                onClick={handleScreenshot}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2.5 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:text-ink"
-              >
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleScreenshot}>
                 <Camera size={13} />
                 Export PNG
-              </button>
+              </Button>
             </div>
           </div>
 

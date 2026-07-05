@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Send, ShieldAlert } from "lucide-react";
 
 import { AIChatMessage } from "@/components/AIChatMessage";
+import { Button } from "@/components/Button";
+import { Textarea } from "@/components/Input";
 import { StatusBanner } from "@/components/StatusBanner";
 import { AI_SUGGESTED_QUESTIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -103,7 +105,7 @@ export function AIChatConversation({
 
       <div className={cn("border-t border-border p-3", isFullscreen && "mx-auto w-full max-w-3xl border-t-0 pt-0")}>
         <div className="flex items-end gap-2">
-          <textarea
+          <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -115,16 +117,18 @@ export function AIChatConversation({
             aria-label={`Ask the AI assistant about ${asset}`}
             placeholder="Ask about this asset's data..."
             rows={1}
-            className="max-h-28 min-h-[40px] flex-1 resize-none rounded-lg border border-border bg-surface-raised px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-brand/60 focus:outline-none"
+            className="max-h-28 flex-1 resize-none"
           />
-          <button
+          <Button
+            variant="primary"
+            size="icon"
             onClick={handleSend}
             disabled={isSending || isLoadingSession || !input.trim()}
             aria-label="Send message"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-10 w-10 shrink-0"
           >
             <Send size={15} />
-          </button>
+          </Button>
         </div>
         <p className="mt-2 flex items-start gap-1.5 text-[10px] leading-relaxed text-ink-faint">
           <ShieldAlert size={11} className="mt-0.5 shrink-0" />

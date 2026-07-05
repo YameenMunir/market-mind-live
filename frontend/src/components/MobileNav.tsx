@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BarChart3, LayoutGrid, Menu, Settings, X } from "lucide-react";
 
 import { BrandMark } from "@/components/BrandMark";
+import { Button } from "@/components/Button";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -45,14 +46,15 @@ export function MobileNav() {
         <Link href="/" aria-label="Market Mind Live home">
           <BrandMark />
         </Link>
-        <button
+        <Button
+          variant="secondary"
+          size="icon"
           onClick={() => setIsOpen(true)}
           aria-label="Open navigation menu"
           aria-expanded={isOpen}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface-raised text-ink-muted transition-colors hover:text-ink"
         >
           <Menu size={18} />
-        </button>
+        </Button>
       </div>
 
       <AnimatePresence>
@@ -74,13 +76,9 @@ export function MobileNav() {
             >
               <div className="mb-4 flex items-center justify-between">
                 <BrandMark />
-                <button
-                  onClick={() => setIsOpen(false)}
-                  aria-label="Close navigation menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink"
-                >
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close navigation menu">
                   <X size={18} />
-                </button>
+                </Button>
               </div>
               {NAV_ITEMS.map((item) => {
                 const isActive = pathname?.startsWith(item.href);

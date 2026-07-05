@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Coins, Loader2 } from "lucide-react";
 
+import { Button } from "@/components/Button";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { SUPPORTED_CURRENCIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -35,13 +36,15 @@ export function CurrencySelector() {
 
   return (
     <div ref={containerRef} className="relative">
-      <button
+      <Button
+        variant="secondary"
+        size="md"
         onClick={() => setIsOpen((v) => !v)}
         aria-label="Change display currency"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         title="Change display currency"
-        className="flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-3 text-xs font-semibold text-ink-muted transition-colors hover:border-ink-faint/40 hover:text-ink"
+        className="gap-1.5 text-xs font-semibold text-ink-muted hover:text-ink"
       >
         {isLoadingRates ? (
           <Loader2 size={13} className="animate-spin" aria-hidden />
@@ -49,7 +52,7 @@ export function CurrencySelector() {
           <Coins size={13} aria-hidden />
         )}
         {currency}
-      </button>
+      </Button>
 
       {isOpen && (
         <>
@@ -57,7 +60,7 @@ export function CurrencySelector() {
           <div
             role="listbox"
             aria-label="Display currency"
-            className="absolute right-0 z-50 mt-2 max-h-80 w-56 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20"
+            className="animate-dropdown-in absolute right-0 z-50 mt-2 max-h-80 w-56 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20"
           >
             {SUPPORTED_CURRENCIES.map((c) => (
               <button
@@ -69,7 +72,7 @@ export function CurrencySelector() {
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "flex min-h-[40px] w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-surface",
+                  "flex min-h-[44px] w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-surface",
                   c.code === currency ? "text-ink" : "text-ink-muted"
                 )}
               >
