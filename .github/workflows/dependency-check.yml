@@ -42,7 +42,7 @@ jobs:
 
       - name: Enable pnpm
         if: steps.pm.outputs.manager == 'pnpm'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 9
 
