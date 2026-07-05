@@ -71,11 +71,27 @@ the provider directly, or you'll bypass caching and rate limiting.
   0, flat otherwise) over historical bars. Not a general backtesting framework.
 - `services/live_hub.py` (`LiveDataHub`) - one background asyncio poller per actively-*subscribed* symbol,
   shared across every connected WebSocket client watching that symbol, so N viewers cost exactly 1 upstream
-  yfinance poll. Quote/market-status refresh every `hub_quote_interval_seconds`; indicators/prediction/risk
-  refresh far less often (`hub_indicator_interval_seconds`) since they're derived from daily bars. Idles out
-  and cancels its own task after `hub_idle_shutdown_seconds` with no subscribers; `main.py`'s lifespan
-  handler cancels all remaining pollers on shutdown. `api/ws.py` is a thin serializer over this hub's
+  yfinance poll. Quote/market-status poll cadence adapts per symbol to its own market session
+  (`hub_quote_interval_open/extended/closed_seconds` via `_base_interval_for_session()`) - fast while that
+  market is open, slower pre/post-market, much slower while fully closed, since yfinance has no push/
+  streaming API or documented rate limit and hammering it at a fixed fast interval around the clock risks
+  a soft IP ban. Indicators/prediction/risk refresh far less often (`hub_indicator_interval_seconds`) since
+  they're derived from daily bars. Idles out and cancels its own task after `hub_idle_shutdown_seconds` with
+  no subscribers; `main.py`'s lifespan handler cancels all remaining pollers on shutdown (and logs the active
+  provider/poll-cadence/Gemini-key config at startup). `api/ws.py` is a thin serializer over this hub's
   snapshot state - it does not fetch data itself.
+- `data/yfinance_provider.py` retries transient network failures (`_call_with_retry`, exponential backoff +
+  jitter, `provider_max_retries`/`provider_retry_base_delay_seconds`) before raising `NetworkError`. A real
+  `YFRateLimitError` from yfinance is handled differently - it is never retried (that would only make an
+  active rate limit worse); instead it starts a module-level cooldown (`provider_rate_limit_cooldown_seconds`)
+  that makes *every* symbol's calls short-circuit into `RateLimitedError` immediately, since Yahoo's
+  undocumented throttling is IP-wide rather than per-symbol - one rate-limited symbol means they all are.
+  `services/price_service.py` layers a matching global `RateLimiter` (`provider_global_rate_limit_per_minute`)
+  alongside the existing per-symbol one for the same IP-wide reason. `get_quotes_batch()` fetches multiple
+  symbols via one shared `yf.Tickers` session rather than one `yf.Ticker()` per symbol (yfinance has no true
+  single-request multi-symbol quote endpoint); `price_service.get_quotes_batch()` wraps it with the same
+  per-symbol cache `get_quote()` uses, and it's exposed at `GET /api/prices/batch/quotes?symbols=A,B,C` for
+  watchlist-style multi-symbol lookups.
 - `utils/errors.py` - all domain errors are `AppError` subclasses with a `status_code` + `ErrorCode` enum
   member, registered via a single global exception handler in `main.py`. Add new failure modes as new
   `AppError` subclasses here (and a matching `ErrorCode` value in `models/schemas.py`), not ad-hoc

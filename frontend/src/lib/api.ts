@@ -68,6 +68,13 @@ export const api = {
     return request<AssetSearchResult[]>(`/api/assets/search?${params.toString()}`);
   },
   getQuote: (symbol: string) => request<PriceQuote>(`/api/prices/${encodeURIComponent(symbol)}/quote`),
+  // Fetches quotes for multiple symbols in one round trip (e.g. a watchlist) instead of
+  // one request per symbol - a failed/unknown symbol resolves to `null` rather than
+  // failing the whole batch.
+  getQuotesBatch: (symbols: string[]) =>
+    request<Record<string, PriceQuote | null>>(
+      `/api/prices/batch/quotes?symbols=${encodeURIComponent(symbols.join(","))}`
+    ),
   getCandles: (symbol: string, interval: string) =>
     request<CandleSeries>(`/api/prices/${encodeURIComponent(symbol)}/candles?interval=${interval}`),
   getMarketStatus: (symbol: string) => request<MarketStatus>(`/api/market/status/${encodeURIComponent(symbol)}`),

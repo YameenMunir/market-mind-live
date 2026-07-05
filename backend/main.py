@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -27,10 +28,36 @@ from utils.logging import configure_logging
 
 settings = get_settings()
 configure_logging(settings.log_level)
+logger = logging.getLogger(__name__)
+
+
+def _log_startup_config() -> None:
+    """Surfaces the active data-provider/live-update configuration at boot, so a
+    misconfigured deployment (e.g. an unset Gemini key, or an interval edited to
+    something unsafe) is visible in the logs immediately rather than discovered later.
+    """
+    logger.info(
+        "Market data provider: yfinance (unofficial Yahoo Finance API, no API key required)."
+    )
+    logger.info(
+        "Live poll cadence - open: %ss, extended hours: %ss, closed: %ss (adapts per symbol "
+        "based on its own market session; see services/live_hub.py).",
+        settings.hub_quote_interval_open_seconds,
+        settings.hub_quote_interval_extended_seconds,
+        settings.hub_quote_interval_closed_seconds,
+    )
+    if settings.gemini_api_key:
+        logger.info("AI Insights Assistant: using live Gemini API (model=%s).", settings.gemini_model)
+    else:
+        logger.warning(
+            "AI Insights Assistant: GEMINI_API_KEY is not set - falling back to the deterministic "
+            "mock provider. Set GEMINI_API_KEY in backend/.env for live Gemini responses."
+        )
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    _log_startup_config()
     yield
     # Cancel every live-hub background poller on shutdown so reloads/restarts don't
     # leak asyncio tasks holding open Yahoo connections.

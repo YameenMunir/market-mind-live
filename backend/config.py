@@ -25,7 +25,25 @@ class Settings(BaseSettings):
     # can safely be 1s without multiplying outbound requests per viewer.
     ws_poll_interval_seconds: int = 1
 
+    # Per-symbol quota, plus a much larger cross-symbol quota - Yahoo's undocumented
+    # throttling is IP-wide, not per-symbol, so a dashboard watching many symbols could
+    # stay under every individual symbol's limit while still tripping Yahoo's real one.
+    # This is a circuit breaker for genuine runaway/bug scenarios, not a tuned-to-Yahoo
+    # figure (Yahoo publishes no real number) - raise it if legitimately watching many
+    # symbols at once trips it during normal use.
     provider_rate_limit_per_minute: int = 60
+    provider_global_rate_limit_per_minute: int = 900
+
+    # yfinance has no official retry/backoff of its own - transient network hiccups
+    # (DNS blips, connection resets) are retried here with exponential backoff + jitter
+    # before surfacing a NetworkError to callers.
+    provider_max_retries: int = 3
+    provider_retry_base_delay_seconds: float = 0.5
+
+    # When Yahoo itself returns a rate-limit response, every symbol's poller backs off
+    # together for this long (see data/yfinance_provider.py's cooldown) instead of each
+    # independently retrying into a still-active limit.
+    provider_rate_limit_cooldown_seconds: float = 15.0
 
     # AI Insights Assistant (Gemini). If gemini_api_key is unset, the assistant falls back
     # to a deterministic mock provider so the feature still works in local development.
@@ -41,7 +59,17 @@ class Settings(BaseSettings):
 
     # LiveDataHub: one background poller per actively-watched symbol, shared across every
     # client subscribed to it, so N viewers of the same symbol still cost 1 upstream poll.
-    hub_quote_interval_seconds: float = 2.0
+    # yfinance (unofficial Yahoo scraping, no API key, no vendor SLA) has no push/streaming
+    # API and no documented rate limit - hitting it every second for every watched symbol
+    # around the clock risks a soft IP ban. Instead the poller adapts its own cadence to
+    # the market session for that symbol: fast (as close to 1s as is safe) while a market
+    # is actually open, slower during pre/after-hours (prices move less), and much slower
+    # while fully closed (weekends, overnight) since the price cannot change at all - this
+    # is the "fastest safe interval, explained" fallback called for when true 1s push
+    # streaming isn't available from the provider.
+    hub_quote_interval_open_seconds: float = 1.0
+    hub_quote_interval_extended_seconds: float = 5.0
+    hub_quote_interval_closed_seconds: float = 60.0
     hub_indicator_interval_seconds: float = 30.0
     hub_idle_shutdown_seconds: float = 45.0
     hub_error_backoff_max_seconds: float = 30.0

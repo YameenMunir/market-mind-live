@@ -37,6 +37,14 @@ class MarketDataProvider(ABC):
     def get_analyst_consensus(self, symbol: str) -> dict:
         ...
 
+    @abstractmethod
+    def get_quotes_batch(self, symbols: list[str]) -> dict[str, dict | Exception]:
+        """Fetches quotes for multiple symbols in as few upstream requests as the
+        provider supports. Keyed by uppercased symbol; a value is either the quote
+        dict (same shape as `get_quote`) or the Exception raised for that symbol, so
+        one bad ticker doesn't fail the whole batch."""
+        ...
+
 
 def infer_asset_type(symbol: str) -> AssetType:
     s = symbol.upper().strip()

@@ -12,6 +12,11 @@ from utils.errors import RateLimitedError
 
 settings = get_settings()
 _rate_limiter = RateLimiter(max_per_minute=settings.provider_rate_limit_per_minute)
+# Yahoo's real throttling is IP-wide, not per-symbol - this catches a dashboard watching
+# many symbols simultaneously that would otherwise stay under every individual symbol's
+# quota while still tripping Yahoo's actual limit.
+_global_rate_limiter = RateLimiter(max_per_minute=settings.provider_global_rate_limit_per_minute)
+_GLOBAL_KEY = "__global__"
 
 # Chart time-range options -> how far back to fetch and what candle size to request.
 # "period" values map directly to yfinance's native period shorthand (Yahoo supports
@@ -38,6 +43,11 @@ DEFAULT_RANGE = "1d"
 
 
 def _check_rate_limit(symbol: str) -> None:
+    if not _global_rate_limiter.check(_GLOBAL_KEY):
+        raise RateLimitedError(
+            "Too many requests across all symbols in a short period.",
+            detail="Please wait a moment before refreshing again.",
+        )
     if not _rate_limiter.check(symbol.upper()):
         raise RateLimitedError(
             "Too many requests for this symbol in a short period.",
@@ -45,27 +55,75 @@ def _check_rate_limit(symbol: str) -> None:
         )
 
 
+def _quote_from_raw(symbol: str, raw: dict) -> PriceQuote:
+    change = raw["price"] - raw["previous_close"]
+    change_percent = (change / raw["previous_close"] * 100) if raw["previous_close"] else 0.0
+    return PriceQuote(
+        symbol=symbol.upper(),
+        price=round(raw["price"], 6),
+        change=round(change, 6),
+        change_percent=round(change_percent, 4),
+        previous_close=round(raw["previous_close"], 6),
+        day_high=raw.get("day_high"),
+        day_low=raw.get("day_low"),
+        volume=raw.get("volume"),
+        currency=raw.get("currency", "USD"),
+        as_of=datetime.now(timezone.utc).isoformat(),
+        is_delayed=True,
+    )
+
+
 def get_quote(symbol: str) -> PriceQuote:
     def _fetch() -> PriceQuote:
         _check_rate_limit(symbol)
         raw = provider.get_quote(symbol)
-        change = raw["price"] - raw["previous_close"]
-        change_percent = (change / raw["previous_close"] * 100) if raw["previous_close"] else 0.0
-        return PriceQuote(
-            symbol=symbol.upper(),
-            price=round(raw["price"], 6),
-            change=round(change, 6),
-            change_percent=round(change_percent, 4),
-            previous_close=round(raw["previous_close"], 6),
-            day_high=raw.get("day_high"),
-            day_low=raw.get("day_low"),
-            volume=raw.get("volume"),
-            currency=raw.get("currency", "USD"),
-            as_of=datetime.now(timezone.utc).isoformat(),
-            is_delayed=True,
-        )
+        return _quote_from_raw(symbol, raw)
 
     return cache.get_or_set(f"quote:{symbol.upper()}", settings.quote_cache_ttl_seconds, _fetch)
+
+
+def get_quotes_batch(symbols: list[str]) -> dict[str, PriceQuote | Exception]:
+    """Quotes for multiple symbols, reusing the same per-symbol cache as `get_quote` so a
+    watchlist/overview call and an individual dashboard call for the same symbol never
+    disagree or double-fetch. Only symbols that are actually cache-misses get sent to the
+    provider's batch fetch - and that fetch runs as a single `yf.Tickers` call shared
+    across all of them, rather than one `yf.Ticker()` request per symbol.
+    """
+    unique_symbols = list(dict.fromkeys(s.upper() for s in symbols))
+    results: dict[str, PriceQuote | Exception] = {}
+    misses: list[str] = []
+
+    for symbol in unique_symbols:
+        cached = cache.get(f"quote:{symbol}")
+        if cached is not None:
+            results[symbol] = cached
+        else:
+            misses.append(symbol)
+
+    if misses:
+        for symbol in misses:
+            if not _global_rate_limiter.check(_GLOBAL_KEY):
+                results[symbol] = RateLimitedError(
+                    "Too many requests across all symbols in a short period.",
+                    detail="Please wait a moment before refreshing again.",
+                )
+            elif not _rate_limiter.check(symbol):
+                results[symbol] = RateLimitedError(
+                    "Too many requests for this symbol in a short period.",
+                    detail="Please wait a moment before refreshing again.",
+                )
+        fetchable = [s for s in misses if s not in results]
+        if fetchable:
+            raw_results = provider.get_quotes_batch(fetchable)
+            for symbol, raw in raw_results.items():
+                if isinstance(raw, Exception):
+                    results[symbol] = raw
+                else:
+                    quote = _quote_from_raw(symbol, raw)
+                    cache.set(f"quote:{symbol}", quote, settings.quote_cache_ttl_seconds)
+                    results[symbol] = quote
+
+    return results
 
 
 def get_candles(symbol: str, interval: str = DEFAULT_RANGE) -> CandleSeries:

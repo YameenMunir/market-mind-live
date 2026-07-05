@@ -6,8 +6,8 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from config import get_settings
-from models.schemas import IndicatorSet, MarketStatus, PredictionResult, PriceQuote, RiskAssessment
+from config import Settings, get_settings
+from models.schemas import IndicatorSet, MarketSession, MarketStatus, PredictionResult, PriceQuote, RiskAssessment
 from prediction.engine import generate_prediction
 from prediction.history_store import history_store
 from services import price_service
@@ -23,6 +23,22 @@ logger = logging.getLogger(__name__)
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _base_interval_for_session(status: MarketStatus | None, settings: Settings) -> float:
+    """Picks how often to poll Yahoo for this symbol based on its current market session.
+
+    Prices cannot move while a market is fully closed, so polling it as fast as when it's
+    open would only burn provider quota for no new information - and risks the kind of
+    sustained high-frequency hammering that gets an IP soft-banned by an unofficial,
+    keyless API. Unknown status (not yet resolved this cycle) defaults to the open-market
+    cadence so a brand-new subscription doesn't wait a full slow cycle for its first poll.
+    """
+    if status is None or status.session == MarketSession.OPEN:
+        return settings.hub_quote_interval_open_seconds
+    if status.session in (MarketSession.PRE_MARKET, MarketSession.AFTER_HOURS):
+        return settings.hub_quote_interval_extended_seconds
+    return settings.hub_quote_interval_closed_seconds
 
 
 @dataclass
@@ -62,7 +78,7 @@ class _SymbolWatch:
         self.subscriber_count = 0
         self.idle_since: float | None = None
         self.task: asyncio.Task | None = None
-        self.backoff_seconds = get_settings().hub_quote_interval_seconds
+        self.backoff_seconds = get_settings().hub_quote_interval_open_seconds
 
 
 class LiveDataHub:
@@ -150,7 +166,7 @@ class LiveDataHub:
                     watch.snapshot.error_code = None
                     watch.snapshot.error_message = None
                     watch.snapshot.is_stale = False
-                    watch.backoff_seconds = settings.hub_quote_interval_seconds
+                    watch.backoff_seconds = _base_interval_for_session(watch.snapshot.market_status, settings)
 
                     now = time.monotonic()
                     if now - last_analytics_refresh >= settings.hub_indicator_interval_seconds:
