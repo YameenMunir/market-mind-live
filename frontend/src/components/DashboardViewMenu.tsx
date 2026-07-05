@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
-import { useSidebarCollapse } from "@/hooks/useSidebarCollapse";
+import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
 import { cn } from "@/lib/utils";
 
 interface DashboardViewMenuProps {

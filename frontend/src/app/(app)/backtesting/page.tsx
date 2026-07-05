@@ -11,10 +11,12 @@ import { CurrencySelector } from "@/components/CurrencySelector";
 import { Panel } from "@/components/Panel";
 import { StatusBanner } from "@/components/StatusBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
 import { useTheme } from "@/hooks/useTheme";
 import { api } from "@/lib/api";
 import { buildAssetContext } from "@/lib/aiContext";
 import { describeError } from "@/lib/errorMessages";
+import { cn } from "@/lib/utils";
 import type { AssetSearchResult, BacktestResult } from "@/types";
 import { ApiError } from "@/types";
 
@@ -28,6 +30,7 @@ const LOOKBACK_OPTIONS = [
 
 export default function BacktestingPage() {
   const { theme } = useTheme();
+  const { isCollapsed } = useSidebarCollapse();
   const [symbol, setSymbol] = useState("AAPL");
   const [lookbackDays, setLookbackDays] = useState(180);
   const [initialCapital, setInitialCapital] = useState(10000);
@@ -51,7 +54,12 @@ export default function BacktestingPage() {
 
   return (
     <>
-      <header className="flex items-center justify-between border-b border-border bg-canvas px-4 py-3.5 sm:px-6 sm:py-4">
+      <header
+        className={cn(
+          "flex items-center justify-between border-b border-border bg-canvas px-4 py-3.5 sm:px-6 sm:py-4",
+          isCollapsed && "lg:pl-28"
+        )}
+      >
         <h1 className="text-sm font-semibold uppercase tracking-wider text-ink-faint">Backtesting</h1>
         <div className="flex items-center gap-2 sm:gap-3">
           <CurrencySelector />

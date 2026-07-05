@@ -1,10 +1,21 @@
+"use client";
+
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
+import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
+  const { isCollapsed } = useSidebarCollapse();
+
   return (
     <>
-      <header className="flex items-center justify-between border-b border-border bg-canvas px-4 py-3.5 sm:px-6 sm:py-4">
+      <header
+        className={cn(
+          "flex items-center justify-between border-b border-border bg-canvas px-4 py-3.5 sm:px-6 sm:py-4",
+          isCollapsed && "lg:pl-28"
+        )}
+      >
         <h1 className="text-sm font-semibold uppercase tracking-wider text-ink-faint">Settings</h1>
         <ThemeToggle />
       </header>

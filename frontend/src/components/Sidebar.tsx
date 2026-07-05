@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BarChart3, LayoutGrid, PanelLeftClose, Settings } from "lucide-react";
 
 import { BrandMark } from "@/components/BrandMark";
-import { useSidebarCollapse } from "@/hooks/useSidebarCollapse";
+import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
