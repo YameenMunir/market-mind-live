@@ -1,11 +1,54 @@
 version: 2
 updates:
+  # Frontend (Next.js/TypeScript) - frontend/package.json + package-lock.json
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+    groups:
+      # Minor/patch bumps are low-risk - bundle them into one PR per week instead of
+      # one PR per package. Majors are deliberately left out of the group so each one
+      # gets its own PR and a real review, per the "no forced breaking upgrades" rule.
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
+  # Backend (FastAPI/Python) - backend/requirements.txt. No pyproject.toml/poetry.lock/
+  # Pipfile exist in this repo today; if one is introduced later, Dependabot's "pip"
+  # ecosystem already covers pip, Poetry, and Pipenv manifests in the same directory.
   - package-ecosystem: "pip"
     directory: "/backend"
     schedule:
       interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "backend"
+    groups:
+      pip-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Keeps the actions pinned in .github/workflows/*.yml (actions/checkout, setup-node,
+  # setup-python, etc.) current - these are dependencies too, just not in a package manifest.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "ci"
+    groups:
+      github-actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"

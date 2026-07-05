@@ -1,0 +1,193 @@
+name: Dependency Health Check
+
+# Distinct from ci.yml (the fast correctness gate on every push/PR): this workflow is
+# specifically about dependency freshness and security, and also runs on a weekly
+# schedule so staleness/vulnerabilities surface even when nobody's opened a PR.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # Every Monday 06:00 UTC - same day Dependabot opens its weekly PRs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-dependencies:
+    name: Frontend dependencies (outdated, audit, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect package manager
+        # Only frontend/package-lock.json exists in this repo today, so this resolves to
+        # npm - the yarn/pnpm branches are here so this workflow keeps working unchanged
+        # if the project ever switches lock files.
+        id: pm
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            echo "manager=pnpm" >> "$GITHUB_OUTPUT"
+          elif [ -f yarn.lock ]; then
+            echo "manager=yarn" >> "$GITHUB_OUTPUT"
+          else
+            echo "manager=npm" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Enable pnpm
+        if: steps.pm.outputs.manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: ${{ steps.pm.outputs.manager }}
+          cache-dependency-path: |
+            frontend/package-lock.json
+            frontend/yarn.lock
+            frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: |
+          case "${{ steps.pm.outputs.manager }}" in
+            pnpm) pnpm install --frozen-lockfile ;;
+            yarn) yarn install --frozen-lockfile ;;
+            *) npm ci ;;
+          esac
+
+      - name: Check for outdated packages (informational only)
+        # An outdated package isn't broken or insecure - `npm outdated` (and the yarn/pnpm
+        # equivalents) exit non-zero just because a newer version exists. That's not a
+        # reason to fail CI, so this step is allowed to fail without failing the job.
+        continue-on-error: true
+        run: |
+          echo "## Frontend: outdated packages" >> "$GITHUB_STEP_SUMMARY"
+          case "${{ steps.pm.outputs.manager }}" in
+            pnpm) pnpm outdated ;;
+            yarn) yarn outdated ;;
+            *) npm outdated ;;
+          esac | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Security audit
+        # No continue-on-error here - unlike "outdated", a found vulnerability should
+        # fail the job. --audit-level=high keeps low/moderate transitive-dev-dependency
+        # noise from blocking merges while still gating on anything that actually matters.
+        run: |
+          case "${{ steps.pm.outputs.manager }}" in
+            pnpm) pnpm audit --audit-level high ;;
+            yarn) yarn audit --level high ;;
+            *) npm audit --audit-level=high ;;
+          esac
+
+      - name: Lint
+        # `next lint` has a known ESLint flat-config/eslintrc circular-reference issue in
+        # this repo that's unrelated to dependency changes (see CLAUDE.md) - runs for
+        # visibility but is not allowed to fail this job until that's fixed separately.
+        continue-on-error: true
+        run: |
+          has_script() { node -e "process.exit(require('./package.json').scripts && require('./package.json').scripts['$1'] ? 0 : 1)"; }
+          if has_script lint; then
+            case "${{ steps.pm.outputs.manager }}" in
+              pnpm) pnpm run lint ;;
+              yarn) yarn lint ;;
+              *) npm run lint ;;
+            esac
+          else
+            echo "No lint script defined in package.json - skipping."
+          fi
+
+      - name: Build
+        run: |
+          has_script() { node -e "process.exit(require('./package.json').scripts && require('./package.json').scripts['$1'] ? 0 : 1)"; }
+          if has_script build; then
+            case "${{ steps.pm.outputs.manager }}" in
+              pnpm) pnpm run build ;;
+              yarn) yarn build ;;
+              *) npm run build ;;
+            esac
+          else
+            echo "No build script defined in package.json - skipping."
+          fi
+
+      - name: Tests
+        run: |
+          has_script() { node -e "process.exit(require('./package.json').scripts && require('./package.json').scripts['$1'] ? 0 : 1)"; }
+          if has_script test; then
+            case "${{ steps.pm.outputs.manager }}" in
+              pnpm) pnpm test ;;
+              yarn) yarn test ;;
+              *) npm test ;;
+            esac
+          else
+            echo "No test script defined in package.json - skipping (no frontend test suite is configured in this repo yet)."
+          fi
+
+  backend-dependencies:
+    name: Backend dependencies (outdated, audit, import check)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        # Only backend/requirements.txt exists in this repo today - the poetry.lock/
+        # Pipfile/pyproject.toml branches are here so this workflow keeps working
+        # unchanged if the backend ever migrates to one of those.
+        run: |
+          if [ -f poetry.lock ]; then
+            pip install poetry
+            poetry install --no-interaction
+          elif [ -f Pipfile ]; then
+            pip install pipenv
+            pipenv install --dev --system
+          elif [ -f pyproject.toml ]; then
+            pip install .
+          else
+            pip install -r requirements.txt
+          fi
+
+      - name: Check for outdated packages (informational only)
+        continue-on-error: true
+        run: |
+          echo "## Backend: outdated packages" >> "$GITHUB_STEP_SUMMARY"
+          pip list --outdated | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Security audit
+        # No continue-on-error - a found vulnerability should fail the job.
+        run: |
+          pip install pip-audit
+          pip-audit
+
+      - name: Import sanity check
+        # Stands in for a "build" step - a FastAPI app has no compile/build phase, so this
+        # is the equivalent smoke test: the app must still import cleanly after dependency
+        # changes (matches the "test the app after dependency updates" requirement).
+        run: python -c "import main"
+
+      - name: Tests
+        run: |
+          if [ -d tests ] || compgen -G "test_*.py" > /dev/null || compgen -G "*_test.py" > /dev/null; then
+            pip install pytest
+            pytest
+          else
+            echo "No backend test suite is configured in this repo yet (see CLAUDE.md) - skipping."
+          fi

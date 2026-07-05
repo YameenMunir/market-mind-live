@@ -106,6 +106,22 @@ npm run build                  # production build (also runs the TypeScript chec
 npx tsc --noEmit                # typecheck only, faster than a full build
 ```
 
+## Dependency management & CI
+
+- **`.github/workflows/ci.yml`** - fast correctness gate on every push/PR to `main`: frontend
+  typecheck + build, backend import sanity check.
+- **`.github/workflows/dependency-check.yml`** - dependency health: outdated-package reports
+  (informational, never fails the build), a security audit (`npm audit` / `pip-audit`, which
+  *does* fail the build on high/critical findings), and a re-run of lint/build/tests so a bad
+  dependency update is caught before merging. Runs on push/PR to `main` and weekly, so staleness
+  and vulnerabilities surface even with no open PRs.
+- **`.github/dependabot.yml`** - opens PRs weekly for outdated npm (`frontend/`), pip (`backend/`),
+  and GitHub Actions dependencies. Minor/patch bumps are grouped into one PR per ecosystem to cut
+  down on noise; major version bumps always get their own PR for individual review rather than
+  being silently grouped in. Dependabot's separate *security* updates (which open a PR immediately
+  when a vulnerability is disclosed, regardless of schedule) are a repo-level toggle under
+  **Settings -> Code security -> Dependabot** rather than something set in `dependabot.yml` itself.
+
 ## Disclaimer
 
 This project is for educational/informational purposes. Market data is delayed, predictions are
