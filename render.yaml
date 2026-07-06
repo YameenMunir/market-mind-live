@@ -13,9 +13,3 @@ services:
       # Comma-separated list of allowed frontend origins, e.g. https://your-app.vercel.app
       - key: CORS_ORIGINS
         sync: false
-      # Optional - the AI Insights assistant falls back to a deterministic mock provider
-      # if this is left unset.
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: GEMINI_MODEL
-        value: gemini-2.5-flash
