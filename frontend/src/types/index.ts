@@ -32,7 +32,15 @@ export interface Candle {
 
 export interface CandleSeries {
   symbol: string;
+  /** The requested chart filter, e.g. "1d", "5d", ..., "max". */
+  range: string;
+  /** The actual bar/candle resolution used to satisfy that range, e.g. "5m", "1d", "1wk". */
   interval: string;
+  currency: string;
+  market_status: MarketSession;
+  is_market_open: boolean;
+  /** ISO timestamp of when this series was fetched from the provider. */
+  last_updated: string;
   candles: Candle[];
 }
 

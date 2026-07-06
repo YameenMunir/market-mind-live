@@ -78,8 +78,8 @@ export const api = {
     request<Record<string, PriceQuote | null>>(
       `/api/prices/batch/quotes?symbols=${encodeURIComponent(symbols.join(","))}`
     ),
-  getCandles: (symbol: string, interval: string) =>
-    request<CandleSeries>(`/api/prices/${encodeURIComponent(symbol)}/candles?interval=${interval}`),
+  getCandles: (symbol: string, range: string) =>
+    request<CandleSeries>(`/api/prices/${encodeURIComponent(symbol)}/candles?range=${encodeURIComponent(range)}`),
   getMarketStatus: (symbol: string) => request<MarketStatus>(`/api/market/status/${encodeURIComponent(symbol)}`),
   getIndicators: (symbol: string) => request<IndicatorSet>(`/api/indicators/${encodeURIComponent(symbol)}`),
   getPrediction: (symbol: string) => request<PredictionResult>(`/api/predictions/${encodeURIComponent(symbol)}`),

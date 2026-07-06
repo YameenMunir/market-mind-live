@@ -7,8 +7,9 @@ import pandas as pd
 from config import get_settings
 from data.yfinance_provider import provider
 from models.schemas import Candle, CandleSeries, PriceQuote
+from services.market_status_service import get_market_status
 from utils.cache import RateLimiter, cache
-from utils.errors import RateLimitedError
+from utils.errors import RateLimitedError, ValidationError
 
 settings = get_settings()
 _rate_limiter = RateLimiter(max_per_minute=settings.provider_rate_limit_per_minute)
@@ -18,26 +19,31 @@ _rate_limiter = RateLimiter(max_per_minute=settings.provider_rate_limit_per_minu
 _global_rate_limiter = RateLimiter(max_per_minute=settings.provider_global_rate_limit_per_minute)
 _GLOBAL_KEY = "__global__"
 
-# Chart time-range options -> how far back to fetch and what candle size to request.
-# "period" values map directly to yfinance's native period shorthand (Yahoo supports
-# these exactly). "days" ranges (1wk/2wk) have no native Yahoo period string, so they're
-# fetched via an explicit start/end window instead. "ytd"/"max" are also native Yahoo
-# periods, so YTD always starts from the first trading day of the current calendar year
-# and MAX returns the full history Yahoo has for the symbol - both handled by yfinance
-# itself, not computed here.
+# Chart time-range options -> how far back to fetch, what candle size to request, and how
+# long a fetched response may be served from cache before the next filter click/poll must
+# hit the provider again. "period" values map directly to yfinance's native period shorthand.
+# "days" ranges (1wk/2wk) have no native Yahoo period string, so they're fetched via an
+# explicit start/end window instead. "ytd" is likewise computed explicitly (Jan 1 of the
+# current year -> now) rather than relying on yfinance's own "ytd" period, so the window is
+# exact and independent of yfinance's interpretation. "max" is still a native Yahoo period
+# (the full history Yahoo has for the symbol).
+#
+# cache_ttl_seconds is intentionally tiered: short for intraday/short-term ranges so the
+# chart never shows a stale "latest" candle while the market is moving, and much longer for
+# multi-year/max ranges whose bars (weekly/monthly) are effectively static within a session.
 RANGE_CONFIG: dict[str, dict] = {
-    "1d": {"period": "1d", "bar_interval": "5m"},
-    "5d": {"period": "5d", "bar_interval": "15m"},
-    "1wk": {"days": 7, "bar_interval": "30m"},
-    "2wk": {"days": 14, "bar_interval": "1h"},
-    "1mo": {"period": "1mo", "bar_interval": "1d"},
-    "3mo": {"period": "3mo", "bar_interval": "1d"},
-    "6mo": {"period": "6mo", "bar_interval": "1d"},
-    "ytd": {"period": "ytd", "bar_interval": "1d"},
-    "1y": {"period": "1y", "bar_interval": "1d"},
-    "2y": {"period": "2y", "bar_interval": "1wk"},
-    "5y": {"period": "5y", "bar_interval": "1wk"},
-    "max": {"period": "max", "bar_interval": "1mo"},
+    "1d": {"period": "1d", "bar_interval": "5m", "cache_ttl_seconds": 15},
+    "5d": {"period": "5d", "bar_interval": "15m", "cache_ttl_seconds": 15},
+    "1wk": {"days": 7, "bar_interval": "30m", "cache_ttl_seconds": 60},
+    "2wk": {"days": 14, "bar_interval": "1h", "cache_ttl_seconds": 60},
+    "1mo": {"period": "1mo", "bar_interval": "1d", "cache_ttl_seconds": 120},
+    "3mo": {"period": "3mo", "bar_interval": "1d", "cache_ttl_seconds": 120},
+    "6mo": {"period": "6mo", "bar_interval": "1d", "cache_ttl_seconds": 120},
+    "ytd": {"ytd": True, "bar_interval": "1d", "cache_ttl_seconds": 120},
+    "1y": {"period": "1y", "bar_interval": "1d", "cache_ttl_seconds": 120},
+    "2y": {"period": "2y", "bar_interval": "1wk", "cache_ttl_seconds": 900},
+    "5y": {"period": "5y", "bar_interval": "1wk", "cache_ttl_seconds": 900},
+    "max": {"period": "max", "bar_interval": "1mo", "cache_ttl_seconds": 3600},
 }
 DEFAULT_RANGE = "1d"
 
@@ -126,8 +132,12 @@ def get_quotes_batch(symbols: list[str]) -> dict[str, PriceQuote | Exception]:
     return results
 
 
-def get_candles(symbol: str, interval: str = DEFAULT_RANGE) -> CandleSeries:
-    range_key = interval if interval in RANGE_CONFIG else DEFAULT_RANGE
+def get_candles(symbol: str, range_key: str = DEFAULT_RANGE) -> CandleSeries:
+    if range_key not in RANGE_CONFIG:
+        raise ValidationError(
+            f"'{range_key}' is not a supported chart range.",
+            detail=f"Supported ranges: {', '.join(RANGE_CONFIG)}.",
+        )
     config = RANGE_CONFIG[range_key]
     bar_interval = config["bar_interval"]
 
@@ -137,12 +147,32 @@ def get_candles(symbol: str, interval: str = DEFAULT_RANGE) -> CandleSeries:
             end = datetime.now(timezone.utc)
             start = end - timedelta(days=config["days"])
             df = provider.get_history(symbol, interval=bar_interval, start=start, end=end)
+        elif config.get("ytd"):
+            end = datetime.now(timezone.utc)
+            start = datetime(end.year, 1, 1, tzinfo=timezone.utc)
+            df = provider.get_history(symbol, interval=bar_interval, start=start, end=end)
         else:
             df = provider.get_history(symbol, period=config["period"], interval=bar_interval)
-        return CandleSeries(symbol=symbol.upper(), interval=range_key, candles=_dataframe_to_candles(df))
+
+        market_status = get_market_status(symbol)
+        # Reuse the quote cache's currency if a quote for this symbol is already warm,
+        # rather than triggering an extra upstream fetch just to learn the currency.
+        cached_quote = cache.get(f"quote:{symbol.upper()}")
+        currency = cached_quote.currency if isinstance(cached_quote, PriceQuote) else "USD"
+
+        return CandleSeries(
+            symbol=symbol.upper(),
+            range=range_key,
+            interval=bar_interval,
+            currency=currency,
+            market_status=market_status.session,
+            is_market_open=market_status.is_open,
+            last_updated=datetime.now(timezone.utc).isoformat(),
+            candles=_dataframe_to_candles(df),
+        )
 
     key = f"candles:{symbol.upper()}:{range_key}"
-    return cache.get_or_set(key, settings.candle_cache_ttl_seconds, _fetch)
+    return cache.get_or_set(key, config["cache_ttl_seconds"], _fetch)
 
 
 def get_history_df(symbol: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:

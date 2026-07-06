@@ -27,5 +27,8 @@ def get_quote(symbol: str):
 
 
 @router.get("/{symbol}/candles", response_model=CandleSeries)
-def get_candles(symbol: str, interval: str = "1d"):
-    return price_service.get_candles(symbol, interval=interval)
+def get_candles(
+    symbol: str,
+    range_: str = Query("1d", alias="range", description="Chart time range, e.g. 1d, 5d, 1wk, 1mo, ytd, max"),
+):
+    return price_service.get_candles(symbol, range_key=range_)

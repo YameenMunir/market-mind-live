@@ -21,6 +21,13 @@ class AssetSearchResult(BaseModel):
     exchange: str
 
 
+class MarketSession(str, Enum):
+    OPEN = "open"
+    CLOSED = "closed"
+    PRE_MARKET = "pre_market"
+    AFTER_HOURS = "after_hours"
+
+
 class PriceQuote(BaseModel):
     symbol: str
     price: float
@@ -46,7 +53,17 @@ class Candle(BaseModel):
 
 class CandleSeries(BaseModel):
     symbol: str
+    # The requested chart filter (e.g. "1d", "5d", ..., "max") - see
+    # services/price_service.py: RANGE_CONFIG for the full set and what each maps to.
+    range: str
+    # The actual bar/candle resolution used to satisfy that range (e.g. "5m", "1d", "1wk").
     interval: str
+    currency: str = "USD"
+    market_status: MarketSession
+    is_market_open: bool
+    # UTC ISO timestamp of when this series was fetched from the provider (not merely
+    # serialized) - unchanged across cache hits, so it reflects true data freshness.
+    last_updated: str
     candles: list[Candle]
 
 
@@ -56,13 +73,6 @@ class FxRates(BaseModel):
     # rates["USD"] is always 1.0.
     rates: dict[str, float]
     as_of: str
-
-
-class MarketSession(str, Enum):
-    OPEN = "open"
-    CLOSED = "closed"
-    PRE_MARKET = "pre_market"
-    AFTER_HOURS = "after_hours"
 
 
 class MarketStatus(BaseModel):

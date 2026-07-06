@@ -11,9 +11,10 @@ import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { LiveCandlestickChart, type LiveCandlestickChartHandle } from "@/charts/LiveCandlestickChart";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
+import { LastUpdated } from "@/components/LastUpdated";
 import { CHART_RANGES } from "@/lib/constants";
 import { cn, formatPercent, formatPrice } from "@/lib/utils";
-import type { CandleSeries, MarketStatus, PredictionResult, PriceForecast, PriceQuote } from "@/types";
+import type { ApiError, CandleSeries, MarketStatus, PredictionResult, PriceForecast, PriceQuote } from "@/types";
 
 const SESSION_META = {
   open: { label: "Market Open", icon: Activity, dot: "bg-bull" },
@@ -27,8 +28,8 @@ interface FullscreenChartModalProps {
   onClose: () => void;
   symbol: string;
   assetName?: string | null;
-  interval: string;
-  onIntervalChange: (value: string) => void;
+  range: string;
+  onRangeChange: (value: string) => void;
   showMA: boolean;
   onToggleMA: (value: boolean) => void;
   showBB: boolean;
@@ -41,6 +42,7 @@ interface FullscreenChartModalProps {
   isLoadingForecast: boolean;
   candles: CandleSeries | null;
   isLoadingCandles: boolean;
+  candlesError?: ApiError | null;
   quote: PriceQuote | null;
   marketStatus: MarketStatus | null;
   supportLevels: number[];
@@ -54,8 +56,8 @@ export function FullscreenChartModal({
   onClose,
   symbol,
   assetName,
-  interval,
-  onIntervalChange,
+  range,
+  onRangeChange,
   showMA,
   onToggleMA,
   showBB,
@@ -68,6 +70,7 @@ export function FullscreenChartModal({
   isLoadingForecast,
   candles,
   isLoadingCandles,
+  candlesError,
   quote,
   marketStatus,
   supportLevels,
@@ -137,7 +140,7 @@ export function FullscreenChartModal({
     if (!dataUrl) return;
     const link = document.createElement("a");
     link.href = dataUrl;
-    link.download = `${symbol}-${interval}-chart.png`;
+    link.download = `${symbol}-${range}-chart.png`;
     link.click();
   };
 
@@ -168,7 +171,7 @@ export function FullscreenChartModal({
                 <h2 className="mt-0.5 text-lg font-semibold text-ink">
                   {assetName ? `${assetName} · ${symbol}` : symbol}
                   <span className="ml-2 text-sm font-medium text-ink-faint">
-                    {CHART_RANGES.find((r) => r.value === interval)?.label}
+                    {CHART_RANGES.find((r) => r.value === range)?.label}
                   </span>
                 </h2>
               </div>
@@ -202,7 +205,7 @@ export function FullscreenChartModal({
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-4 border-b border-border px-4 py-3 sm:px-6">
-            <TimeframeSelector value={interval} onChange={onIntervalChange} />
+            <TimeframeSelector value={range} onChange={onRangeChange} />
             <ChartOverlayToggles showMA={showMA} onToggleMA={onToggleMA} showBB={showBB} onToggleBB={onToggleBB} />
             <PricePredictorControls
               enabled={showPricePredictor}
@@ -210,7 +213,8 @@ export function FullscreenChartModal({
               horizonDays={horizonDays}
               onHorizonChange={onHorizonChange}
             />
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-3">
+              {candles && !isLoadingCandles && <LastUpdated updatedAt={candles.last_updated} />}
               <Button variant="secondary" size="sm" onClick={() => chartHandleRef.current?.fitContent()}>
                 <RotateCcw size={13} />
                 Reset zoom
@@ -223,6 +227,9 @@ export function FullscreenChartModal({
           </div>
 
           <div className="min-h-0 flex-1 p-4 sm:p-6">
+            {candlesError && (
+              <StatusBanner message={candlesError.message} tone="warning" icon="warning" className="mb-3" />
+            )}
             {showPricePredictor && isLoadingForecast && !forecast && (
               <StatusBanner message="Generating price forecast..." tone="muted" icon="loading" className="mb-3" />
             )}
@@ -230,7 +237,7 @@ export function FullscreenChartModal({
               <LiveCandlestickChart
                 ref={chartHandleRef}
                 candles={convertedCandles.candles}
-                livePrice={interval === "1d" ? convert(quote?.price ?? null, nativeCurrency) : null}
+                livePrice={range === "1d" ? convert(quote?.price ?? null, nativeCurrency) : null}
                 supportLevels={convertedSupport}
                 resistanceLevels={convertedResistance}
                 prediction={prediction}

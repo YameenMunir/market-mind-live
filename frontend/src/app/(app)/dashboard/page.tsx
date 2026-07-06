@@ -18,6 +18,7 @@ import { DashboardViewMenu } from "@/components/DashboardViewMenu";
 import { ExplanationPanel } from "@/components/ExplanationPanel";
 import { FullscreenChartModal } from "@/components/FullscreenChartModal";
 import { IndicatorPanel } from "@/components/IndicatorPanel";
+import { LastUpdated } from "@/components/LastUpdated";
 import { MarketStatusCard } from "@/components/MarketStatusCard";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { Panel } from "@/components/Panel";
@@ -50,7 +51,7 @@ export default function DashboardPage() {
   const [symbol, setSymbol] = useState(prefs.defaultSymbol);
   const [assetType, setAssetType] = useState<AssetType | null>(null);
   const [assetName, setAssetName] = useState<string | null>(null);
-  const [interval, setInterval_] = useState("1d");
+  const [range, setRange] = useState("1d");
   const [showMA, setShowMA] = useState(prefs.showMovingAverages);
   const [showBB, setShowBB] = useState(prefs.showBollinger);
   const [showPricePredictor, setShowPricePredictor] = useState(prefs.showPricePredictor);
@@ -77,7 +78,7 @@ export default function DashboardPage() {
   };
 
   const snapshot = useLiveSnapshot(symbol);
-  const candles = useCandles(symbol, interval);
+  const candles = useCandles(symbol, range);
   const forecast = usePriceForecast(symbol, horizonDays, showPricePredictor);
   const alertsState = useAlerts(symbol);
   const analyst = useAnalystConsensus(symbol);
@@ -192,10 +193,10 @@ export default function DashboardPage() {
             className="xl:col-span-8"
             dataTour="live-chart"
             eyebrow="Live Chart"
-            title={`${symbol} · ${CHART_RANGES.find((r) => r.value === interval)?.label}`}
+            title={`${symbol} · ${CHART_RANGES.find((r) => r.value === range)?.label}`}
             action={
               <div className="flex flex-wrap items-center gap-3">
-                <TimeframeSelector value={interval} onChange={setInterval_} />
+                <TimeframeSelector value={range} onChange={setRange} />
                 <Button
                   variant="secondary"
                   size="icon"
@@ -216,10 +217,16 @@ export default function DashboardPage() {
                 horizonDays={horizonDays}
                 onHorizonChange={handleHorizonChange}
               />
-              {candles.isLoading && !candles.data && (
-                <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" className="ml-auto" />
-              )}
+              <div className="ml-auto flex items-center gap-3">
+                {candles.isLoading && !candles.data && (
+                  <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" />
+                )}
+                {!candles.isLoading && candles.data && <LastUpdated updatedAt={candles.data.last_updated} />}
+              </div>
             </div>
+            {candles.error && (
+              <StatusBanner message={candles.error.message} tone="warning" icon="warning" className="mb-3" />
+            )}
             {showPricePredictor && forecast.isLoading && !forecast.data && (
               <StatusBanner message="Generating price forecast..." tone="muted" icon="loading" className="mb-3" />
             )}
@@ -230,7 +237,7 @@ export default function DashboardPage() {
               {convertedCandles && convertedCandles.candles.length > 0 ? (
                 <LiveCandlestickChart
                   candles={convertedCandles.candles}
-                  livePrice={interval === "1d" ? convert(snapshot.quote?.price ?? null, nativeCurrency) : null}
+                  livePrice={range === "1d" ? convert(snapshot.quote?.price ?? null, nativeCurrency) : null}
                   supportLevels={convertedSupport}
                   resistanceLevels={convertedResistance}
                   prediction={snapshot.prediction}
@@ -283,8 +290,8 @@ export default function DashboardPage() {
         onClose={() => setIsChartFullscreen(false)}
         symbol={symbol}
         assetName={assetName}
-        interval={interval}
-        onIntervalChange={setInterval_}
+        range={range}
+        onRangeChange={setRange}
         showMA={showMA}
         onToggleMA={setShowMA}
         showBB={showBB}
@@ -297,6 +304,7 @@ export default function DashboardPage() {
         isLoadingForecast={forecast.isLoading}
         candles={candles.data ?? null}
         isLoadingCandles={candles.isLoading}
+        candlesError={candles.error}
         quote={snapshot.quote}
         marketStatus={snapshot.marketStatus}
         supportLevels={snapshot.indicators?.support_resistance.support ?? []}
