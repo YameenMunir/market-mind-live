@@ -237,6 +237,7 @@ export function FullscreenChartModal({
               <LiveCandlestickChart
                 ref={chartHandleRef}
                 candles={convertedCandles.candles}
+                range={range}
                 livePrice={range === "1d" ? convert(quote?.price ?? null, nativeCurrency) : null}
                 supportLevels={convertedSupport}
                 resistanceLevels={convertedResistance}

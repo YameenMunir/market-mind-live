@@ -237,6 +237,7 @@ export default function DashboardPage() {
               {convertedCandles && convertedCandles.candles.length > 0 ? (
                 <LiveCandlestickChart
                   candles={convertedCandles.candles}
+                  range={range}
                   livePrice={range === "1d" ? convert(snapshot.quote?.price ?? null, nativeCurrency) : null}
                   supportLevels={convertedSupport}
                   resistanceLevels={convertedResistance}

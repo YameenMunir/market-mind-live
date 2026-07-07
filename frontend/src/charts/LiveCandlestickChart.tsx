@@ -17,6 +17,9 @@ import type { Candle, ForecastPoint, PredictionResult, PriceForecast } from "@/t
 
 interface LiveCandlestickChartProps {
   candles: Candle[];
+  /** Chart range key (e.g. "1d", "max") the current `candles` belong to - drives when
+   * the visible viewport re-fits to the data (see `lastFittedRangeRef` below). */
+  range: string;
   /** Latest live quote price - when set, ticks the last bar's close/high/low in place
    * via `series.update()` between full candle refreshes, so the chart visibly tracks
    * the live price without a full redraw (no reset zoom/pan, no flicker). */
@@ -78,6 +81,7 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
   function LiveCandlestickChart(
     {
       candles,
+      range,
       livePrice,
       supportLevels,
       resistanceLevels,
@@ -104,7 +108,11 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
   const forecastLowerRef = useRef<ISeriesApi<"Line"> | null>(null);
   const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
   const lastBaseCandleRef = useRef<{ time: Time; open: number; high: number; low: number } | null>(null);
-  const hasFitContentRef = useRef(false);
+  // Tracks which range's data the viewport was last fit to - re-fits whenever `range`
+  // changes (a fresh timeframe, e.g. switching to MAX, needs a fresh zoom) but not on a
+  // same-range polling refresh (which should preserve the user's zoom/pan). `null`
+  // guarantees the very first render always fits, same as the old boolean flag did.
+  const lastFittedRangeRef = useRef<string | null>(null);
   // Maps a forecast point's Unix-seconds date to its full ForecastPoint, so the
   // crosshair-move handler (registered once, on mount) can look up hover details without
   // needing to be re-subscribed every time the `forecast` prop changes.
@@ -191,7 +199,7 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
     forecastLineRef.current = forecastLine;
     forecastUpperRef.current = forecastUpper;
     forecastLowerRef.current = forecastLower;
-    hasFitContentRef.current = false;
+    lastFittedRangeRef.current = null;
     setIsReady(true);
 
     // Custom hover tooltip for forecast points - this chart has no other crosshair-move
@@ -360,15 +368,18 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
       forecastLowerRef.current?.setData([]);
     }
 
-    // Only fit the visible range on the first load - refitting on every subsequent
-    // refresh would reset any zoom/pan the user has done, which reads as a jarring
-    // "jump" rather than a smooth live update.
-    if (!hasFitContentRef.current) {
+    // Fit the visible range whenever the *range* changes (a fresh timeframe - e.g. just
+    // switched to MAX - has an entirely different data span, so the old viewport is
+    // meaningless). Same-range refreshes (polling, toggling overlays, live ticks) keep
+    // whatever zoom/pan the user has set, which would otherwise jump jarringly on every
+    // update.
+    if (lastFittedRangeRef.current !== range) {
       chartRef.current?.timeScale().fitContent();
-      hasFitContentRef.current = true;
+      lastFittedRangeRef.current = range;
     }
   }, [
     candles,
+    range,
     isReady,
     showMovingAverages,
     showBollinger,
