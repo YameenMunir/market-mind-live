@@ -69,7 +69,7 @@ export function DashboardViewMenu({
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} data-tour="view-menu" className="relative">
       <Button
         variant="secondary"
         size="md"
