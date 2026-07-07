@@ -1,24 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Compass, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, Compass, Gauge, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
 import { cn } from "@/lib/utils";
+import type { ExperienceMode } from "@/types";
 
 interface DashboardViewMenuProps {
   isFullscreen: boolean;
   onEnterFullscreen: () => void;
   onExitFullscreen: () => void;
   onRestartTour: () => void;
+  experienceMode: ExperienceMode;
+  onToggleExperienceMode: () => void;
 }
 
-/** A small "View" dropdown in the dashboard toolbar with Fullscreen Dashboard and
- * Hide/Show Sidebar options. Once fullscreen is active, the dropdown is replaced by
- * a standalone Exit Fullscreen button - always visible, no need to reopen a menu to
- * find the way out. */
-export function DashboardViewMenu({ isFullscreen, onEnterFullscreen, onExitFullscreen, onRestartTour }: DashboardViewMenuProps) {
+/** A small "View" dropdown in the dashboard toolbar with Fullscreen Dashboard,
+ * Hide/Show Sidebar, Simple/Advanced mode, and Take the Tour options. Once fullscreen
+ * is active, the dropdown is replaced by a standalone Exit Fullscreen button - always
+ * visible, no need to reopen a menu to find the way out. */
+export function DashboardViewMenu({
+  isFullscreen,
+  onEnterFullscreen,
+  onExitFullscreen,
+  onRestartTour,
+  experienceMode,
+  onToggleExperienceMode,
+}: DashboardViewMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { isCollapsed: isSidebarCollapsed, toggle: toggleSidebar } = useSidebarCollapse();
@@ -108,6 +118,17 @@ export function DashboardViewMenu({ isFullscreen, onEnterFullscreen, onExitFulls
                 <PanelLeftClose size={15} aria-hidden />
               )}
               {isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
+            </button>
+            <button
+              role="menuitem"
+              onClick={() => {
+                onToggleExperienceMode();
+                setIsOpen(false);
+              }}
+              className="flex min-h-[44px] w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-ink-muted transition-colors hover:bg-surface hover:text-ink"
+            >
+              {experienceMode === "advanced" ? <Sparkles size={15} aria-hidden /> : <Gauge size={15} aria-hidden />}
+              {experienceMode === "advanced" ? "Switch to Simple View" : "Switch to Advanced View"}
             </button>
             <button
               role="menuitem"

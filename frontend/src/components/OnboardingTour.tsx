@@ -62,7 +62,12 @@ export function OnboardingTour({ tour }: OnboardingTourProps) {
     }
     const target = document.querySelector(step.selector);
     if (!target) {
+      // This step's target isn't currently rendered (e.g. the indicator panel is
+      // hidden in Simple mode) - skip forward instead of leaving the tour stuck with
+      // nothing visible to click. `next()` on the last step ends the tour, so this
+      // can't loop forever even if every remaining target were missing.
       setRect(null);
+      next();
       return;
     }
 
@@ -86,7 +91,7 @@ export function OnboardingTour({ tour }: OnboardingTourProps) {
       window.removeEventListener("scroll", updateRect, true);
       window.removeEventListener("resize", updateRect);
     };
-  }, [isActive, step]);
+  }, [isActive, step, next]);
 
   useEffect(() => {
     if (!isActive) return;

@@ -22,6 +22,8 @@ from api import (
     risk,
     ws,
 )
+# Aliased - `settings` at module scope below is the app's Settings instance, not this router module.
+from api import settings as settings_router
 from config import get_settings
 from db.migrate import run_migrations
 from db.session import engine
@@ -99,6 +101,7 @@ app.include_router(alerts.router)
 app.include_router(fx.router)
 app.include_router(analysts.router)
 app.include_router(knowledge.router)
+app.include_router(settings_router.router)
 app.include_router(debug.router)
 app.include_router(ws.router)
 

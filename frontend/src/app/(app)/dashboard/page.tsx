@@ -40,8 +40,10 @@ import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { usePriceForecast } from "@/hooks/usePriceForecast";
 import { useTheme } from "@/hooks/useTheme";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import { buildAssetContext } from "@/lib/aiContext";
 import { CHART_RANGES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import type { AssetSearchResult, AssetType, PriceForecast } from "@/types";
 
 export default function DashboardPage() {
@@ -63,6 +65,8 @@ export default function DashboardPage() {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const { isFullscreen, enter: enterFullscreen, exit: exitFullscreen } = useFullscreenToggle(dashboardRef);
   const onboardingTour = useOnboardingTour();
+  const { experienceMode, setExperienceMode } = useUserSettings();
+  const isAdvanced = experienceMode === "advanced";
 
   useEffect(() => {
     setSymbol(prefs.defaultSymbol);
@@ -149,6 +153,8 @@ export default function DashboardPage() {
               onEnterFullscreen={enterFullscreen}
               onExitFullscreen={exitFullscreen}
               onRestartTour={onboardingTour.restart}
+              experienceMode={experienceMode}
+              onToggleExperienceMode={() => setExperienceMode(isAdvanced ? "simple" : "advanced")}
             />
           </div>
         }
@@ -158,19 +164,27 @@ export default function DashboardPage() {
       <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">
         {snapshot.errorMessage && <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />}
 
-        <div data-tour="stat-cards" className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+        <div
+          data-tour="stat-cards"
+          className={cn(
+            "grid grid-cols-1 gap-4 sm:grid-cols-2",
+            isAdvanced ? "md:grid-cols-3 xl:grid-cols-5" : "md:grid-cols-2"
+          )}
+        >
           <PriceCard
             quote={snapshot.quote}
             symbol={symbol}
             isLive={snapshot.connectionState === "live"}
             isStale={snapshot.isStale}
           />
-          <MarketStatusCard
-            status={snapshot.marketStatus}
-            updatedAt={snapshot.marketStatusUpdatedAt}
-            isLive={snapshot.connectionState === "live"}
-            isStale={snapshot.isStale}
-          />
+          {isAdvanced && (
+            <MarketStatusCard
+              status={snapshot.marketStatus}
+              updatedAt={snapshot.marketStatusUpdatedAt}
+              isLive={snapshot.connectionState === "live"}
+              isStale={snapshot.isStale}
+            />
+          )}
           <PredictionCard
             prediction={snapshot.prediction}
             isLoading={!snapshot.prediction}
@@ -179,18 +193,22 @@ export default function DashboardPage() {
             isStale={snapshot.isStale}
             nativeCurrency={nativeCurrency}
           />
-          <AnalystConsensusCard consensus={analyst.data} isLoading={analyst.isLoading} symbol={symbol} />
-          <RiskCard
-            risk={snapshot.risk}
-            updatedAt={snapshot.riskUpdatedAt}
-            isLive={snapshot.connectionState === "live"}
-            isStale={snapshot.isStale}
-          />
+          {isAdvanced && (
+            <>
+              <AnalystConsensusCard consensus={analyst.data} isLoading={analyst.isLoading} symbol={symbol} />
+              <RiskCard
+                risk={snapshot.risk}
+                updatedAt={snapshot.riskUpdatedAt}
+                isLive={snapshot.connectionState === "live"}
+                isStale={snapshot.isStale}
+              />
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <Panel
-            className="xl:col-span-8"
+            className={isAdvanced ? "xl:col-span-8" : "xl:col-span-12"}
             dataTour="live-chart"
             eyebrow="Live Chart"
             title={`${symbol} · ${CHART_RANGES.find((r) => r.value === range)?.label}`}
@@ -268,21 +286,23 @@ export default function DashboardPage() {
             </div>
           </Panel>
 
-          <div data-tour="indicator-panel" className="xl:col-span-4">
-            <IndicatorPanel
-              indicators={snapshot.indicators}
-              price={snapshot.quote?.price ?? null}
-              updatedAt={snapshot.indicatorsUpdatedAt}
-              isLive={snapshot.connectionState === "live"}
-              isStale={snapshot.isStale}
-              nativeCurrency={nativeCurrency}
-            />
-          </div>
+          {isAdvanced && (
+            <div data-tour="indicator-panel" className="xl:col-span-4">
+              <IndicatorPanel
+                indicators={snapshot.indicators}
+                price={snapshot.quote?.price ?? null}
+                updatedAt={snapshot.indicatorsUpdatedAt}
+                isLive={snapshot.connectionState === "live"}
+                isStale={snapshot.isStale}
+                nativeCurrency={nativeCurrency}
+              />
+            </div>
+          )}
         </div>
 
-        <div data-tour="beginner-explanation" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div data-tour="beginner-explanation" className={cn("grid grid-cols-1 gap-4", isAdvanced && "lg:grid-cols-2")}>
           <BeginnerSummary prediction={snapshot.prediction} />
-          <ExplanationPanel prediction={snapshot.prediction} />
+          {isAdvanced && <ExplanationPanel prediction={snapshot.prediction} />}
         </div>
       </main>
 

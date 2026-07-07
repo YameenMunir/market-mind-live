@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -487,3 +488,11 @@ class KnowledgeArticle(BaseModel):
     id: str
     title: str
     body: str
+
+
+class UserSettings(BaseModel):
+    """Device-scoped dashboard preferences (see db/models.py: UserSettingsRecord).
+    "simple" collapses the dashboard to price/prediction/chart/beginner-summary only;
+    "advanced" (the default) shows everything, unchanged from before this setting existed."""
+
+    experience_mode: Literal["simple", "advanced"] = "advanced"

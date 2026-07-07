@@ -8,6 +8,7 @@ import { Toggle } from "@/components/Toggle";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
 import { useTheme } from "@/hooks/useTheme";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import { API_BASE_URL, INDICATOR_POLL_MS, QUOTE_POLL_FALLBACK_MS, SUPPORTED_CURRENCIES, WS_BASE_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -15,9 +16,41 @@ export function SettingsPanel() {
   const { theme, setTheme } = useTheme();
   const { prefs, updatePrefs } = useChartPreferences();
   const { currency, setCurrency } = useCurrencyContext();
+  const { experienceMode, setExperienceMode } = useUserSettings();
 
   return (
     <div className="flex flex-col gap-5">
+      <Panel eyebrow="Dashboard" title="Experience level">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Experience level">
+          <button
+            onClick={() => setExperienceMode("simple")}
+            aria-pressed={experienceMode === "simple"}
+            className={cn(
+              "flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors",
+              experienceMode === "simple"
+                ? "border-brand bg-brand/10 text-ink"
+                : "border-border text-ink-muted hover:border-ink-faint/40 hover:text-ink"
+            )}
+          >
+            <span className="text-sm font-medium">Simple</span>
+            <span className="text-xs text-ink-faint">Price, prediction, chart, and a one-line summary only.</span>
+          </button>
+          <button
+            onClick={() => setExperienceMode("advanced")}
+            aria-pressed={experienceMode === "advanced"}
+            className={cn(
+              "flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors",
+              experienceMode === "advanced"
+                ? "border-brand bg-brand/10 text-ink"
+                : "border-border text-ink-muted hover:border-ink-faint/40 hover:text-ink"
+            )}
+          >
+            <span className="text-sm font-medium">Advanced</span>
+            <span className="text-xs text-ink-faint">Full dashboard: indicators, risk, analyst consensus, and more.</span>
+          </button>
+        </div>
+      </Panel>
+
       <Panel eyebrow="Appearance" title="Theme">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Theme">
           <button

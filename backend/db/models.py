@@ -79,6 +79,13 @@ class ChatFeedbackRecord(SQLModel, table=True):
     created_at: str = Field(default_factory=_now_iso)
 
 
+class UserSettingsRecord(SQLModel, table=True):
+    __tablename__ = "usersettingsrecord"
+
+    device_id: str = Field(primary_key=True, foreign_key="device.id")
+    experience_mode: str = Field(default="advanced")
+
+
 class PredictionHistoryRecord(SQLModel, table=True):
     """Global engine-performance data, not per-device - a prediction's accuracy
     doesn't depend on who was looking at the dashboard when it was made."""

@@ -33,6 +33,7 @@ import type {
   SessionListResponse,
   SummariseRequest,
   SummariseResponse,
+  UserSettings,
 } from "@/types";
 import { ApiError } from "@/types";
 
@@ -117,4 +118,7 @@ export const api = {
   getFxRates: () => request<FxRates>(`/api/fx/rates`),
   getAnalystConsensus: (symbol: string) => request<AnalystConsensus>(`/api/analysts/${encodeURIComponent(symbol)}`),
   getKnowledgeArticles: () => request<KnowledgeArticle[]>(`/api/knowledge/articles`),
+  getUserSettings: () => request<UserSettings>(`/api/settings`),
+  updateUserSettings: (body: UserSettings) =>
+    request<UserSettings>(`/api/settings`, { method: "PUT", body: JSON.stringify(body) }),
 };

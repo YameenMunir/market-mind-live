@@ -434,3 +434,9 @@ export interface KnowledgeArticle {
   title: string;
   body: string;
 }
+
+export type ExperienceMode = "simple" | "advanced";
+
+export interface UserSettings {
+  experience_mode: ExperienceMode;
+}
