@@ -14,6 +14,7 @@ from yfinance.exceptions import YFRateLimitError
 
 from config import get_settings
 from data.provider import MarketDataProvider
+from utils.cache import cache
 from utils.errors import InvalidSymbolError, NetworkError, RateLimitedError
 
 logger = logging.getLogger(__name__)
@@ -143,7 +144,7 @@ class YFinanceProvider(MarketDataProvider):
             ) from exc
 
         if last_price is None or previous_close is None:
-            history = self._safe_history(symbol, period="5d", interval="1d")
+            history = self._cached_quote_fallback_history(symbol)
             if history.empty:
                 raise InvalidSymbolError(f"No market data available for '{symbol}'.")
             last_row = history.iloc[-1]
@@ -219,6 +220,20 @@ class YFinanceProvider(MarketDataProvider):
             "price_target_median": targets.get("median"),
             **counts,
         }
+
+    def _cached_quote_fallback_history(self, symbol: str) -> pd.DataFrame:
+        """`get_quote`'s fallback when `fast_info` omits price/previous_close (happens for
+        some thinly-traded or international symbols) - calling `_safe_history` directly
+        here would bypass `price_service`'s caching layer entirely, since this method lives
+        below it in the provider, so a symbol that habitually needs this fallback would
+        otherwise trigger a fresh, uncached Yahoo call on every quote poll (every ~10s while
+        actively watched). Cached here at the same short TTL as a quote closes that gap.
+        """
+        settings = get_settings()
+        key = f"quote_fallback_history:{symbol.upper()}"
+        return cache.get_or_set(
+            key, settings.quote_cache_ttl_seconds, lambda: self._safe_history(symbol, period="5d", interval="1d")
+        )
 
     def _safe_history(
         self,
