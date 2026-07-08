@@ -1,14 +1,15 @@
-import { Minus, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { Clock, Minus, TrendingDown, TrendingUp, Users } from "lucide-react";
 
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { cn, formatPrice } from "@/lib/utils";
-import type { AnalystConsensus, AnalystRating } from "@/types";
+import type { AnalystConsensus, AnalystRating, ApiError } from "@/types";
 
 interface AnalystConsensusCardProps {
   consensus: AnalystConsensus | null;
   isLoading?: boolean;
+  error?: ApiError | null;
   symbol: string;
 }
 
@@ -21,7 +22,7 @@ const RATING_META: Record<AnalystRating, { label: string; icon: typeof TrendingU
   not_covered: { label: "Not Covered", icon: Minus, color: "text-ink-faint" },
 };
 
-export function AnalystConsensusCard({ consensus, isLoading, symbol }: AnalystConsensusCardProps) {
+export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: AnalystConsensusCardProps) {
   const { currency, convert } = useCurrencyContext();
   const meta = consensus ? RATING_META[consensus.rating] : null;
   const Icon = meta?.icon ?? Minus;
@@ -39,7 +40,19 @@ export function AnalystConsensusCard({ consensus, isLoading, symbol }: AnalystCo
       title={meta ? meta.label : isLoading ? "Loading..." : "--"}
       className="flex h-full flex-col"
     >
-      {!consensus && isLoading ? (
+      {!consensus && error ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-6 text-center">
+          <Clock size={18} className="text-ink-faint" aria-hidden />
+          <p className="text-xs font-medium text-ink-muted">
+            {error.errorCode === "rate_limited" ? "Temporarily rate-limited" : "Couldn't load analyst data"}
+          </p>
+          <p className="text-[11px] leading-relaxed text-ink-faint">
+            {error.errorCode === "rate_limited"
+              ? "The market data provider is busy right now - this will retry automatically."
+              : error.message}
+          </p>
+        </div>
+      ) : !consensus && isLoading ? (
         <div aria-hidden className="animate-pulse">
           <div className="h-5 w-24 rounded bg-surface-raised" />
           <div className="mt-3 h-1.5 w-full rounded-full bg-surface-raised" />

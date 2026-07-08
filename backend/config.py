@@ -48,8 +48,12 @@ class Settings(BaseSettings):
 
     # When Yahoo itself returns a rate-limit response, every symbol's poller backs off
     # together for this long (see data/yfinance_provider.py's cooldown) instead of each
-    # independently retrying into a still-active limit.
+    # independently retrying into a still-active limit. Repeated hits escalate this
+    # cooldown (doubling each time, up to the max below) rather than reapplying the same
+    # fixed window, since a real Yahoo-side ban often outlasts one short cooldown - the
+    # streak resets after a call actually succeeds.
     provider_rate_limit_cooldown_seconds: float = 15.0
+    provider_rate_limit_cooldown_max_seconds: float = 120.0
 
     # AI Insights Assistant (Gemini). If gemini_api_key is unset, the assistant falls back
     # to a deterministic mock provider so the feature still works in local development.
@@ -77,7 +81,14 @@ class Settings(BaseSettings):
     hub_quote_interval_extended_seconds: float = 5.0
     hub_quote_interval_closed_seconds: float = 60.0
     hub_indicator_interval_seconds: float = 30.0
-    hub_idle_shutdown_seconds: float = 45.0
+    # Kept short deliberately: a symbol's poller keeps hitting the provider at its normal
+    # cadence for this long after the last viewer navigates away (e.g. switches to a
+    # different stock), so a large value here directly multiplies provider load from users
+    # browsing between several symbols in quick succession - a major contributor to
+    # rate-limiting under normal "switch stocks a few times" usage. Short enough to cut
+    # off abandoned symbols quickly, still long enough to avoid a full cold-restart if the
+    # user flips back to the same symbol within a few seconds.
+    hub_idle_shutdown_seconds: float = 12.0
     hub_error_backoff_max_seconds: float = 30.0
 
     # Price Predictor forecast (services/prediction_service.py). A daily-bar-derived

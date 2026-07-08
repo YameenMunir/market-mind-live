@@ -48,7 +48,7 @@ RANGE_CONFIG: dict[str, dict] = {
 DEFAULT_RANGE = "1d"
 
 
-def _check_rate_limit(symbol: str) -> None:
+def check_rate_limit(symbol: str) -> None:
     if not _global_rate_limiter.check(_GLOBAL_KEY):
         raise RateLimitedError(
             "Too many requests across all symbols in a short period.",
@@ -81,7 +81,7 @@ def _quote_from_raw(symbol: str, raw: dict) -> PriceQuote:
 
 def get_quote(symbol: str) -> PriceQuote:
     def _fetch() -> PriceQuote:
-        _check_rate_limit(symbol)
+        check_rate_limit(symbol)
         raw = provider.get_quote(symbol)
         return _quote_from_raw(symbol, raw)
 
@@ -142,7 +142,7 @@ def get_candles(symbol: str, range_key: str = DEFAULT_RANGE) -> CandleSeries:
     bar_interval = config["bar_interval"]
 
     def _fetch() -> CandleSeries:
-        _check_rate_limit(symbol)
+        check_rate_limit(symbol)
         if "days" in config:
             end = datetime.now(timezone.utc)
             start = end - timedelta(days=config["days"])
@@ -177,7 +177,7 @@ def get_candles(symbol: str, range_key: str = DEFAULT_RANGE) -> CandleSeries:
 
 def get_history_df(symbol: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
     def _fetch() -> pd.DataFrame:
-        _check_rate_limit(symbol)
+        check_rate_limit(symbol)
         return provider.get_history(symbol, period=period, interval=interval)
 
     # Indicators/predictions/risk/backtest all pull the same recent history for a symbol -

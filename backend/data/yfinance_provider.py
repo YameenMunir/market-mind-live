@@ -25,12 +25,19 @@ T = TypeVar("T")
 _TRANSIENT_EXCEPTIONS = (socket.gaierror, ConnectionError, TimeoutError)
 
 # Yahoo's 429 throttling is IP-wide, not per-symbol - once it's been seen, every symbol's
-# poller should stop hitting the network entirely for a short cooldown window rather than
-# each independently retrying and compounding the problem. Shared across all callers in
-# this process (module-level, not per-request) since it reflects the state of the shared
+# poller should stop hitting the network entirely for a cooldown window rather than each
+# independently retrying and compounding the problem. Shared across all callers in this
+# process (module-level, not per-request) since it reflects the state of the shared
 # upstream connection, not any one symbol.
+#
+# The cooldown escalates on consecutive hits (doubling each time, capped at
+# provider_rate_limit_cooldown_max_seconds) rather than always reapplying the same fixed
+# window - a real Yahoo-side block often outlasts one short cooldown, and retrying right as
+# it expires only trips it again. The streak resets after any call actually succeeds, so a
+# single transient hit doesn't leave the server permanently over-throttled.
 _cooldown_lock = threading.Lock()
 _cooldown_until = 0.0
+_consecutive_rate_limit_hits = 0
 
 
 def _in_cooldown() -> float | None:
@@ -39,10 +46,20 @@ def _in_cooldown() -> float | None:
     return remaining if remaining > 0 else None
 
 
-def _start_cooldown(seconds: float) -> None:
-    global _cooldown_until
+def _start_cooldown(base_seconds: float, max_seconds: float) -> float:
+    global _cooldown_until, _consecutive_rate_limit_hits
     with _cooldown_lock:
-        _cooldown_until = max(_cooldown_until, time.monotonic() + seconds)
+        _consecutive_rate_limit_hits += 1
+        escalated = min(base_seconds * (2 ** (_consecutive_rate_limit_hits - 1)), max_seconds)
+        _cooldown_until = max(_cooldown_until, time.monotonic() + escalated)
+        return escalated
+
+
+def _reset_rate_limit_streak() -> None:
+    global _consecutive_rate_limit_hits
+    if _consecutive_rate_limit_hits:
+        with _cooldown_lock:
+            _consecutive_rate_limit_hits = 0
 
 
 def _call_with_retry(fn: Callable[[], T], *, description: str) -> T:
@@ -70,12 +87,17 @@ def _call_with_retry(fn: Callable[[], T], *, description: str) -> T:
     attempt = 0
     while True:
         try:
-            return fn()
+            result = fn()
+            _reset_rate_limit_streak()
+            return result
         except YFRateLimitError as exc:
-            _start_cooldown(settings.provider_rate_limit_cooldown_seconds)
+            cooldown_seconds = _start_cooldown(
+                settings.provider_rate_limit_cooldown_seconds,
+                settings.provider_rate_limit_cooldown_max_seconds,
+            )
             logger.warning(
                 "%s hit Yahoo's rate limit - cooling down all symbols for %.0fs.",
-                description, settings.provider_rate_limit_cooldown_seconds,
+                description, cooldown_seconds,
             )
             raise RateLimitedError(
                 "Market data provider is rate-limiting this server.", detail=str(exc)

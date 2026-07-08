@@ -195,7 +195,7 @@ export default function DashboardPage() {
           />
           {isAdvanced && (
             <>
-              <AnalystConsensusCard consensus={analyst.data} isLoading={analyst.isLoading} symbol={symbol} />
+              <AnalystConsensusCard consensus={analyst.data} isLoading={analyst.isLoading} error={analyst.error} symbol={symbol} />
               <RiskCard
                 risk={snapshot.risk}
                 updatedAt={snapshot.riskUpdatedAt}

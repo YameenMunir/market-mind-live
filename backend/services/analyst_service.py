@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from config import get_settings
 from data.yfinance_provider import provider
 from models.schemas import AnalystConsensus, AnalystRating
+from services.price_service import check_rate_limit
 from utils.cache import cache
 
 settings = get_settings()
@@ -35,6 +36,7 @@ def _derive_rating(counts: dict[str, int]) -> AnalystRating:
 
 def get_analyst_consensus(symbol: str, currency: str = "USD") -> AnalystConsensus:
     def _fetch() -> AnalystConsensus:
+        check_rate_limit(symbol)
         raw = provider.get_analyst_consensus(symbol)
         counts = {key: raw.get(key, 0) for key in _RATING_WEIGHTS}
 
