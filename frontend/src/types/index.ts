@@ -202,6 +202,7 @@ export interface AnalystConsensus {
   price_target_median: number | null;
   currency: string;
   as_of: string;
+  is_stale: boolean;
 }
 
 export type ErrorCode =

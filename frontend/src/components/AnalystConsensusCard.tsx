@@ -115,7 +115,7 @@ export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: An
       {consensus && !isNotCovered && (
         <div className="mt-auto pt-3">
           <div className="border-t border-border pt-3">
-            <LastUpdated updatedAt={consensus.as_of} />
+            <LastUpdated updatedAt={consensus.as_of} isStale={consensus.is_stale} />
           </div>
         </div>
       )}

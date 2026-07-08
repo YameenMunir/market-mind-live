@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 
 from config import get_settings
 from services.live_hub import hub
+from utils import metrics
 from utils.cache import cache
 
 router = APIRouter(prefix="/api/debug", tags=["debug"])
@@ -22,6 +23,14 @@ def debug_cache():
     _require_development()
     entries = cache.debug_snapshot()
     return {"count": len(entries), "entries": entries}
+
+
+@router.get("/metrics")
+def debug_metrics():
+    """Distinguishes our own proactive rate-limiting from the provider's real 429s, and
+    how often stale fallback data gets served - see utils/metrics.py."""
+    _require_development()
+    return metrics.snapshot()
 
 
 @router.get("/data-freshness/{symbol}")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -8,8 +9,11 @@ from config import get_settings
 from data.yfinance_provider import provider
 from models.schemas import Candle, CandleSeries, PriceQuote
 from services.market_status_service import get_market_status
+from utils import metrics
 from utils.cache import RateLimiter, cache
 from utils.errors import RateLimitedError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 _rate_limiter = RateLimiter(max_per_minute=settings.provider_rate_limit_per_minute)
@@ -49,12 +53,20 @@ DEFAULT_RANGE = "1d"
 
 
 def check_rate_limit(symbol: str) -> None:
+    # Distinguished from data/yfinance_provider.py's cooldown (which reacts to a *real*
+    # Yahoo 429) - this is our own proactive circuit breaker rejecting a call before it
+    # ever reaches the network. Logged/counted separately so it's possible to tell "we're
+    # over-fetching" apart from "the provider is actually throttling us" in production.
     if not _global_rate_limiter.check(_GLOBAL_KEY):
+        metrics.increment("rate_limit.self_throttled_global")
+        logger.info("Self-throttled (global limit) for %s - not a provider response.", symbol.upper())
         raise RateLimitedError(
             "Too many requests across all symbols in a short period.",
             detail="Please wait a moment before refreshing again.",
         )
     if not _rate_limiter.check(symbol.upper()):
+        metrics.increment("rate_limit.self_throttled_symbol")
+        logger.info("Self-throttled (per-symbol limit) for %s - not a provider response.", symbol.upper())
         raise RateLimitedError(
             "Too many requests for this symbol in a short period.",
             detail="Please wait a moment before refreshing again.",

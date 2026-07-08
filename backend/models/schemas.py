@@ -200,6 +200,11 @@ class AnalystConsensus(BaseModel):
     price_target_median: float | None = None
     currency: str = "USD"
     as_of: str
+    # True when this is the last successfully-fetched value being served during a
+    # provider outage/rate-limit window rather than a fresh fetch - `as_of` still
+    # reflects when it was *actually* fetched, so the frontend can show "last updated
+    # X ago" honestly instead of implying live data.
+    is_stale: bool = False
 
 
 class PredictionHistoryEntry(BaseModel):

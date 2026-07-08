@@ -14,6 +14,7 @@ from yfinance.exceptions import YFRateLimitError
 
 from config import get_settings
 from data.provider import MarketDataProvider
+from utils import metrics
 from utils.cache import cache
 from utils.errors import InvalidSymbolError, NetworkError, RateLimitedError
 
@@ -80,6 +81,7 @@ def _call_with_retry(fn: Callable[[], T], *, description: str) -> T:
 
     cooldown_remaining = _in_cooldown()
     if cooldown_remaining is not None:
+        metrics.increment("rate_limit.provider_cooldown_reject")
         raise RateLimitedError(
             "Market data provider is rate-limiting this server.",
             detail=f"Cooling down for {cooldown_remaining:.0f}s before retrying.",
@@ -92,12 +94,13 @@ def _call_with_retry(fn: Callable[[], T], *, description: str) -> T:
             _reset_rate_limit_streak()
             return result
         except YFRateLimitError as exc:
+            metrics.increment("rate_limit.provider_429")
             cooldown_seconds = _start_cooldown(
                 settings.provider_rate_limit_cooldown_seconds,
                 settings.provider_rate_limit_cooldown_max_seconds,
             )
             logger.warning(
-                "%s hit Yahoo's rate limit - cooling down all symbols for %.0fs.",
+                "%s hit Yahoo's REAL rate limit (HTTP 429) - cooling down all symbols for %.0fs.",
                 description, cooldown_seconds,
             )
             raise RateLimitedError(
