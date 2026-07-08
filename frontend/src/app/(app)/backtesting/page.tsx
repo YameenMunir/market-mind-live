@@ -9,11 +9,14 @@ import { AssetSearch } from "@/components/AssetSearch";
 import { BacktestResults } from "@/components/BacktestResults";
 import { Button } from "@/components/Button";
 import { CurrencySelector } from "@/components/CurrencySelector";
+import { GeminiKeySetupModal } from "@/components/GeminiKeySetupModal";
 import { Input, Select } from "@/components/Input";
 import { Panel } from "@/components/Panel";
 import { StatusBanner } from "@/components/StatusBanner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
+import { useGeminiKey } from "@/hooks/useGeminiKey";
+import { useGeminiKeyPrompt } from "@/hooks/useGeminiKeyPrompt";
 import { useTheme } from "@/hooks/useTheme";
 import { api } from "@/lib/api";
 import { buildAssetContext } from "@/lib/aiContext";
@@ -40,6 +43,8 @@ export default function BacktestingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [isAIOpen, setIsAIOpen] = useState(false);
+  const geminiKey = useGeminiKey();
+  const geminiKeyPrompt = useGeminiKeyPrompt(geminiKey.status.has_key, geminiKey.isLoading);
 
   const runBacktest = async () => {
     setIsLoading(true);
@@ -153,6 +158,8 @@ export default function BacktestingPage() {
           })
         }
       />
+
+      <GeminiKeySetupModal isOpen={geminiKeyPrompt.isOpen} onClose={geminiKeyPrompt.close} />
     </>
   );
 }

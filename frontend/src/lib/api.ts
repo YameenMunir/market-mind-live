@@ -19,6 +19,7 @@ import type {
   DeleteSessionResponse,
   FeedbackRequest,
   FxRates,
+  GeminiKeyStatus,
   IndicatorSet,
   KnowledgeArticle,
   MarketStatus,
@@ -121,4 +122,8 @@ export const api = {
   getUserSettings: () => request<UserSettings>(`/api/settings`),
   updateUserSettings: (body: UserSettings) =>
     request<UserSettings>(`/api/settings`, { method: "PUT", body: JSON.stringify(body) }),
+  getGeminiKeyStatus: () => request<GeminiKeyStatus>(`/api/ai/gemini-key`),
+  setGeminiKey: (apiKey: string) =>
+    request<GeminiKeyStatus>(`/api/ai/gemini-key`, { method: "PUT", body: JSON.stringify({ api_key: apiKey }) }),
+  deleteGeminiKey: () => request<GeminiKeyStatus>(`/api/ai/gemini-key`, { method: "DELETE" }),
 };

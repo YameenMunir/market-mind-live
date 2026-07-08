@@ -429,6 +429,16 @@ export interface AlertActionResponse {
   status: string;
 }
 
+export interface GeminiKeyStatus {
+  has_key: boolean;
+  masked_key: string | null;
+  updated_at: string | null;
+}
+
+export interface GeminiKeyUpdateRequest {
+  api_key: string;
+}
+
 export interface KnowledgeArticle {
   id: string;
   title: string;

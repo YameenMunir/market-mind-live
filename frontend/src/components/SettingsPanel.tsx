@@ -1,12 +1,18 @@
 "use client";
 
-import { Check, Moon, Sun } from "lucide-react";
+"use client";
 
+import { useState } from "react";
+import { Check, KeyRound, Moon, Sun } from "lucide-react";
+
+import { Button } from "@/components/Button";
+import { GeminiKeySetupModal } from "@/components/GeminiKeySetupModal";
 import { Input } from "@/components/Input";
 import { Panel } from "@/components/Panel";
 import { Toggle } from "@/components/Toggle";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
+import { useGeminiKey } from "@/hooks/useGeminiKey";
 import { useTheme } from "@/hooks/useTheme";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { API_BASE_URL, INDICATOR_POLL_MS, QUOTE_POLL_FALLBACK_MS, SUPPORTED_CURRENCIES, WS_BASE_URL } from "@/lib/constants";
@@ -17,9 +23,54 @@ export function SettingsPanel() {
   const { prefs, updatePrefs } = useChartPreferences();
   const { currency, setCurrency } = useCurrencyContext();
   const { experienceMode, setExperienceMode } = useUserSettings();
+  const geminiKey = useGeminiKey();
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  const handleRemoveKey = async () => {
+    setIsRemoving(true);
+    try {
+      await geminiKey.remove();
+    } finally {
+      setIsRemoving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-5">
+      <Panel eyebrow="AI Insights" title="Gemini API key">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+            <KeyRound size={16} className="text-brand" />
+          </div>
+          <div className="min-w-0 flex-1">
+            {geminiKey.status.has_key ? (
+              <>
+                <p className="truncate font-mono text-sm text-ink">{geminiKey.status.masked_key}</p>
+                <p className="text-xs text-ink-faint">Live Gemini responses are enabled for this browser.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-ink">Not configured</p>
+                <p className="text-xs text-ink-faint">
+                  AI Insights is using the built-in offline assistant. Add your own key for live Gemini responses.
+                </p>
+              </>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {geminiKey.status.has_key && (
+              <Button variant="ghost" size="sm" onClick={handleRemoveKey} loading={isRemoving}>
+                Remove
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => setIsKeyModalOpen(true)}>
+              {geminiKey.status.has_key ? "Replace key" : "Add key"}
+            </Button>
+          </div>
+        </div>
+      </Panel>
+
       <Panel eyebrow="Dashboard" title="Experience level">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Experience level">
           <button
@@ -161,6 +212,13 @@ export function SettingsPanel() {
           </div>
         </div>
       </Panel>
+
+      <GeminiKeySetupModal
+        isOpen={isKeyModalOpen}
+        onClose={() => setIsKeyModalOpen(false)}
+        allowSkip
+        cancelLabel="Cancel"
+      />
     </div>
   );
 }

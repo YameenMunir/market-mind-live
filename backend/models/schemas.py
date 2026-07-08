@@ -480,6 +480,19 @@ class AlertActionResponse(BaseModel):
     status: str
 
 
+class GeminiKeyStatus(BaseModel):
+    """Never carries the decrypted key - only enough for the UI to show whether one is
+    configured and a masked hint (e.g. '••••••••f8a2')."""
+
+    has_key: bool
+    masked_key: str | None = None
+    updated_at: str | None = None
+
+
+class GeminiKeyUpdateRequest(BaseModel):
+    api_key: str = Field(min_length=1, max_length=512)
+
+
 class KnowledgeArticle(BaseModel):
     """A static methodology explanation from services/knowledge_base.py, exposed for
     dashboard tooltips as well as the AI chat assistant's system prompt. Omits the

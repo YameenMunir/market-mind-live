@@ -27,6 +27,7 @@ from models.schemas import (
 )
 from services import context_builder, gemini_service, mock_ai_provider
 from services.chat_store import FeedbackEntry, chat_store, feedback_store
+from services.gemini_key_store import gemini_key_store
 from services.knowledge_base import retrieve as retrieve_knowledge
 from utils.cache import RateLimiter, cache
 from utils.errors import AppError
@@ -88,6 +89,13 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _resolve_gemini_api_key(device_id: str, settings) -> str | None:
+    """A device's own BYOK Gemini key (set via /api/ai/gemini-key) takes priority over
+    the server-wide GEMINI_API_KEY, so a user who supplies their own key always gets
+    live Gemini even when the server itself has none configured."""
+    return gemini_key_store.get_decrypted_key(device_id) or settings.gemini_api_key
+
+
 def resolve_context(asset: str, client_context: AIAssetContext | None) -> AIAssetContext:
     """Prefer the context the frontend already has on screen (guarantees the assistant
     talks about exactly what the user is looking at); fall back to a fresh server-side
@@ -126,10 +134,14 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
 
     provider = "mock"
     reply: str
-    if settings.gemini_api_key:
+    api_key = _resolve_gemini_api_key(device_id, settings)
+    if api_key:
         # Identical (context + question) pairs within a short window return the cached
         # reply instead of calling Gemini again - guards against accidental double-sends
         # and immediate retries burning a second paid API call for the same answer.
+        # Keyed only by content, not by which key answered it - two devices asking the
+        # same question about the same context get the same cached reply regardless of
+        # whose Gemini key served it, since the answer itself doesn't depend on that.
         cache_key = "gemini_reply:" + hashlib.sha256(f"{system_instruction}\x1f{request.message}".encode()).hexdigest()
         cached_reply = cache.get(cache_key)
         if cached_reply is not None:
@@ -142,7 +154,7 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
                     history=history,
                     user_message=request.message,
                     model=settings.gemini_model,
-                    api_key=settings.gemini_api_key,
+                    api_key=api_key,
                     timeout_seconds=settings.gemini_timeout_seconds,
                 )
                 provider = "gemini"
@@ -186,7 +198,7 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
     )
 
 
-async def handle_summarise(request: SummariseRequest) -> SummariseResponse:
+async def handle_summarise(request: SummariseRequest, device_id: str) -> SummariseResponse:
     context = resolve_context(request.asset, request.client_context)
     prompt = (
         "Summarise the single most important insight from this dashboard right now in 2-4 sentences, "
@@ -196,14 +208,15 @@ async def handle_summarise(request: SummariseRequest) -> SummariseResponse:
 
     settings = get_settings()
     provider = "mock"
-    if settings.gemini_api_key:
+    api_key = _resolve_gemini_api_key(device_id, settings)
+    if api_key:
         try:
             summary = await gemini_service.generate_reply(
                 system_instruction=system_instruction,
                 history=[],
                 user_message=prompt,
                 model=settings.gemini_model,
-                api_key=settings.gemini_api_key,
+                api_key=api_key,
                 timeout_seconds=settings.gemini_timeout_seconds,
             )
             provider = "gemini"

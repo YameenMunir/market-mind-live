@@ -14,6 +14,7 @@ from api import (
     backtest,
     debug,
     fx,
+    gemini_key,
     indicators,
     knowledge,
     market,
@@ -97,6 +98,7 @@ app.include_router(predictions.router)
 app.include_router(risk.router)
 app.include_router(backtest.router)
 app.include_router(ai_insights.router)
+app.include_router(gemini_key.router)
 app.include_router(alerts.router)
 app.include_router(fx.router)
 app.include_router(analysts.router)

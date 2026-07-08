@@ -86,6 +86,19 @@ class UserSettingsRecord(SQLModel, table=True):
     experience_mode: str = Field(default="advanced")
 
 
+class GeminiKeyRecord(SQLModel, table=True):
+    """A device's own Gemini API key (BYOK), encrypted at rest via utils/crypto.py.
+    Takes priority over the server-wide GEMINI_API_KEY (config.py) for that device's
+    AI Insights requests - see services/ai_insights_service.py."""
+
+    __tablename__ = "geminikeyrecord"
+
+    device_id: str = Field(primary_key=True, foreign_key="device.id")
+    encrypted_api_key: str
+    created_at: str = Field(default_factory=_now_iso)
+    updated_at: str = Field(default_factory=_now_iso)
+
+
 class PredictionHistoryRecord(SQLModel, table=True):
     """Global engine-performance data, not per-device - a prediction's accuracy
     doesn't depend on who was looking at the dashboard when it was made."""

@@ -17,6 +17,7 @@ import { ConnectionStatusPill } from "@/components/ConnectionStatusPill";
 import { DashboardViewMenu } from "@/components/DashboardViewMenu";
 import { ExplanationPanel } from "@/components/ExplanationPanel";
 import { FullscreenChartModal } from "@/components/FullscreenChartModal";
+import { GeminiKeySetupModal } from "@/components/GeminiKeySetupModal";
 import { IndicatorPanel } from "@/components/IndicatorPanel";
 import { LastUpdated } from "@/components/LastUpdated";
 import { MarketStatusCard } from "@/components/MarketStatusCard";
@@ -35,6 +36,8 @@ import { useAlerts } from "@/hooks/useAlerts";
 import { useAnalystConsensus } from "@/hooks/useAnalystConsensus";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
 import { useFullscreenToggle } from "@/hooks/useFullscreenToggle";
+import { useGeminiKey } from "@/hooks/useGeminiKey";
+import { useGeminiKeyPrompt } from "@/hooks/useGeminiKeyPrompt";
 import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
@@ -65,6 +68,8 @@ export default function DashboardPage() {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const { isFullscreen, enter: enterFullscreen, exit: exitFullscreen } = useFullscreenToggle(dashboardRef);
   const onboardingTour = useOnboardingTour();
+  const geminiKey = useGeminiKey();
+  const geminiKeyPrompt = useGeminiKeyPrompt(geminiKey.status.has_key, geminiKey.isLoading);
   const { experienceMode, setExperienceMode } = useUserSettings();
   const isAdvanced = experienceMode === "advanced";
 
@@ -356,6 +361,7 @@ export default function DashboardPage() {
       />
 
       <OnboardingTour tour={onboardingTour} />
+      <GeminiKeySetupModal isOpen={geminiKeyPrompt.isOpen} onClose={geminiKeyPrompt.close} />
     </div>
   );
 }

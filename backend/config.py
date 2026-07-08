@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     # to a deterministic mock provider so the feature still works in local development.
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.5-flash"
+    # Fernet key (base64) encrypting per-device Gemini API keys at rest (db/models.py::
+    # GeminiKeyRecord). If unset, utils/crypto.py generates one in-memory at process
+    # start (fine for local dev; set this explicitly in production so stored keys
+    # survive a restart/redeploy).
+    ai_key_encryption_secret: str | None = None
     gemini_timeout_seconds: float = 20.0
     ai_chat_rate_limit_per_minute: int = 20
     ai_max_history_messages: int = 20

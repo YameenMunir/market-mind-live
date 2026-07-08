@@ -45,8 +45,8 @@ def history(session_id: str = Query(..., description="Chat session identifier"))
 
 
 @router.post("/summarise", response_model=SummariseResponse)
-async def summarise(request: SummariseRequest):
-    return await ai_insights_service.handle_summarise(request)
+async def summarise(request: SummariseRequest, device_id: str = Depends(get_device_id)):
+    return await ai_insights_service.handle_summarise(request, device_id)
 
 
 @router.post("/new-session", response_model=NewSessionResponse)
