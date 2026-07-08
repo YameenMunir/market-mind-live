@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { History, Maximize2, MessageSquarePlus, Sparkles, X } from "lucide-react";
+import { History, Maximize2, MessageSquarePlus, Sparkles, Trash2, X } from "lucide-react";
 
 import { AIChatConversation } from "@/components/AIChatConversation";
 import { AIChatHistoryList } from "@/components/AIChatHistoryList";
@@ -25,6 +25,7 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
   const chat = useAIChat({ asset, enabled: isOpen, buildContext });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
   useEffect(() => {
     if (!isOpen || isFullscreen) return;
@@ -35,12 +36,21 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, isFullscreen, onClose]);
 
+  useEffect(() => {
+    setIsConfirmingClear(false);
+  }, [chat.sessionId]);
+
   const context = isOpen ? buildContext() : null;
   const signalMeta = context?.prediction ? SIGNAL_META[context.prediction.signal] : null;
 
   const openHistory = () => {
     setShowHistory(true);
     chat.refreshSessions();
+  };
+
+  const handleClearChat = () => {
+    if (chat.sessionId) chat.deleteSession(chat.sessionId);
+    setIsConfirmingClear(false);
   };
 
   return (
@@ -87,6 +97,15 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                   <Button variant="ghost" size="icon-sm" onClick={() => chat.startNewChat()} aria-label="New chat">
                     <MessageSquarePlus size={15} />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setIsConfirmingClear(true)}
+                    aria-label="Clear chat"
+                    disabled={!chat.sessionId || chat.messages.length <= 1}
+                  >
+                    <Trash2 size={15} />
+                  </Button>
                   <Button variant="ghost" size="icon-sm" onClick={() => setIsFullscreen(true)} aria-label="Expand to full screen">
                     <Maximize2 size={15} />
                   </Button>
@@ -95,6 +114,25 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                   </Button>
                 </div>
               </div>
+
+              {isConfirmingClear && (
+                <div className="flex items-center justify-between gap-2 border-b border-border bg-bear/5 px-4 py-2.5">
+                  <p className="text-xs text-ink">Clear this conversation? This can't be undone.</p>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setIsConfirmingClear(false)}
+                      className="h-auto px-2 py-1 text-[11px]"
+                    >
+                      Cancel
+                    </Button>
+                    <Button variant="danger" size="sm" onClick={handleClearChat} className="h-auto px-2 py-1 text-[11px]">
+                      Clear chat
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {signalMeta && context?.risk && (
                 <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">

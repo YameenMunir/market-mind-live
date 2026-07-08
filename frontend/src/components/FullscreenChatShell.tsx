@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { History, Minimize2, MessageSquarePlus, Sparkles, X } from "lucide-react";
+import { History, Minimize2, MessageSquarePlus, Sparkles, Trash2, X } from "lucide-react";
 
 import { AIChatConversation } from "@/components/AIChatConversation";
 import { AIChatHistoryList } from "@/components/AIChatHistoryList";
@@ -26,6 +26,7 @@ interface FullscreenChatShellProps {
 
 export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, context, chat }: FullscreenChatShellProps) {
   const [showHistory, setShowHistory] = useState(false);
+  const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,9 +45,18 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
 
   const signalMeta = context?.prediction ? SIGNAL_META[context.prediction.signal] : null;
 
+  useEffect(() => {
+    setIsConfirmingClear(false);
+  }, [chat.sessionId]);
+
   const openHistory = () => {
     setShowHistory(true);
     chat.refreshSessions();
+  };
+
+  const handleClearChat = () => {
+    if (chat.sessionId) chat.deleteSession(chat.sessionId);
+    setIsConfirmingClear(false);
   };
 
   return (
@@ -108,7 +118,35 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
               <MessageSquarePlus size={13} />
               New chat
             </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsConfirmingClear(true)}
+              disabled={!chat.sessionId || chat.messages.length <= 1}
+            >
+              <Trash2 size={13} />
+              Clear chat
+            </Button>
           </div>
+
+          {isConfirmingClear && (
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-bear/5 px-4 py-2.5 sm:px-6">
+              <p className="text-xs text-ink">Clear this conversation? This can't be undone.</p>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsConfirmingClear(false)}
+                  className="h-auto px-2 py-1 text-[11px]"
+                >
+                  Cancel
+                </Button>
+                <Button variant="danger" size="sm" onClick={handleClearChat} className="h-auto px-2 py-1 text-[11px]">
+                  Clear chat
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="relative flex min-h-0 flex-1">
             {showHistory && (
