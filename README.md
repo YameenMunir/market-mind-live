@@ -11,8 +11,9 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
 ## Features
 
 - **Live dashboard** - real-time-style price, market status (open/closed/pre-market/after-hours),
-  and candlestick charts across multiple timeframes (1D through MAX), streamed over WebSocket with
-  automatic REST-polling fallback.
+  and candlestick charts across 12 timeframes (1D, 5D, 1W, 2W, 1M, 3M, 6M, YTD, 1Y, 2Y, 5Y, MAX -
+  each mapped server-side to the right bar resolution and cache freshness for that range), streamed
+  over WebSocket with automatic REST-polling fallback.
 - **Technical indicators** - SMA/EMA, RSI, MACD, Bollinger Bands, ATR, and support/resistance,
   computed server-side and explained in plain English.
 - **Prediction engine** - a transparent, rule-based model (trend + momentum + volatility position)
@@ -21,12 +22,20 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
 - **Risk scoring** - annualized volatility, max drawdown, and a composite risk score/level per asset.
   Strategy backtesting - simulates a SMA-20/50 + MACD trend-following strategy over historical
   data, with an equity curve, win rate, and full trade log.
+- **Analyst consensus** - buy/hold/sell breakdown and price targets sourced from Yahoo's analyst
+  coverage, collapsed into the same bullish/neutral/bearish shape as the app's own prediction so
+  the two are directly comparable.
 - **AI Insights assistant** - a Gemini-powered chat assistant grounded in the same live data shown
   on the dashboard (falls back to a deterministic mock provider if no Gemini API key is configured,
   so the feature works out of the box).
-- **Price alerts** - browser-notification alerts on price/RSI/signal/risk-level conditions.
+- **Price alerts** - browser-notification alerts on price/RSI/signal/risk-level conditions,
+  persisted per-browser so they survive a refresh without requiring a login.
 - **Multi-currency display** - convert prices/charts/backtests to your preferred display currency
   via live FX rates.
+- **Simple/Advanced experience mode** - a per-device toggle that adapts how much detail the
+  dashboard surfaces, remembered server-side across sessions.
+- **First-run onboarding tour** - a guided walkthrough of the dashboard's key panels for new users,
+  restartable any time from the view menu.
 
 ## Tech stack
 
@@ -36,8 +45,13 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
   API key required); wrapped behind an abstract `MarketDataProvider` so a paid vendor can be
   swapped in later
 - Pydantic / pydantic-settings for schemas and config
-- In-memory TTL caching + sliding-window rate limiting (no database)
-- WebSockets for the live data feed
+- SQLite (via SQLModel + Alembic migrations) for alerts, AI chat sessions, prediction history, and
+  per-device settings - everything else (quotes, candles, indicators, etc.) is in-memory TTL-cached
+  only, with sliding-window rate limiting and escalating cooldowns in front of the upstream provider
+  to absorb bursty traffic without tripping Yahoo's own rate limits
+- Anonymous per-browser device IDs (no login) scope alerts/chat/settings to "this browser"
+- WebSockets for the live data feed, with one shared background poller per actively-watched symbol
+  (N viewers of the same symbol cost exactly one upstream poll)
 - Google Gemini (via `httpx`, no SDK dependency) for the AI Insights assistant, with a
   deterministic mock fallback
 
@@ -57,12 +71,15 @@ backend/
   prediction/     # rule-based prediction engine
   backtesting/    # strategy backtest engine
   models/         # Pydantic schemas (single source of truth for API shapes)
+  db/             # SQLModel session/models (alerts, chat, prediction history, settings)
+  migrations/     # Alembic migrations, run automatically at startup
   utils/          # caching, rate limiting, error handling
 
 frontend/
-  src/app/        # Next.js App Router pages (dashboard, backtesting, settings, marketing site)
+  src/app/        # Next.js App Router pages: dashboard/backtesting/settings (app group) +
+                  #   marketing site (landing, about, contact, privacy, terms)
   src/components/ # reusable UI (design-system primitives + dashboard cards/panels)
-  src/hooks/      # live data, AI chat, alerts, chart preferences, etc.
+  src/hooks/      # live data, AI chat, alerts, chart preferences, onboarding tour, etc.
   src/lib/        # API client, formatting helpers, design tokens/constants
   src/charts/     # chart wrapper components
 ```
@@ -106,21 +123,26 @@ npm run build                  # production build (also runs the TypeScript chec
 npx tsc --noEmit                # typecheck only, faster than a full build
 ```
 
-## Dependency management & CI
+## Deployment
 
-- **`.github/workflows/ci.yml`** - fast correctness gate on every push/PR to `main`: frontend
-  typecheck + build, backend import sanity check.
-- **`.github/workflows/dependency-check.yml`** - dependency health: outdated-package reports
-  (informational, never fails the build), a security audit (`npm audit` / `pip-audit`, which
-  *does* fail the build on high/critical findings), and a re-run of lint/build/tests so a bad
-  dependency update is caught before merging. Runs on push/PR to `main` and weekly, so staleness
-  and vulnerabilities surface even with no open PRs.
-- **`.github/dependabot.yml`** - opens PRs weekly for outdated npm (`frontend/`), pip (`backend/`),
-  and GitHub Actions dependencies. Minor/patch bumps are grouped into one PR per ecosystem to cut
-  down on noise; major version bumps always get their own PR for individual review rather than
-  being silently grouped in. Dependabot's separate *security* updates (which open a PR immediately
-  when a vulnerability is disclosed, regardless of schedule) are a repo-level toggle under
-  **Settings -> Code security -> Dependabot** rather than something set in `dependabot.yml` itself.
+The frontend and backend deploy independently:
+
+- **Backend -> [Render](https://render.com)**. `render.yaml` at the repo root is a Render
+  Blueprint - importing this repo as a Blueprint auto-configures the `market-mind-backend` web
+  service (build/start commands, health check at `/api/health`, Python version) and prompts only
+  for `CORS_ORIGINS` (set it to your deployed frontend's origin, comma-separated if there's more
+  than one). Set `GEMINI_API_KEY` there too if you want live AI Insights instead of the mock
+  provider. Vercel isn't suitable for this service - it needs a persistent process for the
+  WebSocket live feed, the background per-symbol pollers, and the SQLite file, none of which
+  survive on a stateless serverless platform.
+- **Frontend -> [Vercel](https://vercel.com)**. Import the repo, set the project's root directory
+  to `frontend/`, and set `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_WS_BASE_URL` (the latter using
+  `wss://`) to the deployed Render URL before the first build - these are inlined into the client
+  bundle at build time, so changing them later requires a redeploy.
+
+After both are live, double-check `CORS_ORIGINS` on Render matches the exact Vercel origin
+(no trailing slash) - a mismatch surfaces as a CORS error in the browser console rather than an
+obvious backend failure.
 
 ## Disclaimer
 
