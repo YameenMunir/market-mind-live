@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { LineChart, Maximize2 } from "lucide-react";
 
 import { AIInsightsButton } from "@/components/AIInsightsButton";
-import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AlertsBellButton } from "@/components/AlertsBellButton";
 import { AnalystConsensusCard } from "@/components/AnalystConsensusCard";
 import { AlertsPanel } from "@/components/AlertsPanel";
@@ -16,7 +16,6 @@ import { ChartOverlayToggles } from "@/components/ChartOverlayToggles";
 import { ConnectionStatusPill } from "@/components/ConnectionStatusPill";
 import { DashboardViewMenu } from "@/components/DashboardViewMenu";
 import { ExplanationPanel } from "@/components/ExplanationPanel";
-import { FullscreenChartModal } from "@/components/FullscreenChartModal";
 import { GeminiKeySetupModal } from "@/components/GeminiKeySetupModal";
 import { IndicatorPanel } from "@/components/IndicatorPanel";
 import { LastUpdated } from "@/components/LastUpdated";
@@ -35,6 +34,7 @@ import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAnalystConsensus } from "@/hooks/useAnalystConsensus";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
+import { useCurrencyConvertedChartData } from "@/hooks/useCurrencyConvertedChartData";
 import { useFullscreenToggle } from "@/hooks/useFullscreenToggle";
 import { useGeminiKey } from "@/hooks/useGeminiKey";
 import { useGeminiKeyPrompt } from "@/hooks/useGeminiKeyPrompt";
@@ -47,7 +47,20 @@ import { useUserSettings } from "@/hooks/useUserSettings";
 import { buildAssetContext } from "@/lib/aiContext";
 import { CHART_RANGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import type { AssetSearchResult, AssetType, PriceForecast } from "@/types";
+import type { AssetSearchResult, AssetType } from "@/types";
+
+// Both are invisible until the user explicitly opens them (AI Insights button /
+// expand-chart button) - deferring their code (and, for AI Insights, its own
+// conversation/history subtree) into separate chunks keeps them off the dashboard's
+// initial critical path. No loading fallback: each renders nothing while closed
+// regardless, so there's nothing meaningful to show while the chunk loads either.
+const AIInsightsPanel = dynamic(() => import("@/components/AIInsightsPanel").then((m) => m.AIInsightsPanel), {
+  ssr: false,
+});
+const FullscreenChartModal = dynamic(
+  () => import("@/components/FullscreenChartModal").then((m) => m.FullscreenChartModal),
+  { ssr: false }
+);
 
 export default function DashboardPage() {
   const { theme } = useTheme();
@@ -94,45 +107,16 @@ export default function DashboardPage() {
   const isLive = snapshot.connectionState === "live" || snapshot.connectionState === "polling";
   const activeAlertCount = alertsState.alerts.filter((a) => a.status === "active" || a.status === "triggered").length;
 
-  const { currency, convert } = useCurrencyContext();
+  const { convert } = useCurrencyContext();
   const nativeCurrency = snapshot.quote?.currency ?? "USD";
 
-  const convertedCandles = useMemo(() => {
-    if (!candles.data) return null;
-    if (nativeCurrency === currency) return candles.data;
-    return {
-      ...candles.data,
-      candles: candles.data.candles.map((c) => ({
-        ...c,
-        open: convert(c.open, nativeCurrency) ?? c.open,
-        high: convert(c.high, nativeCurrency) ?? c.high,
-        low: convert(c.low, nativeCurrency) ?? c.low,
-        close: convert(c.close, nativeCurrency) ?? c.close,
-      })),
-    };
-  }, [candles.data, currency, nativeCurrency, convert]);
-
-  const convertedSupport = (snapshot.indicators?.support_resistance.support ?? []).map(
-    (v) => convert(v, nativeCurrency) ?? v
-  );
-  const convertedResistance = (snapshot.indicators?.support_resistance.resistance ?? []).map(
-    (v) => convert(v, nativeCurrency) ?? v
-  );
-
-  const convertedForecast: PriceForecast | null = useMemo(() => {
-    if (!forecast.data) return null;
-    if (nativeCurrency === currency) return forecast.data;
-    return {
-      ...forecast.data,
-      last_actual_price: convert(forecast.data.last_actual_price, nativeCurrency) ?? forecast.data.last_actual_price,
-      points: forecast.data.points.map((p) => ({
-        ...p,
-        predicted_price: convert(p.predicted_price, nativeCurrency) ?? p.predicted_price,
-        lower_bound: convert(p.lower_bound, nativeCurrency) ?? p.lower_bound,
-        upper_bound: convert(p.upper_bound, nativeCurrency) ?? p.upper_bound,
-      })),
-    };
-  }, [forecast.data, currency, nativeCurrency, convert]);
+  const { convertedCandles, convertedForecast, convertedSupport, convertedResistance } = useCurrencyConvertedChartData({
+    candles: candles.data,
+    forecast: forecast.data,
+    supportLevels: snapshot.indicators?.support_resistance.support ?? [],
+    resistanceLevels: snapshot.indicators?.support_resistance.resistance ?? [],
+    nativeCurrency,
+  });
 
   const handleSelectAsset = (asset: AssetSearchResult) => {
     setSymbol(asset.symbol);
@@ -172,7 +156,7 @@ export default function DashboardPage() {
         <div
           data-tour="stat-cards"
           className={cn(
-            "grid grid-cols-1 gap-4 sm:grid-cols-2",
+            "grid grid-cols-2 gap-3 sm:gap-4",
             isAdvanced ? "md:grid-cols-3 xl:grid-cols-5" : "md:grid-cols-2"
           )}
         >
@@ -316,16 +300,18 @@ export default function DashboardPage() {
         onClose={() => setIsChartFullscreen(false)}
         symbol={symbol}
         assetName={assetName}
-        range={range}
-        onRangeChange={setRange}
-        showMA={showMA}
-        onToggleMA={setShowMA}
-        showBB={showBB}
-        onToggleBB={setShowBB}
-        showPricePredictor={showPricePredictor}
-        onTogglePricePredictor={handleTogglePricePredictor}
-        horizonDays={horizonDays}
-        onHorizonChange={handleHorizonChange}
+        chartControls={{
+          range,
+          onRangeChange: setRange,
+          showMA,
+          onToggleMA: setShowMA,
+          showBB,
+          onToggleBB: setShowBB,
+          showPricePredictor,
+          onTogglePricePredictor: handleTogglePricePredictor,
+          horizonDays,
+          onHorizonChange: handleHorizonChange,
+        }}
         forecast={forecast.data}
         isLoadingForecast={forecast.isLoading}
         candles={candles.data ?? null}

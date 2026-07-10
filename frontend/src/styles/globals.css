@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens. Every semantic color below is verified to hit WCAG AA (>=4.5:1)
+   as text against both --color-canvas and --color-surface in its own theme - see
+   the contrast table this was derived from in DESIGN_SYSTEM.md. `warn` is also
+   deliberately hue-separated from `brand` (~20deg apart, not just a different
+   token) so the two remain visually distinguishable at a glance, not only in code -
+   they were previously ~1.3:1 apart and read as almost the same color. */
 :root {
   --color-canvas: 7 9 14;
   --color-surface: 13 16 24;
@@ -9,12 +15,19 @@
   --color-border: 32 38 52;
   --color-ink: 236 238 244;
   --color-ink-muted: 156 164 182;
-  --color-ink-faint: 92 100 118;
+  /* Deliberately carries a bit more margin above the 4.5:1 floor than the other
+     semantic colors (~4.8-4.9:1 vs. pure canvas/surface, not the bare minimum) - an
+     automated contrast scan (axe-core) caught it dropping under 4.5:1 in a couple of
+     spots where it sat on a tinted card background rather than a pure one, since it
+     had ~zero buffer to spare. Anywhere ink-faint needs to sit on a tinted
+     background, prefer ink-muted instead (it has much more headroom) rather than
+     relying on this alone. */
+  --color-ink-faint: 122 129 146;
   --color-brand: 245 166 35;
   --color-brand-strong: 255 195 92;
   --color-bull: 45 212 191;
   --color-bear: 244 63 94;
-  --color-warn: 250 204 21;
+  --color-warn: 196 180 8;
 }
 
 .light {
@@ -24,12 +37,12 @@
   --color-border: 226 226 220;
   --color-ink: 22 24 29;
   --color-ink-muted: 91 96 107;
-  --color-ink-faint: 145 149 158;
-  --color-brand: 196 122 12;
-  --color-brand-strong: 163 100 8;
-  --color-bull: 13 148 136;
-  --color-bear: 220 38 38;
-  --color-warn: 180 130 10;
+  --color-ink-faint: 101 108 123;
+  --color-brand: 160 94 13;
+  --color-brand-strong: 123 72 10;
+  --color-bull: 10 127 104;
+  --color-bear: 219 31 44;
+  --color-warn: 120 111 8;
 }
 
 * {

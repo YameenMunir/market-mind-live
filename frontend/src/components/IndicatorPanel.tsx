@@ -175,7 +175,10 @@ export function IndicatorPanel({
       </div>
 
       <div className={cn("mt-3 rounded-xl border p-3", TONE_SUMMARY_BOX[read.summaryTone])}>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Overall Technical Read</p>
+        {/* ink-muted, not ink-faint - this box has a tinted background (bull/bear/warn/5),
+            and ink-faint doesn't have enough contrast margin to spare once a tint eats
+            into it (caught by an automated contrast scan). */}
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Overall Technical Read</p>
         <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{read.summary}</p>
       </div>
 

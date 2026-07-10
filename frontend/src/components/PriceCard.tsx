@@ -77,14 +77,17 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
         </div>
       )}
 
-      <div className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4 text-xs">
+      <div className="mt-5 grid grid-cols-3 gap-2 border-t border-border pt-4 text-xs sm:gap-3">
         {[
-          { label: "Day High", value: quote ? formatPrice(convert(quote.day_high, quote.currency), currency) : null },
-          { label: "Day Low", value: quote ? formatPrice(convert(quote.day_low, quote.currency), currency) : null },
-          { label: "Volume", value: quote ? formatCompactNumber(quote.volume) : null },
+          { label: "Day High", short: "High", value: quote ? formatPrice(convert(quote.day_high, quote.currency), currency) : null },
+          { label: "Day Low", short: "Low", value: quote ? formatPrice(convert(quote.day_low, quote.currency), currency) : null },
+          { label: "Volume", short: "Volume", value: quote ? formatCompactNumber(quote.volume) : null },
         ].map((item) => (
           <div key={item.label} className="min-w-0">
-            <p className="truncate text-ink-faint">{item.label}</p>
+            <p className="truncate text-ink-faint">
+              <span className="sm:hidden">{item.short}</span>
+              <span className="hidden sm:inline">{item.label}</span>
+            </p>
             {item.value !== null ? (
               <p className="numeric mt-1 truncate font-medium text-ink">{item.value}</p>
             ) : (

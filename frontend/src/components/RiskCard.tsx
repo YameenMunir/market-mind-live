@@ -10,10 +10,17 @@ interface RiskCardProps {
   isStale?: boolean;
 }
 
+// A severity ramp, not a brand palette - `brand` is reserved for primary actions/
+// live-state/focus (see DESIGN_SYSTEM.md), so "high" isn't the gold accent color
+// stretched to mean something else. It shares `bear`'s hue with "extreme" (both are
+// genuinely on the same red end of the scale) but at reduced weight for the meter
+// fill, while the text stays full-strength bear for reliable contrast - severity is
+// still unambiguous from the label text itself ("High Risk" vs "Extreme Risk"),
+// which is also what keeps this from depending on color alone.
 const RISK_META = {
   low: { label: "Low Risk", color: "bg-bull", text: "text-bull" },
   medium: { label: "Medium Risk", color: "bg-warn", text: "text-warn" },
-  high: { label: "High Risk", color: "bg-brand", text: "text-brand" },
+  high: { label: "High Risk", color: "bg-bear/65", text: "text-bear" },
   extreme: { label: "Extreme Risk", color: "bg-bear", text: "text-bear" },
 } as const;
 

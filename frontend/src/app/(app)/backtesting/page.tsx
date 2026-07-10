@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { PlayCircle } from "lucide-react";
 
 import { AIInsightsButton } from "@/components/AIInsightsButton";
-import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AssetSearch } from "@/components/AssetSearch";
 import { BacktestResults } from "@/components/BacktestResults";
 import { Button } from "@/components/Button";
@@ -24,6 +24,11 @@ import { describeError } from "@/lib/errorMessages";
 import { cn } from "@/lib/utils";
 import type { AssetSearchResult, BacktestResult } from "@/types";
 import { ApiError } from "@/types";
+
+// Invisible until the user opens it - see dashboard/page.tsx for the same split.
+const AIInsightsPanel = dynamic(() => import("@/components/AIInsightsPanel").then((m) => m.AIInsightsPanel), {
+  ssr: false,
+});
 
 const LOOKBACK_OPTIONS = [
   { label: "1 Month", value: 30 },

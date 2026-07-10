@@ -24,7 +24,11 @@ const config: Config = {
         warn: "rgb(var(--color-warn) / <alpha-value>)",
       },
       boxShadow: {
+        // Persistent page sections (cards, drawers, the fullscreen chart).
         panel: "0 1px 0 0 rgb(var(--color-border) / 0.6), 0 24px 48px -24px rgb(0 0 0 / 0.5)",
+        // Transient floating UI (dropdown menus, tooltips) - tighter blur/spread than
+        // `panel` so a small popover doesn't cast as heavy a shadow as a full section.
+        popover: "0 1px 0 0 rgb(var(--color-border) / 0.6), 0 12px 24px -12px rgb(0 0 0 / 0.45)",
         glow: "0 0 0 1px rgb(var(--color-brand) / 0.3), 0 0 32px -4px rgb(var(--color-brand) / 0.35)",
       },
       backgroundImage: {

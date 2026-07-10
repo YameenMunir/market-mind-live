@@ -11,10 +11,13 @@ interface StatusBannerProps {
   className?: string;
 }
 
+// Fill tint alpha matches Badge.tsx's TONE_STYLES for the same reason - see the
+// comment there. `info` keeps a stronger tint since brand-strong has the contrast
+// headroom to spare; `warning`/`error` don't.
 const TONE_STYLES: Record<StatusTone, string> = {
   info: "border-brand/30 bg-brand/10 text-brand-strong",
-  warning: "border-warn/30 bg-warn/10 text-warn",
-  error: "border-bear/30 bg-bear/10 text-bear",
+  warning: "border-warn/30 bg-warn/6 text-warn",
+  error: "border-bear/30 bg-bear/6 text-bear",
   muted: "border-border bg-surface-raised text-ink-muted",
 };
 

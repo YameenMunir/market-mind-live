@@ -1,7 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { getThemeColor } from "@/lib/theme";
 import { formatPrice } from "@/lib/utils";
 import type { EquityPoint } from "@/types";
 
@@ -12,9 +14,16 @@ interface EquityCurveChartProps {
 }
 
 export function EquityCurveChart({ points, theme, currency = "USD" }: EquityCurveChartProps) {
-  const brandColor = "#f5a623";
-  const gridColor = theme === "dark" ? "#1a2030" : "#eeeeea";
-  const textColor = theme === "dark" ? "#9ca6b6" : "#5b606b";
+  const { brandColor, gridColor, textColor, surfaceColor } = useMemo(
+    () => ({
+      brandColor: getThemeColor("brand", "#f5a623"),
+      gridColor: getThemeColor("border", theme === "dark" ? "#1a2030" : "#eeeeea"),
+      textColor: getThemeColor("ink-muted", theme === "dark" ? "#9ca6b6" : "#5b606b"),
+      surfaceColor: getThemeColor("surface", theme === "dark" ? "#141822" : "#fafaf8"),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [theme]
+  );
 
   const data = points.map((p) => ({
     date: new Date(p.time * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -41,7 +50,7 @@ export function EquityCurveChart({ points, theme, currency = "USD" }: EquityCurv
         />
         <Tooltip
           contentStyle={{
-            background: theme === "dark" ? "#141822" : "#fafaf8",
+            background: surfaceColor,
             border: `1px solid ${gridColor}`,
             borderRadius: 8,
             fontSize: 12,

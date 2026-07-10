@@ -13,6 +13,7 @@ import {
 } from "lightweight-charts";
 
 import { bollingerBands, sma } from "@/charts/indicatorMath";
+import { getThemeColor } from "@/lib/theme";
 import type { Candle, ForecastPoint, PredictionResult, PriceForecast } from "@/types";
 
 interface LiveCandlestickChartProps {
@@ -44,34 +45,36 @@ export interface LiveCandlestickChartHandle {
   takeScreenshot: () => string | null;
 }
 
-const THEME_COLORS = {
-  dark: {
-    background: "#0d1018",
-    text: "#9ca6b6",
-    grid: "#1a2030",
-    border: "#20263480",
-    up: "#2dd4bf",
-    down: "#f43f5e",
-    sma20: "#f5a623",
-    sma50: "#60a5fa",
-    bollinger: "#9ca6b64d",
-    forecastLine: "#a78bfa",
-    forecastBand: "#a78bfa66",
-  },
-  light: {
-    background: "#ffffff",
-    text: "#5b606b",
-    grid: "#eeeeea",
-    border: "#e2e2dc80",
-    up: "#0d9488",
-    down: "#dc2626",
-    sma20: "#c47a0c",
-    sma50: "#2563eb",
-    bollinger: "#5b606b33",
-    forecastLine: "#7c3aed",
-    forecastBand: "#7c3aed4d",
-  },
+// sma50/forecast have no corresponding design token - they're chart-only auxiliary
+// colors, deliberately outside the app's semantic palette (bull/bear/brand/warn) so a
+// second moving-average line and the statistical forecast overlay read as visually
+// distinct categories from "price direction" or "primary action". Every other value
+// here is read live from the actual CSS token (see getThemeColors below) instead of a
+// hand-copied hex, so it can't silently drift out of sync when a token changes.
+const AUX_CHART_COLORS = {
+  dark: { sma50: "#60a5fa", forecastLine: "#a78bfa" },
+  light: { sma50: "#2563eb", forecastLine: "#7c3aed" },
 };
+
+function getThemeColors(theme: "dark" | "light") {
+  const dark = theme === "dark";
+  const aux = AUX_CHART_COLORS[theme];
+  const inkMuted = getThemeColor("ink-muted", dark ? "#9ca6b6" : "#5b606b");
+  const border = getThemeColor("border", dark ? "#202634" : "#e2e2dc");
+  return {
+    background: getThemeColor("surface", dark ? "#0d1018" : "#ffffff"),
+    text: inkMuted,
+    grid: getThemeColor("border", dark ? "#1a2030" : "#eeeeea"),
+    border: border + "80",
+    up: getThemeColor("bull", dark ? "#2dd4bf" : "#0d9488"),
+    down: getThemeColor("bear", dark ? "#f43f5e" : "#dc2626"),
+    sma20: getThemeColor("brand", dark ? "#f5a623" : "#c47a0c"),
+    sma50: aux.sma50,
+    bollinger: inkMuted + (dark ? "4d" : "33"),
+    forecastLine: aux.forecastLine,
+    forecastBand: aux.forecastLine + (dark ? "66" : "4d"),
+  };
+}
 
 function toUnixSeconds(isoDate: string): number {
   return Math.floor(new Date(`${isoDate}T00:00:00Z`).getTime() / 1000);
@@ -126,7 +129,7 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const colors = THEME_COLORS[theme];
+    const colors = getThemeColors(theme);
 
     const chart = createChart(containerRef.current, {
       layout: {
@@ -244,6 +247,7 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
 
   useEffect(() => {
     if (!isReady || !candleSeriesRef.current || candles.length === 0) return;
+    const candleColors = getThemeColors(theme);
 
     const candleData = candles.map((c) => ({
       time: c.time as Time,
@@ -268,7 +272,7 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
       candles.map((c) => ({
         time: c.time as Time,
         value: c.volume ?? 0,
-        color: c.close >= c.open ? THEME_COLORS[theme].up + "80" : THEME_COLORS[theme].down + "80",
+        color: c.close >= c.open ? candleColors.up + "80" : candleColors.down + "80",
       }))
     );
 
@@ -308,7 +312,7 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
     supportLevels.forEach((level) => {
       const line = candleSeriesRef.current!.createPriceLine({
         price: level,
-        color: THEME_COLORS[theme].up,
+        color: candleColors.up,
         lineWidth: 1,
         lineStyle: 2,
         axisLabelVisible: level === nearestSupport,
@@ -320,7 +324,7 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
     resistanceLevels.forEach((level) => {
       const line = candleSeriesRef.current!.createPriceLine({
         price: level,
-        color: THEME_COLORS[theme].down,
+        color: candleColors.down,
         lineWidth: 1,
         lineStyle: 2,
         axisLabelVisible: level === nearestResistance,
@@ -334,7 +338,7 @@ export const LiveCandlestickChart = forwardRef<LiveCandlestickChartHandle, LiveC
       const marker: SeriesMarker<Time> = {
         time: lastCandle.time as Time,
         position: prediction.direction === "bullish" ? "belowBar" : "aboveBar",
-        color: prediction.direction === "bullish" ? THEME_COLORS[theme].up : THEME_COLORS[theme].down,
+        color: prediction.direction === "bullish" ? candleColors.up : candleColors.down,
         shape: prediction.direction === "bullish" ? "arrowUp" : "arrowDown",
         text: `${prediction.direction === "bullish" ? "Bullish" : "Bearish"} ${Math.round(prediction.confidence)}%`,
       };

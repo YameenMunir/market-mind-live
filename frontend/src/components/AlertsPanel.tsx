@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { Bell, Loader2, Plus, Trash2, X } from "lucide-react";
 
 import { Badge, type BadgeTone } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import { Dialog } from "@/components/Dialog";
 import { Input, Select } from "@/components/Input";
 import { StatusBanner } from "@/components/StatusBanner";
 import type { useAlerts } from "@/hooks/useAlerts";
@@ -49,15 +49,6 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
     if (isOpen) requestNotificationPermission();
   }, [isOpen, requestNotificationPermission]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
   const needsThreshold = NEEDS_THRESHOLD.includes(condition);
   const optionalThreshold = OPTIONAL_THRESHOLD.includes(condition);
 
@@ -71,37 +62,23 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-            onClick={onClose}
-          />
-          <motion.aside
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 320 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col border-l border-border bg-surface shadow-panel"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10">
-                  <Bell size={16} className="text-brand" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink">Alerts</p>
-                  <p className="truncate text-[11px] text-ink-faint">{symbol}</p>
-                </div>
-              </div>
-              <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close alerts">
-                <X size={16} />
-              </Button>
-            </div>
+    <Dialog isOpen={isOpen} onClose={onClose} variant="drawer" labelledBy="alerts-panel-title" className="max-w-[400px]">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+            <Bell size={16} className="text-brand" />
+          </div>
+          <div className="min-w-0">
+            <p id="alerts-panel-title" className="text-sm font-semibold text-ink">
+              Alerts
+            </p>
+            <p className="truncate text-[11px] text-ink-faint">{symbol}</p>
+          </div>
+        </div>
+        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close alerts">
+          <X size={16} />
+        </Button>
+      </div>
 
             <form
               onSubmit={(e) => {
@@ -238,10 +215,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                   </div>
                 );
               })}
-            </div>
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+      </div>
+    </Dialog>
   );
 }

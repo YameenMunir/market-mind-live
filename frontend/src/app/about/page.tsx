@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { motion, type Variants } from "framer-motion";
 import {
   ArrowUpRight,
   Activity,
@@ -19,6 +16,7 @@ import {
 
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { Reveal } from "@/components/Reveal";
 
 const FEATURES = [
   {
@@ -86,15 +84,6 @@ const AUDIENCE = [
   },
 ];
 
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-  }),
-};
-
 export default function AboutPage() {
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
@@ -102,38 +91,28 @@ export default function AboutPage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative mx-auto max-w-7xl overflow-hidden px-6 pb-20 pt-12 sm:pt-16">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-0 h-[480px] w-[820px] max-w-[100vw] -translate-x-1/2 rounded-full opacity-20 blur-[140px]"
-            style={{ background: "radial-gradient(closest-side, rgb(var(--color-brand)), transparent)" }}
-          />
-
-          <motion.div initial="hidden" animate="visible" className="relative mx-auto max-w-3xl text-center">
-            <motion.div
-              custom={0}
-              variants={fadeUp}
-              className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-border bg-surface-raised px-3.5 py-1.5 text-xs font-medium text-ink-muted"
-            >
+        <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-12 sm:pt-16">
+          <div className="relative mx-auto max-w-3xl text-center">
+            <Reveal delay={0} className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-border bg-surface-raised px-3.5 py-1.5 text-xs font-medium text-ink-muted">
               <Sparkles size={13} className="text-brand" />
               About Market Mind Live
-            </motion.div>
+            </Reveal>
 
-            <motion.h1
-              custom={1}
-              variants={fadeUp}
-              className="text-4xl font-semibold leading-[1.1] tracking-tight text-ink sm:text-5xl"
-            >
-              Learn the stock market by watching it move
-            </motion.h1>
+            <Reveal delay={0.06}>
+              <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-ink sm:text-5xl">
+                Learn the stock market by watching it move
+              </h1>
+            </Reveal>
 
-            <motion.p custom={2} variants={fadeUp} className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">
-              Market Mind Live is built mainly for beginners who want to understand the stock market, not just
-              trade it. Live charts, technical indicators, AI insights, risk scores, and predictions are all
-              paired with simple, plain-English explanations - so every number on screen comes with a "here's
-              what that actually means."
-            </motion.p>
-          </motion.div>
+            <Reveal delay={0.12}>
+              <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">
+                Market Mind Live is built mainly for beginners who want to understand the stock market, not just
+                trade it. Live charts, technical indicators, AI insights, risk scores, and predictions are all
+                paired with simple, plain-English explanations - so every number on screen comes with a "here's
+                what that actually means."
+              </p>
+            </Reveal>
+          </div>
         </section>
 
         {/* What the platform does */}
@@ -180,12 +159,10 @@ export default function AboutPage() {
 
           <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((feature, i) => (
-              <motion.div
+              <Reveal
                 key={feature.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ delay: (i % 3) * 0.08, duration: 0.5 }}
+                trigger="scroll"
+                delay={(i % 3) * 0.08}
                 className="rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-brand/30"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10">
@@ -193,14 +170,18 @@ export default function AboutPage() {
                 </div>
                 <h3 className="mt-4 text-sm font-semibold text-ink">{feature.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-ink-muted">{feature.description}</p>
-              </motion.div>
+              </Reveal>
             ))}
           </div>
         </section>
 
         {/* Disclaimer */}
         <section className="mx-auto max-w-7xl px-6 pb-20">
-          <div className="rounded-2xl border border-warn/30 bg-warn/5 p-6 sm:p-8">
+          {/* bg-warn/3, not /5 - text-warn directly on its own color's tint needs a
+              lower alpha to clear 4.5:1 against the page's canvas background (caught
+              by an automated contrast scan; see Badge.tsx for the same underlying
+              issue in a different component). */}
+          <div className="rounded-2xl border border-warn/30 bg-warn/3 p-6 sm:p-8">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-warn">Disclaimer</p>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-muted">
               Market Mind Live is a learning tool built for education and informational purposes only. It does

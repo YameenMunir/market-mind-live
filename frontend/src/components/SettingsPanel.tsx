@@ -1,14 +1,12 @@
 "use client";
 
-"use client";
-
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { Check, KeyRound, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { GeminiKeySetupModal } from "@/components/GeminiKeySetupModal";
 import { Input } from "@/components/Input";
-import { Panel } from "@/components/Panel";
 import { Toggle } from "@/components/Toggle";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
@@ -17,6 +15,25 @@ import { useTheme } from "@/hooks/useTheme";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { API_BASE_URL, INDICATOR_POLL_MS, QUOTE_POLL_FALLBACK_MS, SUPPORTED_CURRENCIES, WS_BASE_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+
+interface SettingsSectionProps {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}
+
+/** One row of the settings surface - a labeled section separated from its neighbors
+ * by a divider rather than its own card chrome, so seven related settings don't read
+ * as seven unrelated cards stacked on top of each other. */
+function SettingsSection({ eyebrow, title, children }: SettingsSectionProps) {
+  return (
+    <div className="border-b border-border p-4 last:border-b-0 sm:p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">{eyebrow}</p>
+      <h2 className="mt-0.5 text-sm font-semibold text-ink">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
 
 export function SettingsPanel() {
   const { theme, setTheme } = useTheme();
@@ -37,8 +54,8 @@ export function SettingsPanel() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <Panel eyebrow="AI Insights" title="Gemini API key">
+    <div className="rounded-2xl border border-border bg-surface shadow-panel">
+      <SettingsSection eyebrow="AI Insights" title="Gemini API key">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10">
             <KeyRound size={16} className="text-brand" />
@@ -69,9 +86,9 @@ export function SettingsPanel() {
             </Button>
           </div>
         </div>
-      </Panel>
+      </SettingsSection>
 
-      <Panel eyebrow="Dashboard" title="Experience level">
+      <SettingsSection eyebrow="Dashboard" title="Experience level">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Experience level">
           <button
             onClick={() => setExperienceMode("simple")}
@@ -84,7 +101,10 @@ export function SettingsPanel() {
             )}
           >
             <span className="text-sm font-medium">Simple</span>
-            <span className="text-xs text-ink-faint">Price, prediction, chart, and a one-line summary only.</span>
+            {/* ink-muted, not ink-faint - the selected state tints this button's
+                background (bg-brand/10), and ink-faint doesn't have contrast margin
+                to spare once a tint eats into it (caught by an automated scan). */}
+            <span className="text-xs text-ink-muted">Price, prediction, chart, and a one-line summary only.</span>
           </button>
           <button
             onClick={() => setExperienceMode("advanced")}
@@ -97,12 +117,12 @@ export function SettingsPanel() {
             )}
           >
             <span className="text-sm font-medium">Advanced</span>
-            <span className="text-xs text-ink-faint">Full dashboard: indicators, risk, analyst consensus, and more.</span>
+            <span className="text-xs text-ink-muted">Full dashboard: indicators, risk, analyst consensus, and more.</span>
           </button>
         </div>
-      </Panel>
+      </SettingsSection>
 
-      <Panel eyebrow="Appearance" title="Theme">
+      <SettingsSection eyebrow="Appearance" title="Theme">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Theme">
           <button
             onClick={() => setTheme("dark")}
@@ -129,9 +149,9 @@ export function SettingsPanel() {
             <Sun size={16} aria-hidden /> Light mode
           </button>
         </div>
-      </Panel>
+      </SettingsSection>
 
-      <Panel eyebrow="Chart Defaults" title="Overlays">
+      <SettingsSection eyebrow="Chart Defaults" title="Overlays">
         <div className="divide-y divide-border">
           <Toggle
             checked={prefs.showMovingAverages}
@@ -146,9 +166,9 @@ export function SettingsPanel() {
             description="Show volatility bands overlay on the live chart by default."
           />
         </div>
-      </Panel>
+      </SettingsSection>
 
-      <Panel eyebrow="Display" title="Currency">
+      <SettingsSection eyebrow="Display" title="Currency">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="Display currency">
           {SUPPORTED_CURRENCIES.map((c) => (
             <button
@@ -170,12 +190,12 @@ export function SettingsPanel() {
           ))}
         </div>
         <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-          Prices, charts, predictions, and backtests are converted to this currency using a live FX rate.
-          Numbers are still calculated from the asset's native-currency data - only the display is converted.
+          Prices, charts, predictions, and backtests are converted to this currency using a live FX rate. Numbers
+          are still calculated from the asset's native-currency data - only the display is converted.
         </p>
-      </Panel>
+      </SettingsSection>
 
-      <Panel eyebrow="Default Asset" title="Startup symbol">
+      <SettingsSection eyebrow="Default Asset" title="Startup symbol">
         <label htmlFor="settings-default-symbol" className="sr-only">
           Startup symbol
         </label>
@@ -190,9 +210,9 @@ export function SettingsPanel() {
           placeholder="AAPL"
         />
         <p className="mt-2 text-xs text-ink-muted">The dashboard will load this symbol on your next visit.</p>
-      </Panel>
+      </SettingsSection>
 
-      <Panel eyebrow="Connection" title="Data & refresh">
+      <SettingsSection eyebrow="Connection" title="Data & refresh">
         <div className="space-y-2.5 text-xs">
           <div className="flex items-center justify-between gap-4">
             <span className="shrink-0 text-ink-faint">API endpoint</span>
@@ -211,14 +231,9 @@ export function SettingsPanel() {
             <span className="shrink-0 font-mono text-ink-muted">{INDICATOR_POLL_MS / 1000}s</span>
           </div>
         </div>
-      </Panel>
+      </SettingsSection>
 
-      <GeminiKeySetupModal
-        isOpen={isKeyModalOpen}
-        onClose={() => setIsKeyModalOpen(false)}
-        allowSkip
-        cancelLabel="Cancel"
-      />
+      <GeminiKeySetupModal isOpen={isKeyModalOpen} onClose={() => setIsKeyModalOpen(false)} allowSkip cancelLabel="Cancel" />
     </div>
   );
 }

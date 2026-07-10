@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { History, Minimize2, MessageSquarePlus, Sparkles, Trash2, X } from "lucide-react";
 
 import { AIChatConversation } from "@/components/AIChatConversation";
 import { AIChatHistoryList } from "@/components/AIChatHistoryList";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import { Dialog } from "@/components/Dialog";
 import type { useAIChat } from "@/hooks/useAIChat";
 import { SIGNAL_META } from "@/lib/signalMeta";
 import { cn } from "@/lib/utils";
@@ -28,21 +28,6 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
   const [showHistory, setShowHistory] = useState(false);
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onMinimize();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [isOpen, onMinimize]);
-
   const signalMeta = context?.prediction ? SIGNAL_META[context.prediction.signal] : null;
 
   useEffect(() => {
@@ -60,15 +45,7 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-50 flex flex-col bg-canvas"
-        >
+    <Dialog isOpen={isOpen} onClose={onMinimize} variant="cover" labelledBy="fullscreen-chat-title">
           <div className="relative shrink-0 border-b border-border px-4 py-3.5 sm:px-6">
             <div className="absolute right-4 top-3 flex items-center gap-1.5 sm:right-6">
               <Button variant="secondary" size="icon" onClick={onMinimize} aria-label="Minimize to side panel">
@@ -86,7 +63,7 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">AI Insights</p>
-                  <h2 className="text-sm font-semibold text-ink">
+                  <h2 id="fullscreen-chat-title" className="text-sm font-semibold text-ink">
                     {context?.asset_name ? `${context.asset_name} · ${asset}` : asset}
                   </h2>
                 </div>
@@ -172,8 +149,6 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
               size="fullscreen"
             />
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </Dialog>
   );
 }

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { History, Maximize2, MessageSquarePlus, Sparkles, Trash2, X } from "lucide-react";
 
 import { AIChatConversation } from "@/components/AIChatConversation";
 import { AIChatHistoryList } from "@/components/AIChatHistoryList";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import { Dialog } from "@/components/Dialog";
 import { FullscreenChatShell } from "@/components/FullscreenChatShell";
 import { useAIChat } from "@/hooks/useAIChat";
 import { SIGNAL_META } from "@/lib/signalMeta";
@@ -28,15 +28,6 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || isFullscreen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isFullscreen, onClose]);
-
-  useEffect(() => {
     setIsConfirmingClear(false);
   }, [chat.sessionId]);
 
@@ -55,30 +46,22 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
 
   return (
     <>
-      <AnimatePresence>
-        {isOpen && !isFullscreen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-              onClick={onClose}
-            />
-            <motion.aside
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 32, stiffness: 320 }}
-              className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[420px] flex-col border-l border-border bg-surface shadow-panel"
-            >
+      <Dialog
+        isOpen={isOpen && !isFullscreen}
+        onClose={onClose}
+        variant="drawer"
+        labelledBy="ai-insights-panel-title"
+        className="max-w-[420px]"
+      >
               <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3.5">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10">
                     <Sparkles size={16} className="text-brand" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-ink">AI Insights</p>
+                    <p id="ai-insights-panel-title" className="text-sm font-semibold text-ink">
+                      AI Insights
+                    </p>
                     <p className="truncate text-[11px] text-ink-faint">
                       {context?.asset_name ? `${context.asset_name} · ${asset}` : asset}
                     </p>
@@ -173,10 +156,7 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                   size="compact"
                 />
               )}
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+      </Dialog>
 
       <FullscreenChatShell
         isOpen={isOpen && isFullscreen}

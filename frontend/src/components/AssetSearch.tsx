@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
+import { FIELD_CHROME_CLASSES } from "@/components/Input";
 import { useAssetSearch } from "@/hooks/useAssetSearch";
 import { ASSET_TYPE_LABELS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import type { AssetSearchResult, AssetType } from "@/types";
 
 interface AssetSearchProps {
@@ -33,7 +35,7 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
 
   return (
     <div ref={containerRef} data-tour="asset-search" className="relative w-full max-w-md">
-      <div className="relative z-50 flex items-center gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2.5 transition-colors focus-within:border-brand/60 sm:py-2">
+      <div className={cn("relative z-50 flex items-center gap-2 px-3 py-2.5 focus-within:border-brand/60 sm:py-2", FIELD_CHROME_CLASSES)}>
         <Search size={16} className="shrink-0 text-ink-faint" aria-hidden />
         <input
           value={query}
@@ -75,7 +77,7 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
             id="asset-search-results"
             role="listbox"
             aria-label="Asset search results"
-            className="animate-dropdown-in absolute left-0 right-0 z-50 mt-2 max-h-80 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-panel ring-1 ring-black/20"
+            className="animate-dropdown-in absolute left-0 right-0 z-50 mt-2 max-h-80 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-popover ring-1 ring-black/20"
           >
             {isLoading && (
               <div className="flex items-center gap-2 px-3 py-3 text-xs text-ink-faint" role="status">

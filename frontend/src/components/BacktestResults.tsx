@@ -1,10 +1,18 @@
+import dynamic from "next/dynamic";
 import { BarChart3, Loader2 } from "lucide-react";
 
 import { Panel } from "@/components/Panel";
-import { EquityCurveChart } from "@/charts/EquityCurveChart";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { cn, formatPercent, formatPrice } from "@/lib/utils";
 import type { BacktestResult } from "@/types";
+
+// recharts (~pulled in only by this one chart) is only ever needed once a backtest
+// has actually produced a result - deferring it keeps it out of the initial
+// /backtesting bundle for the common case of a page load that hasn't run one yet.
+const EquityCurveChart = dynamic(() => import("@/charts/EquityCurveChart").then((m) => m.EquityCurveChart), {
+  ssr: false,
+  loading: () => <div aria-hidden className="h-full w-full animate-pulse rounded-xl bg-surface-raised" />,
+});
 
 function StatTile({ label, value, tone }: { label: string; value: string; tone?: "bull" | "bear" | "default" }) {
   return (

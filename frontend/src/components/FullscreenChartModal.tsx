@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useRef } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, Camera, Minus, Moon, RotateCcw, Sunrise, Sunset, X } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { ChartOverlayToggles } from "@/components/ChartOverlayToggles";
+import { Dialog } from "@/components/Dialog";
 import { PricePredictorControls } from "@/components/PricePredictorControls";
 import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { LiveCandlestickChart, type LiveCandlestickChartHandle } from "@/charts/LiveCandlestickChart";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
+import { useCurrencyConvertedChartData } from "@/hooks/useCurrencyConvertedChartData";
 import { LastUpdated } from "@/components/LastUpdated";
 import { CHART_RANGES } from "@/lib/constants";
 import { cn, formatPercent, formatPrice } from "@/lib/utils";
@@ -23,11 +24,11 @@ const SESSION_META = {
   after_hours: { label: "After Hours", icon: Sunset, dot: "bg-warn" },
 } as const;
 
-interface FullscreenChartModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  symbol: string;
-  assetName?: string | null;
+/** Everything needed to drive the chart's own display controls (timeframe, overlays,
+ * price predictor) - one cohesive unit rather than five separate boolean/value +
+ * setter pairs, since they're always read and passed down together (dashboard/page.tsx
+ * and this component are the two places that need all of them at once). */
+export interface ChartControls {
   range: string;
   onRangeChange: (value: string) => void;
   showMA: boolean;
@@ -38,6 +39,14 @@ interface FullscreenChartModalProps {
   onTogglePricePredictor: (value: boolean) => void;
   horizonDays: number;
   onHorizonChange: (value: number) => void;
+}
+
+interface FullscreenChartModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  symbol: string;
+  assetName?: string | null;
+  chartControls: ChartControls;
   forecast: PriceForecast | null;
   isLoadingForecast: boolean;
   candles: CandleSeries | null;
@@ -56,16 +65,7 @@ export function FullscreenChartModal({
   onClose,
   symbol,
   assetName,
-  range,
-  onRangeChange,
-  showMA,
-  onToggleMA,
-  showBB,
-  onToggleBB,
-  showPricePredictor,
-  onTogglePricePredictor,
-  horizonDays,
-  onHorizonChange,
+  chartControls: { range, onRangeChange, showMA, onToggleMA, showBB, onToggleBB, showPricePredictor, onTogglePricePredictor, horizonDays, onHorizonChange },
   forecast,
   isLoadingForecast,
   candles,
@@ -82,53 +82,13 @@ export function FullscreenChartModal({
   const { currency, convert } = useCurrencyContext();
   const nativeCurrency = quote?.currency ?? "USD";
 
-  const convertedCandles = useMemo(() => {
-    if (!candles) return null;
-    if (nativeCurrency === currency) return candles;
-    return {
-      ...candles,
-      candles: candles.candles.map((c) => ({
-        ...c,
-        open: convert(c.open, nativeCurrency) ?? c.open,
-        high: convert(c.high, nativeCurrency) ?? c.high,
-        low: convert(c.low, nativeCurrency) ?? c.low,
-        close: convert(c.close, nativeCurrency) ?? c.close,
-      })),
-    };
-  }, [candles, currency, nativeCurrency, convert]);
-
-  const convertedSupport = supportLevels.map((v) => convert(v, nativeCurrency) ?? v);
-  const convertedResistance = resistanceLevels.map((v) => convert(v, nativeCurrency) ?? v);
-
-  const convertedForecast: PriceForecast | null = useMemo(() => {
-    if (!forecast) return null;
-    if (nativeCurrency === currency) return forecast;
-    return {
-      ...forecast,
-      last_actual_price: convert(forecast.last_actual_price, nativeCurrency) ?? forecast.last_actual_price,
-      points: forecast.points.map((p) => ({
-        ...p,
-        predicted_price: convert(p.predicted_price, nativeCurrency) ?? p.predicted_price,
-        lower_bound: convert(p.lower_bound, nativeCurrency) ?? p.lower_bound,
-        upper_bound: convert(p.upper_bound, nativeCurrency) ?? p.upper_bound,
-      })),
-    };
-  }, [forecast, currency, nativeCurrency, convert]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [isOpen, onClose]);
+  const { convertedCandles, convertedForecast, convertedSupport, convertedResistance } = useCurrencyConvertedChartData({
+    candles,
+    forecast,
+    supportLevels,
+    resistanceLevels,
+    nativeCurrency,
+  });
 
   const sessionMeta = marketStatus ? SESSION_META[marketStatus.session] : null;
   const SessionIcon = sessionMeta?.icon ?? Activity;
@@ -145,15 +105,7 @@ export function FullscreenChartModal({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-50 flex flex-col bg-canvas"
-        >
+    <Dialog isOpen={isOpen} onClose={onClose} variant="cover" labelledBy="fullscreen-chart-title">
           <div className="relative shrink-0 border-b border-border px-4 py-3.5 sm:px-6">
             <Button
               variant="secondary"
@@ -168,7 +120,7 @@ export function FullscreenChartModal({
             <div className="flex flex-wrap items-start gap-x-6 gap-y-2 pr-12">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Live Chart</p>
-                <h2 className="mt-0.5 text-lg font-semibold text-ink">
+                <h2 id="fullscreen-chart-title" className="mt-0.5 text-lg font-semibold text-ink">
                   {assetName ? `${assetName} · ${symbol}` : symbol}
                   <span className="ml-2 text-sm font-medium text-ink-faint">
                     {CHART_RANGES.find((r) => r.value === range)?.label}
@@ -258,8 +210,6 @@ export function FullscreenChartModal({
               </div>
             )}
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </Dialog>
   );
 }
