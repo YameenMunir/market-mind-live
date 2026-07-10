@@ -35,30 +35,30 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={risk ? Math.round(risk.risk_score) : undefined}
-        className={cn("h-1.5 w-full overflow-hidden rounded-full bg-surface-raised", !risk && "animate-pulse")}
+        className={cn("h-3 w-full overflow-hidden rounded-sm border border-border bg-surface-raised my-1.5", !risk && "animate-pulse")}
       >
         <div
-          className={cn("h-full rounded-full transition-all duration-700", meta?.color ?? "bg-ink-faint")}
+          className={cn("h-full transition-all duration-700", meta?.color ?? "bg-ink-faint")}
           style={{ width: `${risk?.risk_score ?? 0}%` }}
         />
       </div>
       {risk ? (
-        <p className={cn("mt-2 numeric text-xs font-medium", meta?.text ?? "text-ink-muted")}>
-          Risk score {Math.round(risk.risk_score)} / 100
+        <p className={cn("mt-1.5 font-mono text-[10px] font-bold uppercase", meta?.text ?? "text-ink-muted")}>
+          Score: {Math.round(risk.risk_score)} / 100
         </p>
       ) : (
-        <div aria-hidden className="mt-2.5 h-3 w-28 animate-pulse rounded bg-surface-raised" />
+        <div aria-hidden className="mt-2.5 h-3 w-28 animate-pulse rounded-sm bg-surface-raised" />
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
-        <span className="text-ink-faint">Annualized volatility</span>
-        <span className="numeric font-medium text-ink">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-xs">
+        <span className="text-[10px] font-bold uppercase text-ink-faint">Annualized volatility</span>
+        <span className="numeric font-semibold text-ink">
           {risk ? `${risk.volatility_annualized_pct.toFixed(1)}%` : "--"}
         </span>
       </div>
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
-        <span className="text-ink-faint">Max drawdown</span>
-        <span className="numeric font-medium text-ink">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-xs">
+        <span className="text-[10px] font-bold uppercase text-ink-faint">Max drawdown</span>
+        <span className="numeric font-semibold text-ink">
           {risk?.max_drawdown_pct !== null && risk?.max_drawdown_pct !== undefined
             ? `${risk.max_drawdown_pct.toFixed(1)}%`
             : "--"}
@@ -68,8 +68,8 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
       {risk && risk.factors.length > 0 && (
         <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
           {risk.factors.map((factor, i) => (
-            <li key={i} className="text-[11px] leading-relaxed text-ink-muted">
-              {factor}
+            <li key={i} className="text-[10px] font-mono leading-relaxed text-ink-muted">
+              &bull; {factor}
             </li>
           ))}
         </ul>

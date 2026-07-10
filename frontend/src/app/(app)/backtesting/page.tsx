@@ -68,11 +68,11 @@ export default function BacktestingPage() {
     <>
       <header
         className={cn(
-          "flex items-center justify-between border-b border-border bg-canvas px-4 py-3.5 sm:px-6 sm:py-4",
+          "flex items-center justify-between border-b border-border bg-surface/20 px-4 py-3.5 sm:px-6 sm:py-4",
           isCollapsed && "lg:pl-28"
         )}
       >
-        <h1 className="text-sm font-semibold uppercase tracking-wider text-ink-faint">Backtesting</h1>
+        <h1 className="text-xs font-mono font-bold uppercase tracking-wider text-ink-muted">Backtesting</h1>
         <div className="flex items-center gap-2 sm:gap-3">
           <CurrencySelector />
           <ThemeToggle />

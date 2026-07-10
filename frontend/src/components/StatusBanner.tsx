@@ -15,10 +15,10 @@ interface StatusBannerProps {
 // comment there. `info` keeps a stronger tint since brand-strong has the contrast
 // headroom to spare; `warning`/`error` don't.
 const TONE_STYLES: Record<StatusTone, string> = {
-  info: "border-brand/30 bg-brand/10 text-brand-strong",
-  warning: "border-warn/30 bg-warn/6 text-warn",
-  error: "border-bear/30 bg-bear/6 text-bear",
-  muted: "border-border bg-surface-raised text-ink-muted",
+  info: "border-brand/40 bg-brand/5 text-brand",
+  warning: "border-warn/40 bg-warn/5 text-warn",
+  error: "border-bear/40 bg-bear/5 text-bear",
+  muted: "border-border bg-surface text-ink-muted",
 };
 
 const ICONS = {
@@ -34,7 +34,7 @@ export function StatusBanner({ message, tone = "muted", icon = "clock", classNam
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium", TONE_STYLES[tone], className)}
+      className={cn("flex items-center gap-2 rounded-sm border px-3 py-2 text-xs font-mono font-medium tracking-wide", TONE_STYLES[tone], className)}
     >
       <Icon size={14} aria-hidden className={cn("shrink-0", icon === "loading" && "animate-spin")} />
       <span>{message}</span>

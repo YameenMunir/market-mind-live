@@ -17,13 +17,13 @@ export function Panel({ children, className, title, eyebrow, action, dataTour }:
     <section
       aria-label={title ?? eyebrow}
       data-tour={dataTour}
-      className={cn("rounded-2xl border border-border bg-surface p-4 shadow-panel sm:p-5", className)}
+      className={cn("rounded-sm border border-border bg-surface p-3.5 sm:p-4", className)}
     >
       {(title || eyebrow || action) && (
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-3">
           <div className="min-w-0">
-            {eyebrow && <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">{eyebrow}</p>}
-            {title && <h3 className="mt-0.5 text-sm font-semibold text-ink">{title}</h3>}
+            {eyebrow && <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-faint">{eyebrow}</p>}
+            {title && <h3 className="mt-1 text-xs font-mono font-bold uppercase tracking-wide text-ink">{title}</h3>}
           </div>
           {action}
         </div>

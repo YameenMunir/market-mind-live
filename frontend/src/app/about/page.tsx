@@ -17,6 +17,8 @@ import {
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { Reveal } from "@/components/Reveal";
+import { BUTTON_SIZE_STYLES, BUTTON_VARIANT_STYLES } from "@/components/Button";
+import { cn } from "@/lib/utils";
 
 const FEATURES = [
   {
@@ -93,19 +95,19 @@ export default function AboutPage() {
         {/* Hero */}
         <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-12 sm:pt-16">
           <div className="relative mx-auto max-w-3xl text-center">
-            <Reveal delay={0} className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-border bg-surface-raised px-3.5 py-1.5 text-xs font-medium text-ink-muted">
-              <Sparkles size={13} className="text-brand" />
+            <Reveal delay={0} className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-[10px] uppercase font-bold tracking-wider text-brand">
+              <Sparkles size={11} className="text-brand" />
               About Market Mind Live
             </Reveal>
 
             <Reveal delay={0.06}>
-              <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-ink sm:text-5xl">
+              <h1 className="text-3xl font-bold uppercase tracking-tight text-ink sm:text-5xl font-mono">
                 Learn the stock market by watching it move
               </h1>
             </Reveal>
 
             <Reveal delay={0.12}>
-              <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">
+              <p className="mx-auto mt-6 max-w-2xl text-xs leading-relaxed text-ink-muted">
                 Market Mind Live is built mainly for beginners who want to understand the stock market, not just
                 trade it. Live charts, technical indicators, AI insights, risk scores, and predictions are all
                 paired with simple, plain-English explanations - so every number on screen comes with a "here's
@@ -116,32 +118,32 @@ export default function AboutPage() {
         </section>
 
         {/* What the platform does */}
-        <section className="mx-auto max-w-7xl px-6 py-16">
+        <section className="mx-auto max-w-7xl px-6 py-12">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">What the platform does</h2>
-              <p className="mt-4 text-sm leading-relaxed text-ink-muted sm:text-base">
+              <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">What the platform does</h2>
+              <p className="mt-4 text-xs leading-relaxed text-ink-muted">
                 Search any stock, ETF, forex pair, crypto asset, or index and see how it's actually behaving:
                 live prices, a real chart, and the same technical indicators professional traders watch - RSI,
                 MACD, moving averages, and more - all on one screen.
               </p>
-              <p className="mt-4 text-sm leading-relaxed text-ink-muted sm:text-base">
+              <p className="mt-4 text-xs leading-relaxed text-ink-muted">
                 Instead of leaving you to guess what a number means, every indicator, prediction, and risk
                 score is paired with a plain-English explanation of what's happening and why - so you build
                 real understanding of market movements, one asset at a time.
               </p>
             </div>
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Who it's for</h2>
+              <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">Who it's for</h2>
               <div className="mt-5 flex flex-col gap-4">
                 {AUDIENCE.map((item) => (
-                  <div key={item.title} className="flex items-start gap-3.5 rounded-xl border border-border bg-surface p-4">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+                  <div key={item.title} className="flex items-start gap-3.5 rounded-sm border border-border bg-surface p-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-brand/25 bg-brand/5">
                       <item.icon size={16} className="text-brand" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-ink">{item.title}</p>
-                      <p className="mt-1 text-sm leading-relaxed text-ink-muted">{item.description}</p>
+                      <p className="font-mono text-xs font-bold uppercase tracking-wider text-ink">{item.title}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-ink-muted">{item.description}</p>
                     </div>
                   </div>
                 ))}
@@ -151,39 +153,35 @@ export default function AboutPage() {
         </section>
 
         {/* Key features */}
-        <section className="mx-auto max-w-7xl px-6 py-16">
+        <section className="mx-auto max-w-7xl px-6 py-12">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-semibold tracking-tight text-ink">Key features</h2>
-            <p className="mt-3 text-ink-muted">Everything you need to learn how to read a market, in one place.</p>
+            <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">Key features</h2>
+            <p className="mt-2 text-xs text-ink-muted">Everything you need to learn how to read a market, in one place.</p>
           </div>
 
-          <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((feature, i) => (
               <Reveal
                 key={feature.title}
                 trigger="scroll"
                 delay={(i % 3) * 0.08}
-                className="rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-brand/30"
+                className="rounded-sm border border-border bg-surface p-6 transition-colors hover:border-brand/35"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10">
-                  <feature.icon size={18} className="text-brand" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-sm border border-brand/25 bg-brand/5">
+                  <feature.icon size={16} className="text-brand" />
                 </div>
-                <h3 className="mt-4 text-sm font-semibold text-ink">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{feature.description}</p>
+                <h3 className="mt-4 font-mono text-xs font-bold uppercase tracking-wider text-ink">{feature.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-ink-muted">{feature.description}</p>
               </Reveal>
             ))}
           </div>
         </section>
 
         {/* Disclaimer */}
-        <section className="mx-auto max-w-7xl px-6 pb-20">
-          {/* bg-warn/3, not /5 - text-warn directly on its own color's tint needs a
-              lower alpha to clear 4.5:1 against the page's canvas background (caught
-              by an automated contrast scan; see Badge.tsx for the same underlying
-              issue in a different component). */}
-          <div className="rounded-2xl border border-warn/30 bg-warn/3 p-6 sm:p-8">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-warn">Disclaimer</p>
-            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-muted">
+        <section className="mx-auto max-w-7xl px-6 pb-16">
+          <div className="rounded-sm border border-warn/30 bg-warn/3 p-6 sm:p-8">
+            <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-warn">Disclaimer</p>
+            <p className="mt-3 max-w-3xl text-xs leading-relaxed text-ink-muted">
               Market Mind Live is a learning tool built for education and informational purposes only. It does
               not provide financial advice, investment recommendations, or guaranteed trading outcomes. Market
               data may be delayed, and all predictions, risk scores, and AI-generated insights are produced
@@ -195,19 +193,23 @@ export default function AboutPage() {
         </section>
 
         {/* CTA */}
-        <section className="mx-auto max-w-7xl px-6 pb-24">
-          <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-border bg-surface p-8 text-center sm:p-12">
-            <h2 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Ready to start learning?</h2>
-            <p className="max-w-md text-sm text-ink-muted">
+        <section className="mx-auto max-w-7xl px-6 pb-20">
+          <div className="flex flex-col items-center justify-center gap-4 rounded-sm border border-border bg-surface p-8 text-center sm:p-12">
+            <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">Ready to start learning?</h2>
+            <p className="max-w-md text-xs text-ink-muted">
               Open the dashboard, pick any asset, and start connecting the dots between price, indicators, and
               risk - no account required.
             </p>
             <Link
               href="/dashboard"
-              className="group mt-2 flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-canvas transition-transform hover:-translate-y-0.5 sm:w-auto"
+              className={cn(
+                BUTTON_VARIANT_STYLES.primary,
+                BUTTON_SIZE_STYLES.lg,
+                "group mt-2 flex w-full items-center justify-center gap-2 sm:w-auto"
+              )}
             >
               Open the terminal
-              <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
           </div>
         </section>

@@ -38,7 +38,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <nav className="mt-10 flex flex-col gap-1" aria-label="Main navigation">
+        <nav className="mt-10 flex flex-col gap-1.5" aria-label="Main navigation">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname?.startsWith(item.href);
             const Icon = item.icon;
@@ -48,17 +48,14 @@ export function Sidebar() {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "group relative flex items-center gap-3 rounded-sm border px-3 py-2.5 text-xs font-mono font-semibold uppercase tracking-wider transition-colors",
                   isActive
-                    ? "bg-surface-raised text-ink shadow-panel"
-                    : "text-ink-muted hover:bg-surface-raised/60 hover:text-ink"
+                    ? "bg-surface border-border border-l-brand border-l-2 text-ink"
+                    : "border-transparent text-ink-muted hover:bg-surface-raised/60 hover:text-ink"
                 )}
               >
-                {isActive && (
-                  <span aria-hidden className="absolute -left-4 h-5 w-0.5 rounded-full bg-brand" />
-                )}
                 <Icon
-                  size={17}
+                  size={15}
                   strokeWidth={2}
                   aria-hidden
                   className={cn("transition-colors", isActive ? "text-brand" : "text-ink-faint group-hover:text-ink-muted")}
@@ -69,7 +66,7 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="mt-auto rounded-xl border border-border bg-surface-raised/60 p-3.5">
+        <div className="mt-auto rounded-sm border border-border bg-surface-raised/60 p-3.5">
           <p className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">Data source</p>
           <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
             Live quotes are delayed and provided for informational purposes only. Not financial advice.

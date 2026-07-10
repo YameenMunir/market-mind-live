@@ -82,31 +82,31 @@ function getSectionMeta(label: string, body: string): SectionMeta {
   const b = body.toLowerCase();
 
   if (l.includes("risk")) {
-    if (b.includes("extreme")) return { icon: ShieldAlert, iconClass: "text-bear", badgeClass: "bg-bear/10" };
-    if (b.includes("high")) return { icon: ShieldAlert, iconClass: "text-brand", badgeClass: "bg-brand/10" };
-    if (b.includes("low")) return { icon: ShieldAlert, iconClass: "text-bull", badgeClass: "bg-bull/10" };
-    return { icon: ShieldAlert, iconClass: "text-warn", badgeClass: "bg-warn/10" };
+    if (b.includes("extreme")) return { icon: ShieldAlert, iconClass: "text-bear", badgeClass: "border border-bear/30 bg-bear/5" };
+    if (b.includes("high")) return { icon: ShieldAlert, iconClass: "text-brand", badgeClass: "border border-brand/30 bg-brand/5" };
+    if (b.includes("low")) return { icon: ShieldAlert, iconClass: "text-bull", badgeClass: "border border-bull/30 bg-bull/5" };
+    return { icon: ShieldAlert, iconClass: "text-warn", badgeClass: "border border-warn/30 bg-warn/5" };
   }
 
   if (l.includes("predict") || l.includes("signal") || l.includes("forecast")) {
     if (b.includes("sell") || b.includes("bearish")) {
-      return { icon: TrendingDown, iconClass: "text-bear", badgeClass: "bg-bear/10" };
+      return { icon: TrendingDown, iconClass: "text-bear", badgeClass: "border border-bear/30 bg-bear/5" };
     }
     if (b.includes("buy") || b.includes("bullish")) {
-      return { icon: TrendingUp, iconClass: "text-bull", badgeClass: "bg-bull/10" };
+      return { icon: TrendingUp, iconClass: "text-bull", badgeClass: "border border-bull/30 bg-bull/5" };
     }
-    return { icon: Minus, iconClass: "text-ink-muted", badgeClass: "bg-surface-raised" };
+    return { icon: Minus, iconClass: "text-ink-muted", badgeClass: "border border-border bg-surface-raised" };
   }
 
   if (l.includes("technical") || l.includes("trend")) {
-    return { icon: BarChart3, iconClass: "text-brand", badgeClass: "bg-brand/10" };
+    return { icon: BarChart3, iconClass: "text-brand", badgeClass: "border border-brand/30 bg-brand/5" };
   }
 
   if (l.includes("market") || l.includes("status") || l.includes("data")) {
-    return { icon: Clock, iconClass: "text-ink-muted", badgeClass: "bg-surface-raised" };
+    return { icon: Clock, iconClass: "text-ink-muted", badgeClass: "border border-border bg-surface-raised" };
   }
 
-  return { icon: Activity, iconClass: "text-ink-muted", badgeClass: "bg-surface-raised" };
+  return { icon: Activity, iconClass: "text-ink-muted", badgeClass: "border border-border bg-surface-raised" };
 }
 
 /** Renders `**bold**` spans and line breaks from AI replies without a markdown
@@ -138,17 +138,17 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
   return (
     <div
       className={cn(
-        "w-full rounded-2xl border border-border bg-surface-raised shadow-sm",
+        "w-full rounded-sm border border-border bg-surface-raised",
         isFullscreen ? "max-w-2xl p-5" : "max-w-[92%] p-4"
       )}
     >
-      <div className="mb-3 flex items-center gap-2 text-ink-faint">
+      <div className="mb-3 flex items-center gap-2 text-ink-faint border-b border-border/60 pb-2">
         <Sparkles size={13} className="text-brand" />
-        <p className="text-[11px] font-semibold uppercase tracking-wider">AI Insights</p>
+        <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-ink-muted">AI Insights</p>
       </div>
 
       {insight.intro && (
-        <p className={cn("mb-4 leading-relaxed text-ink", isFullscreen ? "text-[15px]" : "text-sm")}>
+        <p className={cn("mb-4 leading-relaxed text-ink", isFullscreen ? "text-sm" : "text-xs")}>
           {renderRichText(insight.intro)}
         </p>
       )}
@@ -160,14 +160,14 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
           return (
             <div
               key={i}
-              className="flex gap-3 rounded-xl border border-border/70 bg-surface p-3 sm:p-3.5"
+              className="flex gap-3 rounded-sm border border-border bg-surface p-3"
             >
-              <div className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", meta.badgeClass)}>
+              <div className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-sm", meta.badgeClass)}>
                 <Icon size={14} className={meta.iconClass} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{section.label}</p>
-                <p className={cn("mt-1 leading-relaxed text-ink-muted", isFullscreen ? "text-sm" : "text-[13px]")}>
+                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-ink-faint">{section.label}</p>
+                <p className={cn("mt-1 leading-relaxed text-ink-muted", isFullscreen ? "text-sm" : "text-xs")}>
                   {renderRichText(section.body)}
                 </p>
               </div>
@@ -177,7 +177,7 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
       </div>
 
       {insight.footer && (
-        <div className="mt-4 flex items-start gap-2 border-t border-border/60 pt-3 text-[11px] leading-relaxed text-ink-faint">
+        <div className="mt-4 flex items-start gap-2 border-t border-border/60 pt-3 font-mono text-[9px] uppercase tracking-wide leading-relaxed text-ink-faint/80">
           <AlertTriangle size={12} className="mt-0.5 shrink-0" />
           <p>{renderRichText(insight.footer)}</p>
         </div>
@@ -198,9 +198,9 @@ export function AIChatMessage({ message, onFeedback, feedbackGiven, size = "comp
       ) : (
         <div
           className={cn(
-            "rounded-2xl leading-relaxed",
-            isFullscreen ? "max-w-2xl px-4 py-3 text-[15px]" : "max-w-[92%] px-3.5 py-2.5 text-[13px]",
-            isUser ? "bg-brand text-canvas" : "border border-border bg-surface-raised text-ink-muted"
+            "rounded-sm leading-relaxed border",
+            isFullscreen ? "max-w-2xl px-4 py-3 text-sm" : "max-w-[92%] px-3.5 py-2.5 text-xs",
+            isUser ? "border-brand/35 bg-brand/5 text-ink font-mono font-medium tracking-wide" : "border-border bg-surface-raised text-ink-muted"
           )}
         >
           {renderRichText(message.content)}

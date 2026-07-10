@@ -1,3 +1,5 @@
+"use client";
+
 import dynamic from "next/dynamic";
 import { BarChart3, Loader2 } from "lucide-react";
 
@@ -6,21 +8,18 @@ import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { cn, formatPercent, formatPrice } from "@/lib/utils";
 import type { BacktestResult } from "@/types";
 
-// recharts (~pulled in only by this one chart) is only ever needed once a backtest
-// has actually produced a result - deferring it keeps it out of the initial
-// /backtesting bundle for the common case of a page load that hasn't run one yet.
 const EquityCurveChart = dynamic(() => import("@/charts/EquityCurveChart").then((m) => m.EquityCurveChart), {
   ssr: false,
-  loading: () => <div aria-hidden className="h-full w-full animate-pulse rounded-xl bg-surface-raised" />,
+  loading: () => <div aria-hidden className="h-full w-full animate-pulse rounded-sm bg-surface-raised border border-border" />,
 });
 
 function StatTile({ label, value, tone }: { label: string; value: string; tone?: "bull" | "bear" | "default" }) {
   return (
-    <div className="rounded-xl border border-border bg-surface-raised p-3.5 sm:p-4">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">{label}</p>
+    <div className="rounded-sm border border-border bg-surface p-3 sm:p-4">
+      <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-ink-faint">{label}</p>
       <p
         className={cn(
-          "numeric mt-1.5 font-mono text-lg font-semibold sm:text-xl",
+          "numeric mt-1 font-mono text-base font-bold sm:text-lg",
           tone === "bull" && "text-bull",
           tone === "bear" && "text-bear",
           (!tone || tone === "default") && "text-ink"
@@ -42,11 +41,11 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
   if (isLoading) {
     return (
       <Panel eyebrow="Backtest" title="Running simulation...">
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-10 text-center">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-border px-4 py-10 text-center bg-surface">
           <Loader2 size={22} className="animate-spin text-brand" aria-hidden />
-          <p className="text-sm font-medium text-ink-muted">Simulating trades over the selected window</p>
-          <p className="max-w-sm text-xs leading-relaxed text-ink-faint">
-            This usually takes a few seconds - results will appear here automatically.
+          <p className="font-mono text-xs font-bold uppercase text-ink-muted">Simulating trades over the selected window</p>
+          <p className="max-w-sm font-mono text-[9px] uppercase tracking-wide text-ink-faint">
+            Please wait. Results will appear here automatically.
           </p>
         </div>
       </Panel>
@@ -56,12 +55,11 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
   if (!result) {
     return (
       <Panel eyebrow="Backtest" title="No results yet">
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-10 text-center">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-border px-4 py-10 text-center bg-surface">
           <BarChart3 size={22} className="text-ink-faint" aria-hidden />
-          <p className="text-sm font-medium text-ink-muted">Run your first backtest</p>
-          <p className="max-w-sm text-xs leading-relaxed text-ink-faint">
-            Pick an asset and a lookback window above, then run the strategy to see its equity curve, win
-            rate, and full trade log here.
+          <p className="font-mono text-xs font-bold uppercase text-ink-muted">Run your first backtest</p>
+          <p className="max-w-sm font-mono text-[9px] uppercase tracking-wide text-ink-faint">
+            Pick an asset and a lookback window above, then run the strategy.
           </p>
         </div>
       </Panel>
@@ -79,10 +77,10 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
   }));
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {isConverted && (
-        <p className="text-xs leading-relaxed text-ink-faint">
-          Showing results converted from {nativeCurrency} to {currency} at the live FX rate.
+        <p className="font-mono text-[9px] uppercase tracking-wider text-ink-faint">
+          Converted from {nativeCurrency} to {currency} at FX rate.
         </p>
       )}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -104,30 +102,30 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
 
       <Panel eyebrow="Trade Log" title={`${result.trades.length} closed trades`}>
         <div className="-mx-1 max-h-72 overflow-auto px-1">
-          <table className="w-full min-w-[520px] text-left text-xs">
-            <thead className="sticky top-0 z-10 bg-surface text-ink-faint">
+          <table className="w-full min-w-[520px] text-left border-collapse">
+            <thead className="sticky top-0 z-10 bg-surface-raised border-b border-border text-ink-faint">
               <tr>
-                <th scope="col" className="pb-2 pr-3 font-medium">Entry</th>
-                <th scope="col" className="pb-2 pr-3 font-medium">Exit</th>
-                <th scope="col" className="pb-2 pr-3 text-right font-medium">Entry Price</th>
-                <th scope="col" className="pb-2 pr-3 text-right font-medium">Exit Price</th>
-                <th scope="col" className="pb-2 text-right font-medium">Return</th>
+                <th scope="col" className="py-2.5 px-3 font-mono text-[9px] uppercase font-bold tracking-wider">Entry</th>
+                <th scope="col" className="py-2.5 px-3 font-mono text-[9px] uppercase font-bold tracking-wider">Exit</th>
+                <th scope="col" className="py-2.5 px-3 text-right font-mono text-[9px] uppercase font-bold tracking-wider">Entry Price</th>
+                <th scope="col" className="py-2.5 px-3 text-right font-mono text-[9px] uppercase font-bold tracking-wider">Exit Price</th>
+                <th scope="col" className="py-2.5 px-3 text-right font-mono text-[9px] uppercase font-bold tracking-wider">Return</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/60 bg-surface">
               {result.trades.map((trade, i) => (
-                <tr key={i} className="transition-colors hover:bg-surface-raised/50">
-                  <td className="py-2.5 pr-3 text-ink-muted">{new Date(trade.entry_time * 1000).toLocaleDateString()}</td>
-                  <td className="py-2.5 pr-3 text-ink-muted">{new Date(trade.exit_time * 1000).toLocaleDateString()}</td>
-                  <td className="numeric py-2.5 pr-3 text-right text-ink">
+                <tr key={i} className="transition-colors hover:bg-surface-raised/80 border-b border-border/20">
+                  <td className="py-2 px-3 font-mono text-xs text-ink-muted">{new Date(trade.entry_time * 1000).toLocaleDateString()}</td>
+                  <td className="py-2 px-3 font-mono text-xs text-ink-muted">{new Date(trade.exit_time * 1000).toLocaleDateString()}</td>
+                  <td className="numeric py-2 px-3 text-right font-mono text-xs text-ink">
                     {formatPrice(convert(trade.entry_price, nativeCurrency), currency)}
                   </td>
-                  <td className="numeric py-2.5 pr-3 text-right text-ink">
+                  <td className="numeric py-2 px-3 text-right font-mono text-xs text-ink">
                     {formatPrice(convert(trade.exit_price, nativeCurrency), currency)}
                   </td>
                   <td
                     className={cn(
-                      "numeric py-2.5 text-right font-medium",
+                      "numeric py-2 px-3 text-right font-mono text-xs font-semibold",
                       trade.return_pct >= 0 ? "text-bull" : "text-bear"
                     )}
                   >
@@ -137,8 +135,8 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
               ))}
               {result.trades.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-6 text-center text-ink-faint">
-                    No trades were triggered during this window - try a longer lookback period.
+                  <td colSpan={5} className="py-6 text-center font-mono text-xs text-ink-faint">
+                    No trades were triggered. Try a longer period.
                   </td>
                 </tr>
               )}

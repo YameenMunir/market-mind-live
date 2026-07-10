@@ -99,8 +99,8 @@ export function IndicatorPanel({
         <div aria-hidden className="animate-pulse divide-y divide-border">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between gap-3 py-3">
-              <div className="h-3 w-24 rounded bg-surface-raised" />
-              <div className="h-3 w-16 rounded bg-surface-raised" />
+              <div className="h-3 w-24 rounded-sm bg-surface-raised" />
+              <div className="h-3 w-16 rounded-sm bg-surface-raised" />
             </div>
           ))}
         </div>
@@ -114,14 +114,14 @@ export function IndicatorPanel({
         {read.insights.map((insight) => (
           <div key={insight.key} className="py-2.5">
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-              <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase font-bold text-ink-muted">
                 {insight.label}
                 <InfoTooltip articleId={GLOSSARY_ID_BY_INDICATOR_KEY[insight.key]} />
               </span>
-              <span className={cn("numeric font-mono text-sm font-medium", TONE_TEXT[insight.tone])}>{insight.value}</span>
+              <span className={cn("numeric font-mono text-xs font-semibold", TONE_TEXT[insight.tone])}>{insight.value}</span>
             </div>
-            <div className="mt-1.5 flex items-start justify-between gap-2">
-              <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-ink-faint">{insight.note}</p>
+            <div className="mt-1 flex items-start justify-between gap-2">
+              <p className="min-w-0 flex-1 font-mono text-[9px] uppercase tracking-wide text-ink-faint/80 leading-normal">{insight.note}</p>
               <Badge
                 size="sm"
                 uppercase
@@ -137,49 +137,46 @@ export function IndicatorPanel({
 
       <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3">
         <div>
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-ink-faint">
+          <span className="inline-flex items-center gap-1 font-mono text-[9px] uppercase font-bold tracking-wider text-ink-faint">
             Support
             <InfoTooltip articleId={SUPPORT_RESISTANCE_GLOSSARY_ID} />
           </span>
-          <div className="mt-1.5 flex flex-col gap-1">
+          <div className="mt-1 flex flex-col gap-0.5">
             {convertedIndicators?.support_resistance.support.length ? (
               convertedIndicators.support_resistance.support.map((v, i) => (
-                <span key={i} className="numeric font-mono text-xs text-bull">
+                <span key={i} className="numeric font-mono text-xs font-semibold text-bull">
                   {formatPrice(v, currency)}
                 </span>
               ))
             ) : (
-              <span className="text-xs text-ink-faint">--</span>
+              <span className="font-mono text-xs text-ink-faint">--</span>
             )}
           </div>
-          <p className="mt-1.5 text-[10px] leading-relaxed text-ink-faint">{read.support.note}</p>
+          <p className="mt-1 font-mono text-[8px] uppercase tracking-wide text-ink-faint/80 leading-normal">{read.support.note}</p>
         </div>
         <div>
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-ink-faint">
+          <span className="inline-flex items-center gap-1 font-mono text-[9px] uppercase font-bold tracking-wider text-ink-faint">
             Resistance
             <InfoTooltip articleId={SUPPORT_RESISTANCE_GLOSSARY_ID} />
           </span>
-          <div className="mt-1.5 flex flex-col gap-1">
+          <div className="mt-1 flex flex-col gap-0.5">
             {convertedIndicators?.support_resistance.resistance.length ? (
               convertedIndicators.support_resistance.resistance.map((v, i) => (
-                <span key={i} className="numeric font-mono text-xs text-bear">
+                <span key={i} className="numeric font-mono text-xs font-semibold text-bear">
                   {formatPrice(v, currency)}
                 </span>
               ))
             ) : (
-              <span className="text-xs text-ink-faint">--</span>
+              <span className="font-mono text-xs text-ink-faint">--</span>
             )}
           </div>
-          <p className="mt-1.5 text-[10px] leading-relaxed text-ink-faint">{read.resistance.note}</p>
+          <p className="mt-1 font-mono text-[8px] uppercase tracking-wide text-ink-faint/80 leading-normal">{read.resistance.note}</p>
         </div>
       </div>
 
-      <div className={cn("mt-3 rounded-xl border p-3", TONE_SUMMARY_BOX[read.summaryTone])}>
-        {/* ink-muted, not ink-faint - this box has a tinted background (bull/bear/warn/5),
-            and ink-faint doesn't have enough contrast margin to spare once a tint eats
-            into it (caught by an automated contrast scan). */}
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Overall Technical Read</p>
-        <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{read.summary}</p>
+      <div className={cn("mt-3 rounded-sm border p-3", TONE_SUMMARY_BOX[read.summaryTone])}>
+        <p className="font-mono text-[9px] uppercase font-bold tracking-wider text-ink-muted">Overall Technical Read</p>
+        <p className="mt-1 text-xs font-mono font-medium leading-relaxed text-ink-muted">{read.summary}</p>
       </div>
 
       <div className="mt-3 border-t border-border pt-3">

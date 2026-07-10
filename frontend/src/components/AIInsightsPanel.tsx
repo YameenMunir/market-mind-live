@@ -55,14 +55,14 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
       >
               <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3.5">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-brand/25 bg-brand/5">
                     <Sparkles size={16} className="text-brand" />
                   </div>
                   <div className="min-w-0">
-                    <p id="ai-insights-panel-title" className="text-sm font-semibold text-ink">
+                    <p id="ai-insights-panel-title" className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
                       AI Insights
                     </p>
-                    <p className="truncate text-[11px] text-ink-faint">
+                    <p className="truncate font-mono text-[9px] uppercase tracking-wider text-ink-faint">
                       {context?.asset_name ? `${context.asset_name} · ${asset}` : asset}
                     </p>
                   </div>

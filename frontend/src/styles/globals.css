@@ -9,40 +9,33 @@
    token) so the two remain visually distinguishable at a glance, not only in code -
    they were previously ~1.3:1 apart and read as almost the same color. */
 :root {
-  --color-canvas: 7 9 14;
-  --color-surface: 13 16 24;
-  --color-surface-raised: 18 22 32;
-  --color-border: 32 38 52;
-  --color-ink: 236 238 244;
-  --color-ink-muted: 156 164 182;
-  /* Deliberately carries a bit more margin above the 4.5:1 floor than the other
-     semantic colors (~4.8-4.9:1 vs. pure canvas/surface, not the bare minimum) - an
-     automated contrast scan (axe-core) caught it dropping under 4.5:1 in a couple of
-     spots where it sat on a tinted card background rather than a pure one, since it
-     had ~zero buffer to spare. Anywhere ink-faint needs to sit on a tinted
-     background, prefer ink-muted instead (it has much more headroom) rather than
-     relying on this alone. */
-  --color-ink-faint: 122 129 146;
-  --color-brand: 245 166 35;
-  --color-brand-strong: 255 195 92;
-  --color-bull: 45 212 191;
-  --color-bear: 244 63 94;
-  --color-warn: 196 180 8;
+  --color-canvas: 9 11 16;
+  --color-surface: 17 20 28;
+  --color-surface-raised: 24 28 39;
+  --color-border: 29 35 47;
+  --color-ink: 241 243 247;
+  --color-ink-muted: 148 163 184;
+  --color-ink-faint: 100 116 139;
+  --color-brand: 245 158 11;
+  --color-brand-strong: 251 191 36;
+  --color-bull: 16 185 129;
+  --color-bear: 239 68 68;
+  --color-warn: 234 179 8;
 }
 
 .light {
-  --color-canvas: 246 246 243;
+  --color-canvas: 248 250 252;
   --color-surface: 255 255 255;
-  --color-surface-raised: 250 250 248;
-  --color-border: 226 226 220;
-  --color-ink: 22 24 29;
-  --color-ink-muted: 91 96 107;
-  --color-ink-faint: 101 108 123;
-  --color-brand: 160 94 13;
-  --color-brand-strong: 123 72 10;
-  --color-bull: 10 127 104;
-  --color-bear: 219 31 44;
-  --color-warn: 120 111 8;
+  --color-surface-raised: 241 245 249;
+  --color-border: 226 232 240;
+  --color-ink: 15 23 42;
+  --color-ink-muted: 71 85 105;
+  --color-ink-faint: 100 116 139;
+  --color-brand: 217 119 6;
+  --color-brand-strong: 180 83 9;
+  --color-bull: 5 150 105;
+  --color-bear: 220 38 38;
+  --color-warn: 202 138 4;
 }
 
 * {

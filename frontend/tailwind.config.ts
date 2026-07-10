@@ -6,7 +6,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-sora)", "sans-serif"],
+        sans: ["var(--font-inter)", "sans-serif"],
         mono: ["var(--font-jetbrains-mono)", "monospace"],
       },
       colors: {
@@ -24,12 +24,11 @@ const config: Config = {
         warn: "rgb(var(--color-warn) / <alpha-value>)",
       },
       boxShadow: {
-        // Persistent page sections (cards, drawers, the fullscreen chart).
-        panel: "0 1px 0 0 rgb(var(--color-border) / 0.6), 0 24px 48px -24px rgb(0 0 0 / 0.5)",
-        // Transient floating UI (dropdown menus, tooltips) - tighter blur/spread than
-        // `panel` so a small popover doesn't cast as heavy a shadow as a full section.
-        popover: "0 1px 0 0 rgb(var(--color-border) / 0.6), 0 12px 24px -12px rgb(0 0 0 / 0.45)",
-        glow: "0 0 0 1px rgb(var(--color-brand) / 0.3), 0 0 32px -4px rgb(var(--color-brand) / 0.35)",
+        // Persistent page sections (cards, drawers, the fullscreen chart). Flat panel style.
+        panel: "none",
+        // Transient floating UI (dropdown menus, tooltips) - clean sharp border-shadow
+        popover: "0 4px 12px 0 rgb(0 0 0 / 0.15), 0 0 0 1px rgb(var(--color-border))",
+        glow: "0 0 0 1px rgb(var(--color-brand) / 0.4)",
       },
       backgroundImage: {
         grain: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E\")",

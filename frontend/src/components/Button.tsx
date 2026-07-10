@@ -16,18 +16,18 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 /** Exported so non-`<button>` elements (e.g. a `<Link>` styled to match) can share the
  * exact same visual variants instead of hand-copying class strings. */
 export const BUTTON_VARIANT_STYLES: Record<ButtonVariant, string> = {
-  primary: "bg-brand text-canvas hover:bg-brand-strong",
+  primary: "bg-brand text-canvas hover:bg-brand-strong border border-transparent",
   secondary: "border border-border bg-surface-raised text-ink hover:border-ink-faint/40 hover:bg-surface",
   ghost: "text-ink-muted hover:bg-surface-raised hover:text-ink",
   danger: "border border-bear/30 bg-bear/10 text-bear hover:bg-bear/15",
 };
 
 export const BUTTON_SIZE_STYLES: Record<ButtonSize, string> = {
-  sm: "h-8 gap-1.5 rounded-lg px-2.5 text-xs font-medium",
-  md: "h-9 gap-2 rounded-lg px-3.5 text-sm font-medium",
-  lg: "h-10 gap-2 rounded-lg px-4 text-sm font-semibold",
-  icon: "h-9 w-9 rounded-lg",
-  "icon-sm": "h-8 w-8 rounded-lg",
+  sm: "h-8 gap-1.5 rounded-sm px-2.5 text-xs font-mono font-semibold uppercase tracking-wider",
+  md: "h-9 gap-2 rounded-sm px-3.5 text-xs font-mono font-semibold uppercase tracking-wider",
+  lg: "h-10 gap-2 rounded-sm px-4 text-xs font-mono font-semibold uppercase tracking-wider",
+  icon: "h-9 w-9 rounded-sm",
+  "icon-sm": "h-8 w-8 rounded-sm",
 };
 
 /** Standard interactive button - consolidates the ~8 slightly-different hand-rolled

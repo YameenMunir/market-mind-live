@@ -52,8 +52,8 @@ export interface LiveCandlestickChartHandle {
 // here is read live from the actual CSS token (see getThemeColors below) instead of a
 // hand-copied hex, so it can't silently drift out of sync when a token changes.
 const AUX_CHART_COLORS = {
-  dark: { sma50: "#60a5fa", forecastLine: "#a78bfa" },
-  light: { sma50: "#2563eb", forecastLine: "#7c3aed" },
+  dark: { sma50: "#38bdf8", forecastLine: "#94a3b8" },
+  light: { sma50: "#0284c7", forecastLine: "#475569" },
 };
 
 function getThemeColors(theme: "dark" | "light") {

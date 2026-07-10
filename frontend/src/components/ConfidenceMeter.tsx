@@ -1,42 +1,36 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 
 interface ConfidenceMeterProps {
   confidence: number;
-  size?: number;
 }
 
-export function ConfidenceMeter({ confidence, size = 100 }: ConfidenceMeterProps) {
-  const radius = (size - 10) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - confidence / 100);
-
-  const colorClass = confidence >= 70 ? "text-brand" : confidence >= 45 ? "text-warn" : "text-ink-faint";
+export function ConfidenceMeter({ confidence }: ConfidenceMeterProps) {
+  const filledCount = Math.round(confidence / 10);
+  const colorClass =
+    confidence >= 70
+      ? "bg-brand border-brand"
+      : confidence >= 45
+      ? "bg-warn border-warn"
+      : "bg-ink-faint border-ink-faint";
 
   return (
-    <div className="relative flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          strokeWidth={7}
-          className="fill-none stroke-border"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          strokeWidth={7}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className={cn("fill-none transition-all duration-700 ease-out", colorClass)}
-          stroke="currentColor"
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center gap-0.5">
-        <span className="numeric font-mono text-xl font-semibold leading-none text-ink">{Math.round(confidence)}%</span>
-        <span className="text-[8px] font-medium uppercase tracking-wide text-ink-faint">Confidence</span>
+    <div className="flex flex-col gap-1.5 min-w-[110px] shrink-0">
+      <div className="flex items-baseline justify-between font-mono">
+        <span className="text-[9px] font-bold uppercase tracking-wider text-ink-faint">Confidence</span>
+        <span className="numeric text-xs font-bold text-ink">{Math.round(confidence)}%</span>
+      </div>
+      <div className="flex gap-0.5">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "h-3.5 w-2 rounded-sm border transition-all duration-300",
+              i < filledCount ? colorClass : "border-border bg-surface-raised"
+            )}
+          />
+        ))}
       </div>
     </div>
   );

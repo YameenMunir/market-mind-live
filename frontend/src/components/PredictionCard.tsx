@@ -40,19 +40,19 @@ export function PredictionCard({
     <Panel
       eyebrow="Model Prediction"
       title={prediction ? `${prediction.horizon}` : isLoading ? "Analyzing..." : "--"}
-      className="flex h-full flex-col gap-4"
+      className="flex h-full flex-col justify-between"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         {prediction ? (
           <div className="min-w-0">
-            <div className={cn("flex items-center gap-2 text-lg font-semibold", meta?.color ?? "text-ink-muted")}>
-              <Icon size={20} className="shrink-0" />
+            <div className={cn("inline-flex items-center gap-2 rounded-sm border px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-wider", meta?.color === "text-bull" ? "border-bull/20 bg-bull/5 text-bull" : meta?.color === "text-bear" ? "border-bear/20 bg-bear/5 text-bear" : "border-border bg-surface-raised text-ink-muted")}>
+              <Icon size={14} className="shrink-0" />
               <span className="truncate">{meta?.label ?? "--"}</span>
             </div>
             {prediction.target_price && (
-              <p className="mt-2 break-words text-xs leading-relaxed text-ink-muted">
-                Indicative target:{" "}
-                <span className="numeric font-medium text-ink">
+              <p className="mt-2.5 break-words font-mono text-xs text-ink-muted">
+                Target:{" "}
+                <span className="numeric font-bold text-ink">
                   {formatPrice(convert(prediction.target_price, nativeCurrency), currency)}
                 </span>
               </p>
@@ -60,17 +60,24 @@ export function PredictionCard({
           </div>
         ) : (
           <div aria-hidden className="min-w-0 animate-pulse">
-            <div className="h-5 w-24 rounded bg-surface-raised" />
-            <div className="mt-2.5 h-3 w-32 rounded bg-surface-raised" />
+            <div className="h-5 w-24 rounded-sm bg-surface-raised" />
+            <div className="mt-2.5 h-3 w-32 rounded-sm bg-surface-raised" />
           </div>
         )}
         {prediction ? (
           <ConfidenceMeter confidence={prediction.confidence} />
         ) : (
-          <div aria-hidden className="h-[100px] w-[100px] shrink-0 animate-pulse rounded-full border-[7px] border-surface-raised" />
+          <div aria-hidden className="flex flex-col gap-1.5 min-w-[110px] shrink-0 animate-pulse">
+            <div className="h-3 w-16 rounded bg-surface-raised" />
+            <div className="flex gap-0.5">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="h-3.5 w-2 rounded-sm bg-surface-raised" />
+              ))}
+            </div>
+          </div>
         )}
       </div>
-      <div className="mt-auto border-t border-border pt-3">
+      <div className="mt-4 border-t border-border pt-3">
         <LastUpdated updatedAt={updatedAt ?? null} live={isLive} isStale={isStale} />
       </div>
     </Panel>
