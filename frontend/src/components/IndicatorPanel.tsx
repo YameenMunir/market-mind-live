@@ -121,7 +121,7 @@ export function IndicatorPanel({
               <span className={cn("numeric font-mono text-xs font-semibold", TONE_TEXT[insight.tone])}>{insight.value}</span>
             </div>
             <div className="mt-1 flex items-start justify-between gap-2">
-              <p className="min-w-0 flex-1 font-mono text-[9px] uppercase tracking-wide text-ink-faint/80 leading-normal">{insight.note}</p>
+              <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-ink-muted">{insight.note}</p>
               <Badge
                 size="sm"
                 uppercase
@@ -152,7 +152,7 @@ export function IndicatorPanel({
               <span className="font-mono text-xs text-ink-faint">--</span>
             )}
           </div>
-          <p className="mt-1 font-mono text-[8px] uppercase tracking-wide text-ink-faint/80 leading-normal">{read.support.note}</p>
+          <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">{read.support.note}</p>
         </div>
         <div>
           <span className="inline-flex items-center gap-1 font-mono text-[9px] uppercase font-bold tracking-wider text-ink-faint">
@@ -170,13 +170,13 @@ export function IndicatorPanel({
               <span className="font-mono text-xs text-ink-faint">--</span>
             )}
           </div>
-          <p className="mt-1 font-mono text-[8px] uppercase tracking-wide text-ink-faint/80 leading-normal">{read.resistance.note}</p>
+          <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">{read.resistance.note}</p>
         </div>
       </div>
 
       <div className={cn("mt-3 rounded-sm border p-3", TONE_SUMMARY_BOX[read.summaryTone])}>
         <p className="font-mono text-[9px] uppercase font-bold tracking-wider text-ink-muted">Overall Technical Read</p>
-        <p className="mt-1 text-xs font-mono font-medium leading-relaxed text-ink-muted">{read.summary}</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-muted">{read.summary}</p>
       </div>
 
       <div className="mt-3 border-t border-border pt-3">

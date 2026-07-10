@@ -68,7 +68,7 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
       {risk && risk.factors.length > 0 && (
         <ul className="mt-4 space-y-1.5 border-t border-border pt-3">
           {risk.factors.map((factor, i) => (
-            <li key={i} className="text-[10px] font-mono leading-relaxed text-ink-muted">
+            <li key={i} className="text-xs leading-relaxed text-ink-muted">
               &bull; {factor}
             </li>
           ))}
