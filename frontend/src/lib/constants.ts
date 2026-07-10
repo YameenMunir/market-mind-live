@@ -3,6 +3,13 @@ import type { AssetType } from "@/types";
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 export const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_BASE_URL || "ws://localhost:8000";
 
+// Backend requests should normally resolve in a few seconds (see backend/config.py's
+// provider_max_retries/cooldown settings) - this is a generous upper bound that still
+// tolerates a cold start on a free-tier host, so a genuinely hung request fails fast
+// into the existing network_error fallback UI instead of leaving a card stuck on
+// "Loading..." indefinitely.
+export const REQUEST_TIMEOUT_MS = 25_000;
+
 export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   stock: "Stocks",
   etf: "ETFs",

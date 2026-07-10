@@ -59,19 +59,22 @@ class TTLCache:
                 key_lock = Lock()
                 self._inflight_locks[key] = key_lock
 
-        with key_lock:
-            # Another thread may have just populated the cache while we were
-            # waiting for the lock - check again before calling the factory.
-            cached = self.get(key)
-            if cached is not None:
-                return cached
-            value = factory()
-            self.set(key, value, ttl_seconds)
-
-        with self._lock:
-            # Safe to drop the lock entry now - a new one is created on demand
-            # if this key goes cold again later.
-            self._inflight_locks.pop(key, None)
+        try:
+            with key_lock:
+                # Another thread may have just populated the cache while we were
+                # waiting for the lock - check again before calling the factory.
+                cached = self.get(key)
+                if cached is not None:
+                    return cached
+                value = factory()
+                self.set(key, value, ttl_seconds)
+        finally:
+            # Always drop the lock entry, including when `factory()` raises (e.g. a
+            # rate limit) - otherwise a key that keeps failing never gets cleaned up
+            # and accumulates in `_inflight_locks` forever. A new lock is created on
+            # demand if this key goes cold again later.
+            with self._lock:
+                self._inflight_locks.pop(key, None)
 
         return value
 

@@ -10,7 +10,7 @@ from typing import Callable, TypeVar
 
 import pandas as pd
 import yfinance as yf
-from yfinance.exceptions import YFRateLimitError
+from yfinance.exceptions import YFDataException, YFRateLimitError
 
 from config import get_settings
 from data.provider import MarketDataProvider
@@ -25,6 +25,32 @@ T = TypeVar("T")
 # Exceptions that represent a transient, retryable network failure rather than a bad
 # symbol or a permanent provider error.
 _TRANSIENT_EXCEPTIONS = (socket.gaierror, ConnectionError, TimeoutError)
+
+# yfinance runs on whichever HTTP backend is available at import time - curl_cffi
+# when installed (the supported/default case), otherwise plain `requests` (see
+# yfinance/_http.py). Either backend raises its *own* exception classes for a dropped
+# connection or timeout, which are NOT instances of the builtin `ConnectionError`/
+# `TimeoutError` above despite the similar names, so they'd otherwise slip past
+# `_TRANSIENT_EXCEPTIONS` entirely. Matched by class name (mirroring yfinance's own
+# `_is_transient_error` helper in yfinance/data.py, which has the identical problem
+# and solves it the same way) rather than importing curl_cffi/requests directly, so
+# this works regardless of which backend is actually active.
+_TRANSIENT_ERROR_TYPE_NAMES = frozenset({
+    "Timeout", "TimeoutError", "ConnectTimeout", "ReadTimeout",
+    "ConnectionError", "ChunkedEncodingError", "RemoteDisconnected",
+})
+
+# Yahoo doesn't always signal throttling with a clean 429 - yfinance's own cookie-retry
+# logic (yfinance/data.py) only raises YFRateLimitError for a 429 hit on a *second*,
+# cookie-swapped request; a 429 on the first attempt, and a soft IP block (common for
+# shared/cloud hosting ranges, returned as a plain 403), both surface as a generic
+# HTTPError instead. Treated identically to a real rate limit here since the practical
+# meaning - and the correct response - is the same: back off, don't treat it as "no
+# data for this symbol".
+_RATE_LIMIT_STATUS_CODES = frozenset({429, 403})
+# Server-side/unavailable responses - retried with the same backoff as a connection
+# failure rather than surfaced as "this symbol has no data".
+_UNAVAILABLE_STATUS_CODES = frozenset({500, 502, 503, 504})
 
 # Yahoo's 429 throttling is IP-wide, not per-symbol - once it's been seen, every symbol's
 # poller should stop hitting the network entirely for a cooldown window rather than each
@@ -64,6 +90,52 @@ def _reset_rate_limit_streak() -> None:
             _consecutive_rate_limit_hits = 0
 
 
+def _response_status_code(exc: Exception) -> int | None:
+    """Best-effort HTTP status code for an exception from either HTTP backend yfinance
+    may be using (curl_cffi.requests or plain requests) - both attach a `.response`
+    object with a `.status_code` to their HTTPError, so this works without importing
+    either backend directly.
+    """
+    response = getattr(exc, "response", None)
+    return getattr(response, "status_code", None)
+
+
+def _raise_rate_limited(exc: Exception, description: str, *, status_code: int | None = None) -> None:
+    settings = get_settings()
+    metrics.increment(f"rate_limit.provider_{status_code}" if status_code else "rate_limit.provider_429")
+    cooldown_seconds = _start_cooldown(
+        settings.provider_rate_limit_cooldown_seconds,
+        settings.provider_rate_limit_cooldown_max_seconds,
+    )
+    label = f"a real rate limit (HTTP {status_code})" if status_code else "Yahoo's REAL rate limit (HTTP 429)"
+    logger.warning(
+        "%s hit %s - cooling down all symbols for %.0fs.",
+        description, label, cooldown_seconds,
+    )
+    raise RateLimitedError(
+        "Market data provider is rate-limiting this server.", detail=str(exc)
+    ) from exc
+
+
+def _retry_or_raise_network_error(exc: Exception, attempt: int, description: str) -> int:
+    """Sleeps with exponential backoff + jitter and returns the incremented attempt
+    count, or raises NetworkError once `provider_max_retries` is exhausted.
+    """
+    settings = get_settings()
+    attempt += 1
+    if attempt > settings.provider_max_retries:
+        logger.error("%s failed after %d attempts: %s", description, attempt, exc)
+        raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
+    delay = settings.provider_retry_base_delay_seconds * (2 ** (attempt - 1))
+    delay += random.uniform(0, delay * 0.25)
+    logger.warning(
+        "%s failed (attempt %d/%d), retrying in %.2fs: %s",
+        description, attempt, settings.provider_max_retries, delay, exc,
+    )
+    time.sleep(delay)
+    return attempt
+
+
 def _call_with_retry(fn: Callable[[], T], *, description: str) -> T:
     """Runs `fn`, retrying transient network failures with exponential backoff + jitter.
 
@@ -72,10 +144,19 @@ def _call_with_retry(fn: Callable[[], T], *, description: str) -> T:
     letting the failure surface as a NetworkError - protects against one-off DNS/connection
     blips without masking a genuinely down or rate-limited upstream.
 
-    A rate limit (`YFRateLimitError`) is handled differently: it is *not* retried here
+    A rate limit (`YFRateLimitError`, or a generic HTTPError carrying a 429/403 status -
+    see `_RATE_LIMIT_STATUS_CODES`) is handled differently: it is *not* retried here
     (retrying immediately into an active rate limit only makes it worse) - instead it
     starts a shared cooldown and raises `RateLimitedError` straight away, so every other
     symbol's poller also backs off instead of piling on.
+
+    Any other exception is inspected for an HTTP status code or a name matching a known
+    transient-failure shape (`_UNAVAILABLE_STATUS_CODES` / `_TRANSIENT_ERROR_TYPE_NAMES`)
+    before falling back to re-raising it unchanged - this catches real provider trouble
+    that neither yfinance nor the builtin exception types above classify consistently
+    (e.g. curl_cffi's own timeout/connection exceptions, or a 403/503 from Yahoo), so it
+    can never be silently mistaken by a caller for "no data available" instead of "the
+    provider is temporarily unavailable".
     """
     settings = get_settings()
 
@@ -94,30 +175,19 @@ def _call_with_retry(fn: Callable[[], T], *, description: str) -> T:
             _reset_rate_limit_streak()
             return result
         except YFRateLimitError as exc:
-            metrics.increment("rate_limit.provider_429")
-            cooldown_seconds = _start_cooldown(
-                settings.provider_rate_limit_cooldown_seconds,
-                settings.provider_rate_limit_cooldown_max_seconds,
-            )
-            logger.warning(
-                "%s hit Yahoo's REAL rate limit (HTTP 429) - cooling down all symbols for %.0fs.",
-                description, cooldown_seconds,
-            )
-            raise RateLimitedError(
-                "Market data provider is rate-limiting this server.", detail=str(exc)
-            ) from exc
+            _raise_rate_limited(exc, description)
         except _TRANSIENT_EXCEPTIONS as exc:
-            attempt += 1
-            if attempt > settings.provider_max_retries:
-                logger.error("%s failed after %d attempts: %s", description, attempt, exc)
-                raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
-            delay = settings.provider_retry_base_delay_seconds * (2 ** (attempt - 1))
-            delay += random.uniform(0, delay * 0.25)
-            logger.warning(
-                "%s failed (attempt %d/%d), retrying in %.2fs: %s",
-                description, attempt, settings.provider_max_retries, delay, exc,
-            )
-            time.sleep(delay)
+            attempt = _retry_or_raise_network_error(exc, attempt, description)
+        except Exception as exc:
+            status_code = _response_status_code(exc)
+            if status_code in _RATE_LIMIT_STATUS_CODES:
+                _raise_rate_limited(exc, description, status_code=status_code)
+            elif status_code in _UNAVAILABLE_STATUS_CODES or type(exc).__name__ in _TRANSIENT_ERROR_TYPE_NAMES:
+                attempt = _retry_or_raise_network_error(exc, attempt, description)
+            else:
+                # Not a recognized transient/rate-limit signature - leave it to the
+                # caller's own handling (e.g. "no analyst coverage for this symbol").
+                raise
 
 
 class YFinanceProvider(MarketDataProvider):
@@ -189,11 +259,21 @@ class YFinanceProvider(MarketDataProvider):
             )
         except (NetworkError, RateLimitedError):
             raise
-        except Exception:
-            # No analyst coverage for this symbol is a normal outcome here (crypto,
-            # forex, commodities, indices, and many small caps all lack coverage),
-            # not a real error - fall back to an empty result rather than raising.
+        except YFDataException:
+            # yfinance's own signal that this field has no data for this symbol - a
+            # normal outcome (crypto, forex, commodities, indices, and many small
+            # caps all lack analyst coverage), not a real error.
             targets = {}
+        except Exception as exc:
+            # Anything else is real provider trouble we don't have a more specific
+            # classification for (e.g. a TLS/certificate failure, or some other
+            # exception shape _call_with_retry doesn't recognize) - must never be
+            # silently treated as "no coverage" the way a bare `except Exception`
+            # used to (see _call_with_retry's docstring): that let a real outage or
+            # rate limit be misreported as a successful empty result instead of
+            # surfacing to the caller, which is exactly the bug this method exists
+            # to avoid.
+            raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
 
         counts = {"strong_buy": 0, "buy": 0, "hold": 0, "sell": 0, "strong_sell": 0}
         try:
@@ -202,8 +282,10 @@ class YFinanceProvider(MarketDataProvider):
             )
         except (NetworkError, RateLimitedError):
             raise
-        except Exception:
+        except YFDataException:
             trend = None
+        except Exception as exc:
+            raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
 
         if trend is not None and not trend.empty:
             current = trend[trend["period"] == "0m"]

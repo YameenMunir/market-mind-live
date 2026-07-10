@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/constants";
+import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "@/lib/constants";
 import { getDeviceId } from "@/lib/deviceId";
 import type {
   AIAssetContext,
@@ -39,18 +39,31 @@ import type {
 import { ApiError } from "@/types";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // A request that never resolves (backend hung, connection silently dropped) would
+  // otherwise leave a caller's isLoading state true forever - this bounds every call
+  // to REQUEST_TIMEOUT_MS so a hang surfaces as a normal, retryable network_error
+  // instead of an indefinite spinner.
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT_MS);
+
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       headers: { "Content-Type": "application/json", "X-Device-Id": getDeviceId(), ...(init?.headers || {}) },
       cache: "no-store",
+      signal: timeoutController.signal,
     });
   } catch (err) {
+    const isTimeout = err instanceof DOMException && err.name === "AbortError";
     throw new ApiError({
       error_code: "network_error",
-      message: "Could not reach the market data service. Check your connection and try again.",
+      message: isTimeout
+        ? "The market data service took too long to respond. Retrying automatically."
+        : "Could not reach the market data service. Check your connection and try again.",
     });
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (!res.ok) {
