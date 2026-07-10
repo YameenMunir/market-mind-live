@@ -5,7 +5,7 @@ import { Loader2, Send, ShieldAlert } from "lucide-react";
 
 import { AIChatMessage } from "@/components/AIChatMessage";
 import { Button } from "@/components/Button";
-import { Textarea } from "@/components/Input";
+import { Input } from "@/components/Input";
 import { StatusBanner } from "@/components/StatusBanner";
 import { AI_SUGGESTED_QUESTIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -104,21 +104,22 @@ export function AIChatConversation({
       </div>
 
       <div className={cn("border-t border-border p-3", isFullscreen && "mx-auto w-full max-w-3xl border-t-0 pt-0")}>
-        <div className="flex items-end gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            aria-label={`Ask the AI assistant about ${asset}`}
-            placeholder="Ask about this asset's data..."
-            rows={1}
-            className="max-h-28 flex-1 resize-none"
-          />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <Input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              aria-label={`Ask the AI assistant about ${asset}`}
+              placeholder="Ask about this asset's data"
+            />
+          </div>
           <Button
             variant="primary"
             size="icon"
@@ -130,7 +131,7 @@ export function AIChatConversation({
             <Send size={15} />
           </Button>
         </div>
-        <p className="mt-2 flex items-start gap-1.5 text-[10px] leading-relaxed text-ink-faint">
+        <p className="mt-3 flex items-start gap-1.5 text-[10px] leading-relaxed text-ink-faint/80">
           <ShieldAlert size={11} className="mt-0.5 shrink-0" />
           This is for informational purposes only and is not financial advice.
         </p>
