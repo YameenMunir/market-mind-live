@@ -82,8 +82,9 @@ export function MarketGlobe3D({ className }: { className?: string }) {
         >
           <defs>
             <radialGradient id="globe-bg" cx="50%" cy="50%" r="50%">
-              <stop offset="70%" stopColor="var(--color-surface, #0f172a)" stopOpacity="0" />
-              <stop offset="100%" stopColor="var(--color-brand, #3b82f6)" stopOpacity="0.08" />
+              <stop offset="0%" stopColor="var(--color-brand, #3b82f6)" stopOpacity="0.22" />
+              <stop offset="60%" stopColor="var(--color-brand, #3b82f6)" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="var(--color-surface, #0f172a)" stopOpacity="0.4" />
             </radialGradient>
             
             <filter id="globe-glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -96,19 +97,32 @@ export function MarketGlobe3D({ className }: { className?: string }) {
           </defs>
 
           {/* Globe Floor Shadow */}
-          <ellipse cx={center.x} cy={center.y + r + 10} rx={r - 10} ry="6" fill="#020617" opacity="0.3" />
+          <ellipse cx={center.x} cy={center.y + r + 10} rx={r - 10} ry="6" fill="#020617" opacity="0.4" />
 
           {/* Globe Base Sphere */}
-          <circle cx={center.x} cy={center.y} r={r} fill="url(#globe-bg)" stroke="var(--color-border, #1e293b)" strokeWidth="0.8" />
+          <circle cx={center.x} cy={center.y} r={r} fill="url(#globe-bg)" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.45" strokeWidth="1" />
 
           {/* Latitude Bands */}
-          <ellipse cx={center.x} cy={center.y} rx={r} ry="16" stroke="var(--color-border, #1e293b)" strokeOpacity="0.35" strokeWidth="0.8" />
-          <ellipse cx={center.x} cy={center.y - 25} rx={r - 12} ry="8" stroke="var(--color-border, #1e293b)" strokeOpacity="0.2" strokeWidth="0.8" />
-          <ellipse cx={center.x} cy={center.y + 25} rx={r - 12} ry="8" stroke="var(--color-border, #1e293b)" strokeOpacity="0.2" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y} rx={r} ry="16" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.4" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y - 25} rx={r - 12} ry="8" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.3" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y + 25} rx={r - 12} ry="8" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.3" strokeWidth="0.8" />
+          
+          {/* Extra Latitude Bands (Wireframe detailing) */}
+          <ellipse cx={center.x} cy={center.y - 12} rx={r - 4} ry="12" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.2" strokeWidth="0.6" strokeDasharray="1 3" />
+          <ellipse cx={center.x} cy={center.y + 12} rx={r - 4} ry="12" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.2" strokeWidth="0.6" strokeDasharray="1 3" />
 
           {/* Longitude Bands */}
-          <ellipse cx={center.x} cy={center.y} rx="16" ry={r} stroke="var(--color-border, #1e293b)" strokeOpacity="0.35" strokeWidth="0.8" />
-          <ellipse cx={center.x} cy={center.y} rx="36" ry={r} stroke="var(--color-border, #1e293b)" strokeOpacity="0.2" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y} rx="16" ry={r} stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.4" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y} rx="36" ry={r} stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.3" strokeWidth="0.8" />
+          
+          {/* Extra Longitude Bands (Wireframe detailing) */}
+          <ellipse cx={center.x} cy={center.y} rx="26" ry={r} stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.22" strokeWidth="0.6" strokeDasharray="2 3" />
+          <ellipse cx={center.x} cy={center.y} rx="44" ry={r} stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.18" strokeWidth="0.6" strokeDasharray="2 3" />
+
+          {/* ================= SECONDARY DECORATIVE NODES ================= */}
+          <circle cx={center.x + 42} cy={center.y - 12} r="1.8" fill="var(--color-brand, #3b82f6)" opacity="0.3" />
+          <circle cx={center.x - 22} cy={center.y + 28} r="1.8" fill="#10b981" opacity="0.3" />
+          <circle cx={center.x - 42} cy={center.y + 10} r="1.8" fill="#a855f7" opacity="0.2" />
 
           {/* ================= NYC NODE ================= */}
           <g 
@@ -126,7 +140,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
             <circle 
               cx="0" 
               cy="0" 
-              r={activeRegion === "nyc" ? 5 : 3.5} 
+              r={activeRegion === "nyc" ? 5.5 : 4} 
               fill="var(--color-brand, #3b82f6)" 
               className="transition-all"
             />
@@ -134,9 +148,9 @@ export function MarketGlobe3D({ className }: { className?: string }) {
               <circle 
                 cx="0" 
                 cy="0" 
-                r={activeRegion === "nyc" ? 9 : 6} 
+                r={activeRegion === "nyc" ? 10 : 7} 
                 stroke="var(--color-brand, #3b82f6)" 
-                strokeOpacity="0.4" 
+                strokeOpacity="0.65" 
                 strokeWidth="1.2" 
                 className="animate-pulse" 
               />
@@ -159,7 +173,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
             <circle 
               cx="0" 
               cy="0" 
-              r={activeRegion === "london" ? 4.5 : 3} 
+              r={activeRegion === "london" ? 5 : 3.5} 
               fill="#10b981" 
               className="transition-all"
             />
@@ -167,9 +181,9 @@ export function MarketGlobe3D({ className }: { className?: string }) {
               <circle 
                 cx="0" 
                 cy="0" 
-                r={activeRegion === "london" ? 8.5 : 5.5} 
+                r={activeRegion === "london" ? 9.5 : 6.5} 
                 stroke="#10b981" 
-                strokeOpacity="0.4" 
+                strokeOpacity="0.65" 
                 strokeWidth="1.2" 
                 className="animate-pulse" 
               />
@@ -192,7 +206,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
             <circle 
               cx="0" 
               cy="0" 
-              r={activeRegion === "tokyo" ? 5 : 3.5} 
+              r={activeRegion === "tokyo" ? 5.5 : 4} 
               fill="#a855f7" 
               className="transition-all"
             />
@@ -200,9 +214,9 @@ export function MarketGlobe3D({ className }: { className?: string }) {
               <circle 
                 cx="0" 
                 cy="0" 
-                r={activeRegion === "tokyo" ? 9 : 6} 
+                r={activeRegion === "tokyo" ? 10 : 7} 
                 stroke="#a855f7" 
-                strokeOpacity="0.4" 
+                strokeOpacity="0.65" 
                 strokeWidth="1.2" 
                 className="animate-pulse" 
               />
@@ -214,22 +228,24 @@ export function MarketGlobe3D({ className }: { className?: string }) {
           <path
             d={`M ${center.x - 32} ${center.y - 12} Q ${center.x - 12} ${center.y - 38} ${center.x + 8} ${center.y - 30}`}
             stroke="var(--color-brand, #3b82f6)"
-            strokeWidth={activeRegion === "nyc" || activeRegion === "london" ? 2 : 1.2}
+            strokeWidth={activeRegion === "nyc" || activeRegion === "london" ? 2.2 : 1.5}
             strokeLinecap="round"
-            strokeOpacity={activeRegion === "nyc" || activeRegion === "london" ? 0.8 : 0.4}
+            strokeOpacity={activeRegion === "nyc" || activeRegion === "london" ? 0.9 : 0.55}
             strokeDasharray="4 4"
-            className="transition-all"
+            className="transition-all animate-globe-dash"
+            style={{ strokeDashoffset: 0 }}
           />
 
           {/* London -> Tokyo */}
           <path
             d={`M ${center.x + 8} ${center.y - 30} Q ${center.x + 28} ${center.y - 10} ${center.x + 36} ${center.y + 16}`}
             stroke="#10b981"
-            strokeWidth={activeRegion === "london" || activeRegion === "tokyo" ? 2 : 1.2}
+            strokeWidth={activeRegion === "london" || activeRegion === "tokyo" ? 2.2 : 1.5}
             strokeLinecap="round"
-            strokeOpacity={activeRegion === "london" || activeRegion === "tokyo" ? 0.8 : 0.4}
+            strokeOpacity={activeRegion === "london" || activeRegion === "tokyo" ? 0.9 : 0.55}
             strokeDasharray="3 3"
-            className="transition-all"
+            className="transition-all animate-globe-dash"
+            style={{ strokeDashoffset: 0 }}
           />
 
           {/* Active text labels */}
@@ -241,7 +257,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
               fontSize="6.5" 
               fontWeight="bold" 
               fontFamily="monospace" 
-              fillOpacity={activeRegion === "nyc" ? 1.0 : 0.6}
+              fillOpacity={activeRegion === "nyc" ? 1.0 : 0.75}
               className="transition-all duration-150"
             >
               NYSE ACTIVE
@@ -256,7 +272,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
               fontSize="6.5" 
               fontWeight="bold" 
               fontFamily="monospace"
-              fillOpacity={activeRegion === "london" ? 1.0 : 0.7}
+              fillOpacity={activeRegion === "london" ? 1.0 : 0.8}
               className="transition-all duration-150"
             >
               LSE CONNECTED
@@ -271,13 +287,22 @@ export function MarketGlobe3D({ className }: { className?: string }) {
               fontSize="6.5" 
               fontWeight="bold" 
               fontFamily="monospace" 
-              fillOpacity={activeRegion === "tokyo" ? 1.0 : 0.6}
+              fillOpacity={activeRegion === "tokyo" ? 1.0 : 0.75}
               className="transition-all duration-150"
             >
               TSE CLOSED
             </text>
           </g>
         </svg>
+
+        <style jsx global>{`
+          @keyframes globeDash {
+            to { strokeDashoffset: -20; }
+          }
+          .animate-globe-dash {
+            animation: globeDash 1.2s linear infinite;
+          }
+        `}</style>
       </div>
 
       {/* Connection details panel */}
