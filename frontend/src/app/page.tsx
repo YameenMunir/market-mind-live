@@ -142,7 +142,7 @@ export default function LandingPage() {
           {/* Left: 3D Product Mockup */}
           <div className="lg:col-span-5 w-full">
             <Reveal delay={0.1}>
-              <ProductPreview3D className="mx-auto max-w-[320px] lg:max-w-none" />
+              <ProductPreview3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
             </Reveal>
           </div>
           
@@ -195,7 +195,7 @@ export default function LandingPage() {
           </div>
           <div className="lg:col-span-5 w-full">
             <Reveal delay={0.1} trigger="scroll">
-              <CandlestickChart3D className="mx-auto max-w-[220px] lg:max-w-none" />
+              <CandlestickChart3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
             </Reveal>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-5 w-full order-last lg:order-first">
             <Reveal delay={0.1} trigger="scroll">
-              <BacktestingSimulation3D className="mx-auto max-w-[220px] lg:max-w-none" />
+              <BacktestingSimulation3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
             </Reveal>
           </div>
           <div className="lg:col-span-7 space-y-4">
@@ -231,7 +231,7 @@ export default function LandingPage() {
           </div>
           <div className="lg:col-span-5 w-full">
             <Reveal delay={0.1} trigger="scroll">
-              <EvidenceNetwork3D className="mx-auto max-w-[220px] lg:max-w-none" />
+              <EvidenceNetwork3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
             </Reveal>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-5 w-full order-last lg:order-first">
             <Reveal delay={0.1} trigger="scroll">
-              <MarketGlobe3D className="mx-auto max-w-[220px] lg:max-w-none" />
+              <MarketGlobe3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
             </Reveal>
           </div>
           <div className="lg:col-span-7 space-y-4">

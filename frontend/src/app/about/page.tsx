@@ -115,7 +115,7 @@ export default function AboutPage() {
             {/* Right Column: 3D Connected Nodes (Understanding / Reasoning visual) */}
             <div className="lg:col-span-5 w-full">
               <Reveal delay={0.18}>
-                <EvidenceNetwork3D className="mx-auto max-w-[240px] lg:max-w-none" />
+                <EvidenceNetwork3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
               </Reveal>
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function AboutPage() {
             {/* Left: Global 3D Globe Visual */}
             <div className="lg:col-span-5 w-full">
               <Reveal delay={0.1}>
-                <MarketGlobe3D className="mx-auto max-w-[220px] lg:max-w-none" />
+                <MarketGlobe3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
               </Reveal>
             </div>
             
@@ -185,7 +185,7 @@ export default function AboutPage() {
             </div>
             <div className="lg:col-span-5 w-full">
               <Reveal delay={0.1} trigger="scroll">
-                <CandlestickChart3D className="mx-auto max-w-[200px] lg:max-w-none" />
+                <CandlestickChart3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
               </Reveal>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
             <div className="lg:col-span-5 w-full order-last lg:order-first">
               <Reveal delay={0.1} trigger="scroll">
-                <BacktestingSimulation3D className="mx-auto max-w-[200px] lg:max-w-none" />
+                <BacktestingSimulation3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
               </Reveal>
             </div>
             <div className="lg:col-span-7 space-y-4">

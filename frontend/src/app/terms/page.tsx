@@ -72,7 +72,7 @@ export default function TermsPage() {
           {/* Right Column: 3D visual representing boundaries and simulation testing */}
           <div className="lg:col-span-4 w-full flex items-center justify-center sticky top-24">
             <Reveal delay={0.3}>
-              <BacktestingSimulation3D className="mx-auto max-w-[180px] lg:max-w-none opacity-60 hover:opacity-100 transition-opacity duration-300" />
+              <BacktestingSimulation3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none opacity-60 hover:opacity-100 transition-opacity duration-300" />
             </Reveal>
           </div>
         </div>
