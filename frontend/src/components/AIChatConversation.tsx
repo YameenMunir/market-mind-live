@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, FastForward, Loader2, Send, ShieldAlert, Square } from "lucide-react";
 
 import { AIChatMessage } from "@/components/AIChatMessage";
@@ -8,11 +8,16 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { StatusBanner } from "@/components/StatusBanner";
 import { AI_SUGGESTED_QUESTIONS } from "@/lib/constants";
+import { getFollowUpSuggestions } from "@/lib/followUpSuggestions";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, FeedbackRating } from "@/types";
+import type { AIAssetContext, ChatMessage, FeedbackRating } from "@/types";
 
 interface AIChatConversationProps {
   asset: string;
+  /** Used only to generate contextual follow-up suggestions after a reply (see
+   * lib/followUpSuggestions.ts) - not sent anywhere itself, `onSend` already carries
+   * whatever context each message needs. */
+  context: AIAssetContext | null;
   messages: ChatMessage[];
   isSending: boolean;
   /** message_id of the assistant message currently being streamed into, or null when
@@ -37,6 +42,7 @@ const AUTO_SCROLL_THRESHOLD_PX = 80;
 
 export function AIChatConversation({
   asset,
+  context,
   messages,
   isSending,
   streamingMessageId,
@@ -87,6 +93,18 @@ export function AIChatConversation({
   // Regenerate is only offered on the single most recent assistant reply - see
   // AIChatMessage's onRegenerate prop doc for why earlier ones aren't candidates.
   const lastAssistantId = [...messages].reverse().find((m) => m.role === "assistant")?.message_id;
+
+  // Shown once a real exchange has settled (not the lone welcome message, and not
+  // mid-stream/mid-send) - recomputed only then, so suggestions don't flicker as
+  // content streams in and briefly disappear again the moment the next message sends.
+  const settled = !isSending && !streamingMessageId && !isLoadingSession;
+  const lastMessage = messages[messages.length - 1];
+  const showFollowUps = settled && messages.length > 1 && lastMessage?.role === "assistant";
+  const followUpSuggestions = useMemo(
+    () => (showFollowUps ? getFollowUpSuggestions(context, messages) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showFollowUps, context, messages.length]
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -139,6 +157,20 @@ export function AIChatConversation({
               skipAnimation={skipAnimation}
             />
           ))}
+
+          {followUpSuggestions.length > 0 && (
+            <div className="flex flex-wrap gap-2 pl-1">
+              {followUpSuggestions.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => onSend(q)}
+                  className="rounded-full border border-border bg-surface-raised px-3 py-1.5 text-left text-xs text-ink-muted transition-colors hover:border-brand/40 hover:text-ink"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
 
           {error && <StatusBanner message={error} tone="error" icon="warning" />}
         </div>

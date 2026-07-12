@@ -139,6 +139,7 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
             )}
             <AIChatConversation
               asset={asset}
+              context={context}
               messages={chat.messages}
               isSending={chat.isSending}
               streamingMessageId={chat.streamingMessageId}
