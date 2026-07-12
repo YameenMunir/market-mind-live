@@ -73,7 +73,7 @@ export default function BacktestingPage() {
         )}
       >
         <h1 className="text-xs font-mono font-bold uppercase tracking-wider text-ink-muted">Backtesting</h1>
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="hidden md:flex items-center gap-2 sm:gap-3">
           <CurrencySelector />
           <ThemeToggle />
         </div>

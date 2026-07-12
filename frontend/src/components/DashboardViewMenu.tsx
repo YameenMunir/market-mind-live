@@ -91,7 +91,7 @@ export function DashboardViewMenu({
               toggleSidebar();
               close();
             }}
-            className={MENU_ITEM_CLASSES}
+            className={cn(MENU_ITEM_CLASSES, "hidden lg:flex")}
           >
             {isSidebarCollapsed ? <PanelLeftOpen size={15} aria-hidden /> : <PanelLeftClose size={15} aria-hidden />}
             {isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}

@@ -138,7 +138,7 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
   return (
     <div
       className={cn(
-        "w-full rounded-sm border border-border bg-surface-raised",
+        "w-full rounded-sm border border-border bg-surface-raised break-words",
         isFullscreen ? "max-w-2xl p-5" : "max-w-[92%] p-4"
       )}
     >
@@ -198,7 +198,7 @@ export function AIChatMessage({ message, onFeedback, feedbackGiven, size = "comp
       ) : (
         <div
           className={cn(
-            "rounded-sm leading-relaxed border",
+            "rounded-sm leading-relaxed border break-words",
             isFullscreen ? "max-w-2xl px-4 py-3 text-sm" : "max-w-[92%] px-3.5 py-2.5 text-xs",
             isUser ? "border-brand/35 bg-brand/5 text-ink font-mono font-medium tracking-wide" : "border-border bg-surface-raised text-ink-muted"
           )}

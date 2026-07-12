@@ -39,8 +39,10 @@ export function Topbar({ assetType, onAssetTypeChange, onSelectAsset, rightSlot,
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {rightSlot}
-        <CurrencySelector />
-        <ThemeToggle />
+        <div className="hidden md:flex items-center gap-2 sm:gap-3">
+          <CurrencySelector />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

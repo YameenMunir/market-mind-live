@@ -17,7 +17,9 @@ export default function SettingsPage() {
         )}
       >
         <h1 className="text-xs font-mono font-bold uppercase tracking-wider text-ink-muted">Settings</h1>
-        <ThemeToggle />
+        <div className="hidden md:block">
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">

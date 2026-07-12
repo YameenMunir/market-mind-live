@@ -119,13 +119,13 @@ export function GeminiKeySetupModal({
 
       {error && <StatusBanner message={error} tone="warning" icon="warning" className="mt-3" />}
 
-      <div className="mt-5 flex items-center justify-end gap-2">
+      <div className="mt-5 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2">
         {allowSkip && (
-          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto">
             {cancelLabel}
           </Button>
         )}
-        <Button variant="primary" onClick={handleSave} loading={isSubmitting} disabled={!apiKey.trim()}>
+        <Button variant="primary" onClick={handleSave} loading={isSubmitting} disabled={!apiKey.trim()} className="w-full sm:w-auto">
           Save key
         </Button>
       </div>

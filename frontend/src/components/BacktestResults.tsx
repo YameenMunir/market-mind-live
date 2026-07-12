@@ -101,8 +101,9 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
       </Panel>
 
       <Panel eyebrow="Trade Log" title={`${result.trades.length} closed trades`}>
-        <div className="-mx-1 max-h-72 overflow-auto px-1">
-          <table className="w-full min-w-[520px] text-left border-collapse">
+        <div className="-mx-1 max-h-96 overflow-auto px-1">
+          {/* Desktop Table View */}
+          <table className="hidden md:table w-full min-w-[520px] text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-surface-raised border-b border-border text-ink-faint">
               <tr>
                 <th scope="col" className="py-2.5 px-3 font-mono text-[9px] uppercase font-bold tracking-wider">Entry</th>
@@ -142,6 +143,46 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
               )}
             </tbody>
           </table>
+
+          {/* Mobile Card List View */}
+          <div className="space-y-3 md:hidden">
+            {result.trades.map((trade, i) => (
+              <div key={i} className="rounded-lg border border-border bg-surface p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-ink-muted">Trade #{i + 1}</span>
+                  <span
+                    className={cn(
+                      "numeric font-mono text-xs font-bold px-2 py-0.5 rounded-sm border",
+                      trade.return_pct >= 0 ? "border-bull/20 bg-bull/5 text-bull" : "border-bear/20 bg-bear/5 text-bear"
+                    )}
+                  >
+                    {formatPercent(trade.return_pct)}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5 font-mono text-xs border-t border-border/40 pt-2">
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-ink-faint">Entry</p>
+                    <p className="mt-0.5 text-ink-muted">{new Date(trade.entry_time * 1000).toLocaleDateString()}</p>
+                    <p className="numeric mt-0.5 font-semibold text-ink">
+                      {formatPrice(convert(trade.entry_price, nativeCurrency), currency)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] uppercase font-bold text-ink-faint">Exit</p>
+                    <p className="mt-0.5 text-ink-muted">{new Date(trade.exit_time * 1000).toLocaleDateString()}</p>
+                    <p className="numeric mt-0.5 font-semibold text-ink">
+                      {formatPrice(convert(trade.exit_price, nativeCurrency), currency)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {result.trades.length === 0 && (
+              <div className="py-6 text-center font-mono text-xs text-ink-faint">
+                No trades were triggered. Try a longer period.
+              </div>
+            )}
+          </div>
         </div>
       </Panel>
     </div>

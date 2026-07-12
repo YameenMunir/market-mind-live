@@ -156,7 +156,7 @@ export default function DashboardPage() {
         <div
           data-tour="stat-cards"
           className={cn(
-            "grid grid-cols-2 gap-3 sm:gap-4",
+            "grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4",
             isAdvanced ? "md:grid-cols-3 xl:grid-cols-5" : "md:grid-cols-2"
           )}
         >
@@ -202,14 +202,15 @@ export default function DashboardPage() {
             eyebrow="Live Chart"
             title={`${symbol} · ${CHART_RANGES.find((r) => r.value === range)?.label}`}
             action={
-              <div className="flex flex-wrap items-center gap-3">
-                <TimeframeSelector value={range} onChange={setRange} />
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                <TimeframeSelector value={range} onChange={setRange} className="flex-1 min-w-0" />
                 <Button
                   variant="secondary"
                   size="icon"
                   onClick={() => setIsChartFullscreen(true)}
                   aria-label="Expand chart to full screen"
                   title="Expand chart"
+                  className="shrink-0"
                 >
                   <Maximize2 size={14} />
                 </Button>

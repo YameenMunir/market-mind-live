@@ -53,26 +53,28 @@ export function SettingsPanel() {
   return (
     <div className="rounded-sm border border-border bg-surface">
       <SettingsSection eyebrow="AI Insights" title="Gemini API key">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-brand/25 bg-brand/5">
-            <KeyRound size={15} className="text-brand" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-brand/25 bg-brand/5">
+              <KeyRound size={15} className="text-brand" />
+            </div>
+            <div className="min-w-0 flex-1">
+              {geminiKey.status.has_key ? (
+                <>
+                  <p className="truncate font-mono text-xs text-ink">{geminiKey.status.masked_key}</p>
+                  <p className="text-xs text-ink-faint">Live Gemini responses are enabled for this browser.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold text-ink">Not configured</p>
+                  <p className="text-xs text-ink-faint">
+                    AI Insights is using the built-in offline assistant. Add your own key for live Gemini responses.
+                  </p>
+                </>
+              )}
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            {geminiKey.status.has_key ? (
-              <>
-                <p className="truncate font-mono text-xs text-ink">{geminiKey.status.masked_key}</p>
-                <p className="text-xs text-ink-faint">Live Gemini responses are enabled for this browser.</p>
-              </>
-            ) : (
-              <>
-                <p className="text-xs font-semibold text-ink">Not configured</p>
-                <p className="text-xs text-ink-faint">
-                  AI Insights is using the built-in offline assistant. Add your own key for live Gemini responses.
-                </p>
-              </>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
             {geminiKey.status.has_key && (
               <Button variant="ghost" size="sm" onClick={handleRemoveKey} loading={isRemoving}>
                 Remove

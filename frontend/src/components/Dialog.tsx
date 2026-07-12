@@ -86,11 +86,11 @@ export function Dialog({
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    if (variant === "cover") document.body.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      if (variant === "cover") document.body.style.overflow = "";
+      document.body.style.overflow = "";
       previouslyFocused.current?.focus?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
