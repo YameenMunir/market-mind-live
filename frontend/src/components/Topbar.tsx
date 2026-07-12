@@ -31,7 +31,7 @@ export function Topbar({ assetType, onAssetTypeChange, onSelectAsset, rightSlot,
       )}
     >
       <div className="flex flex-col gap-2 lg:flex-1">
-        {title && <h1 className="text-xs font-mono font-bold uppercase tracking-wider text-ink-muted">{title}</h1>}
+        {title && <h1 className="text-sm font-mono font-bold uppercase tracking-wider text-ink-muted">{title}</h1>}
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <AssetSearch assetType={assetType} onSelect={onSelectAsset} />
           <AssetTypeSelector value={assetType} onChange={onAssetTypeChange} />

@@ -89,7 +89,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
             {/* Left Column: Heading, Supporting Text */}
             <div className="relative mx-auto max-w-3xl text-center lg:col-span-7 lg:text-left lg:max-w-none">
-              <Reveal delay={0} className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-[10px] uppercase font-bold tracking-wider text-brand lg:mx-0">
+              <Reveal delay={0} className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-xs uppercase font-bold tracking-wider text-brand lg:mx-0">
                 <Sparkles size={11} className="text-brand" />
                 About Market Mind Live
               </Reveal>
@@ -103,7 +103,7 @@ export default function AboutPage() {
               </Reveal>
 
               <Reveal delay={0.12}>
-                <p className="mx-auto mt-6 max-w-2xl text-xs leading-relaxed text-ink-muted lg:mx-0">
+                <p className="mx-auto mt-6 max-w-2xl text-sm leading-relaxed text-ink-muted lg:mx-0">
                   Market Mind Live is built mainly for beginners who want to understand the stock market, not just
                   trade it. Live charts, technical indicators, AI insights, risk scores, and predictions are all
                   paired with simple, plain-English explanations - so every number on screen comes with a &ldquo;here&rsquo;s
@@ -135,12 +135,12 @@ export default function AboutPage() {
             <div className="lg:col-span-7 space-y-8">
               <div className="space-y-3">
                 <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">What the platform does</h2>
-                <p className="text-xs leading-relaxed text-ink-muted">
+                <p className="text-sm leading-relaxed text-ink-muted">
                   Search any stock, ETF, forex pair, crypto asset, or index and see how it&rsquo;s actually behaving:
                   live prices, a real chart, and the same technical indicators professional traders watch - RSI,
                   MACD, moving averages, and more - all on one screen.
                 </p>
-                <p className="text-xs leading-relaxed text-ink-muted">
+                <p className="text-sm leading-relaxed text-ink-muted">
                   Instead of leaving you to guess what a number means, every indicator, prediction, and risk
                   score is paired with a plain-English explanation of what&rsquo;s happening and why - so you build
                   real understanding of market movements, one asset at a time.
@@ -156,7 +156,7 @@ export default function AboutPage() {
                         <item.icon size={15} className="text-brand" />
                       </div>
                       <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">{item.title}</h4>
-                      <p className="text-[11px] leading-relaxed text-ink-muted">{item.description}</p>
+                      <p className="text-xs leading-relaxed text-ink-muted">{item.description}</p>
                     </Reveal>
                   ))}
                 </div>
@@ -169,15 +169,15 @@ export default function AboutPage() {
         <section className="mx-auto max-w-7xl px-6 py-16 border-t border-border space-y-24">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">Core Learning Tools</h2>
-            <p className="mt-2 text-xs text-ink-muted">Hands-on visual environments designed to simplify complex market concepts.</p>
+            <p className="mt-2 text-sm text-ink-muted">Hands-on visual environments designed to simplify complex market concepts.</p>
           </div>
 
           {/* Spotlight 1: Charting */}
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
             <div className="lg:col-span-7 space-y-4">
-              <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Visual analysis</span>
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand">Visual analysis</span>
               <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Advanced Charts & Indicators</h3>
-              <p className="text-xs leading-relaxed text-ink-muted">
+              <p className="text-sm leading-relaxed text-ink-muted">
                 Candlestick charts with zoom, pan, and full-screen mode help you get comfortable reading price 
                 action the way traders actually look at it. SMA, EMA, RSI, MACD, Bollinger Bands, ATR, and 
                 support/resistance are laid out directly on the active chart with interactive explanations.
@@ -198,9 +198,9 @@ export default function AboutPage() {
               </Reveal>
             </div>
             <div className="lg:col-span-7 space-y-4">
-              <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Risk-free sandbox</span>
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand">Risk-free sandbox</span>
               <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Backtesting & Historical Testing</h3>
-              <p className="text-xs leading-relaxed text-ink-muted">
+              <p className="text-sm leading-relaxed text-ink-muted">
                 See how a rules-based strategy would have performed historically - a safe, no-money-on-the-line 
                 way to learn how strategy testing works. Study performance curves and gain confidence 
                 evaluating market strategies across previous cycles.
@@ -213,7 +213,7 @@ export default function AboutPage() {
         <section className="mx-auto max-w-7xl px-6 py-16 border-t border-border">
           <div className="mx-auto max-w-2xl text-center mb-12">
             <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">Additional Features</h2>
-            <p className="mt-2 text-xs text-ink-muted">Everything you need to learn how to read a market, in one place.</p>
+            <p className="mt-2 text-sm text-ink-muted">Everything you need to learn how to read a market, in one place.</p>
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -228,7 +228,7 @@ export default function AboutPage() {
                   <feature.icon size={16} className="text-brand" />
                 </div>
                 <h3 className="mt-4 font-mono text-xs font-bold uppercase tracking-wider text-ink">{feature.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-ink-muted">{feature.description}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{feature.description}</p>
               </Reveal>
             ))}
           </div>
@@ -237,8 +237,8 @@ export default function AboutPage() {
         {/* ================= DISCLAIMER SECTION ================= */}
         <section className="mx-auto max-w-7xl px-6 py-8">
           <div className="rounded-sm border border-warn/30 bg-warn/3 p-6 sm:p-8">
-            <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-warn">Disclaimer</p>
-            <p className="mt-3 max-w-3xl text-xs leading-relaxed text-ink-muted">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-warn">Disclaimer</p>
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-muted">
               Market Mind Live is a learning tool built for education and informational purposes only. It does
               not provide financial advice, investment recommendations, or guaranteed trading outcomes. Market
               data may be delayed, and all predictions, risk scores, and AI-generated insights are produced
@@ -257,7 +257,7 @@ export default function AboutPage() {
           </div>
 
           <div className="mx-auto max-w-3xl px-6 text-center space-y-6">
-            <Reveal delay={0.05} className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-2.5 py-0.5 font-mono text-[9px] uppercase font-bold tracking-wider text-brand">
+            <Reveal delay={0.05} className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wider text-brand uppercase">
               Get Started
             </Reveal>
             <Reveal delay={0.1}>
@@ -266,7 +266,7 @@ export default function AboutPage() {
               </h2>
             </Reveal>
             <Reveal delay={0.15}>
-              <p className="mx-auto max-w-md text-xs leading-relaxed text-ink-muted">
+              <p className="mx-auto max-w-md text-sm leading-relaxed text-ink-muted">
                 Open the dashboard, pick any asset, and start connecting the dots between price, indicators, and
                 risk - no account required.
               </p>

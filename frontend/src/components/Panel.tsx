@@ -22,8 +22,8 @@ export function Panel({ children, className, title, eyebrow, action, dataTour }:
       {(title || eyebrow || action) && (
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-3">
           <div className="min-w-0">
-            {eyebrow && <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-faint">{eyebrow}</p>}
-            {title && <h3 className="mt-1 text-xs font-mono font-bold uppercase tracking-wide text-ink">{title}</h3>}
+            {eyebrow && <p className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-faint">{eyebrow}</p>}
+            {title && <h3 className="mt-1.5 text-sm font-mono font-bold uppercase tracking-wide text-ink">{title}</h3>}
           </div>
           {action}
         </div>

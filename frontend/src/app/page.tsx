@@ -33,7 +33,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Column: Heading, Supporting Text, CTAs */}
           <div className="relative mx-auto max-w-3xl text-center lg:col-span-7 lg:text-left lg:max-w-none">
-            <Reveal delay={0} className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-[10px] uppercase font-bold tracking-wider text-brand lg:mx-0">
+            <Reveal delay={0} className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-xs uppercase font-bold tracking-wider text-brand lg:mx-0">
               <Sparkles size={11} className="text-brand" />
               Live asset intelligence &middot; Multi-asset stream
             </Reveal>
@@ -47,7 +47,7 @@ export default function LandingPage() {
             </Reveal>
 
             <Reveal delay={0.12}>
-              <p className="mx-auto mt-6 max-w-xl text-xs leading-relaxed text-ink-muted lg:mx-0">
+              <p className="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-ink-muted lg:mx-0">
                 Live prices, technical indicators, transparent predictions, and risk scoring - in one terminal built for
                 traders who want the signal, not the noise.
               </p>
@@ -91,7 +91,7 @@ export default function LandingPage() {
                 <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3 bg-surface-raised/40">
                   <div className="flex items-center gap-2">
                     <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-sm bg-bull" />
-                    <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-ink-faint">AAPL &middot; reasoning trail</span>
+                    <span className="font-mono text-[11px] uppercase font-bold tracking-wider text-ink-faint">AAPL &middot; reasoning trail</span>
                   </div>
                   <span className="numeric font-mono text-xs font-bold text-ink">$212.48</span>
                 </div>
@@ -102,18 +102,18 @@ export default function LandingPage() {
                   </span>
                   <div>
                     <p className="font-mono text-xs font-bold uppercase tracking-wider text-bull">Bullish</p>
-                    <p className="font-mono text-[9px] uppercase tracking-wide text-ink-faint">78% confidence</p>
+                    <p className="font-mono text-[11px] uppercase tracking-wide text-ink-faint">78% confidence</p>
                   </div>
                 </div>
 
                 <div className="px-5 py-4">
-                  <p className="text-xs leading-relaxed text-ink-muted">
+                  <p className="text-sm leading-relaxed text-ink-muted">
                     &ldquo;Price action confirms an established uptrend with room before overbought conditions - momentum
                     aligns but isn&rsquo;t extreme. This reads as trend continuation, not a speculative spike.&rdquo;
                   </p>
                   <ul className="mt-4 space-y-2 border-t border-border/60 pt-4">
                     {REASONING_FACTORS.map((factor) => (
-                      <li key={factor} className="flex gap-2.5 font-mono text-[10px] leading-relaxed text-ink-muted">
+                      <li key={factor} className="flex gap-2.5 font-mono text-xs leading-relaxed text-ink-muted">
                         <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-sm bg-brand" />
                         {factor}
                       </li>
@@ -121,7 +121,7 @@ export default function LandingPage() {
                   </ul>
                 </div>
               </div>
-              <p className="mt-3 text-center font-mono text-[9px] uppercase tracking-wider text-ink-faint">Illustrative example - not a live quote.</p>
+              <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-wider text-ink-faint">Illustrative example - not a live quote.</p>
             </Reveal>
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function LandingPage() {
 
       {/* ================= ASSET CLASSES RIBBON ================= */}
       <section className="border-y border-border bg-surface/40 py-3.5">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-10 gap-y-2 px-6 font-mono text-[10px] uppercase font-semibold tracking-wider text-ink-faint">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-10 gap-y-2 px-6 font-mono text-xs uppercase font-semibold tracking-wider text-ink-faint">
           {ASSET_CLASSES.map((label) => (
             <span key={label}>{label}</span>
           ))}
@@ -154,7 +154,7 @@ export default function LandingPage() {
               </h2>
             </Reveal>
             <Reveal delay={0.1}>
-              <p className="text-xs leading-relaxed text-ink-muted">
+              <p className="text-sm leading-relaxed text-ink-muted">
                 Ditch the tab-clutter. Market Mind Live brings charting, order books, and real-time AI signal panels 
                 together inside a clean desktop terminal model. Everything behaves reactively and stays visible 
                 at a single glance, adapting beautifully to standard mobile viewports.
@@ -168,7 +168,7 @@ export default function LandingPage() {
                   "Pulsing status parameters",
                   "Fluid viewport adaptation"
                 ].map((item) => (
-                  <li key={item} className="flex items-center gap-2.5 font-mono text-[10px] uppercase font-bold text-ink-muted">
+                  <li key={item} className="flex items-center gap-2.5 font-mono text-xs uppercase font-bold text-ink-muted">
                     <Check size={12} className="text-brand shrink-0" />
                     {item}
                   </li>
@@ -185,9 +185,9 @@ export default function LandingPage() {
         {/* Feature 1: Charting */}
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-7 space-y-4">
-            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Workspace primitive</span>
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand">Workspace primitive</span>
             <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Institutional Charting</h3>
-            <p className="text-xs leading-relaxed text-ink-muted">
+            <p className="text-sm leading-relaxed text-ink-muted">
               Analyze price action with high-density candlestick visualizations. Overlays are built to run 
               smoothly on low-power mobile engines, offering moving averages, Bollinger Bands, and 
               calculated support/resistance regions without visual overlap.
@@ -208,9 +208,9 @@ export default function LandingPage() {
             </Reveal>
           </div>
           <div className="lg:col-span-7 space-y-4">
-            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Risk verification</span>
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand">Risk verification</span>
             <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Strategy Backtesting</h3>
-            <p className="text-xs leading-relaxed text-ink-muted">
+            <p className="text-sm leading-relaxed text-ink-muted">
               Stress-test indicators across historical intervals. Compare strategy performance 
               against index benchmarks side-by-side in 3D projection, tracking entry flags, exit flags, 
               and drawdown valleys with precision metrics.
@@ -221,9 +221,9 @@ export default function LandingPage() {
         {/* Feature 3: AI Insights */}
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-7 space-y-4">
-            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Explainable AI</span>
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand">Explainable AI</span>
             <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Evidence-Based Insights</h3>
-            <p className="text-xs leading-relaxed text-ink-muted">
+            <p className="text-sm leading-relaxed text-ink-muted">
               No black boxes. The system outlines its signal reasoning using an interconnected evidence network. 
               Technical crossovers, momentum status, and volume signals converge transparently into a 
               final bullish or bearish confidence rating.
@@ -244,9 +244,9 @@ export default function LandingPage() {
             </Reveal>
           </div>
           <div className="lg:col-span-7 space-y-4">
-            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Data ecosystem</span>
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand">Data ecosystem</span>
             <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Connected Global Streams</h3>
-            <p className="text-xs leading-relaxed text-ink-muted">
+            <p className="text-sm leading-relaxed text-ink-muted">
               Monitor active market exchanges, crypto channels, forex networks, and commodities indexes globally. 
               Data feeds route through low-overhead pipelines to update values rapidly without clogging threads 
               or battery cycles on mobile hardware.
@@ -263,7 +263,7 @@ export default function LandingPage() {
             <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">
               Structured Terminal Operations
             </h2>
-            <p className="mt-2 text-xs text-ink-muted">
+            <p className="mt-2 text-sm text-ink-muted">
               How the platform synthesizes raw quotes into clear, actionable insights in four steps.
             </p>
           </div>
@@ -278,7 +278,7 @@ export default function LandingPage() {
               <Reveal key={idx} trigger="scroll" delay={idx * 0.08} className="relative rounded-sm border border-border bg-surface p-5 space-y-3">
                 <div className="font-mono text-2xl font-bold text-brand/20">{s.step}</div>
                 <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">{s.title}</h4>
-                <p className="text-[11px] leading-relaxed text-ink-muted">{s.desc}</p>
+                <p className="text-xs leading-relaxed text-ink-muted">{s.desc}</p>
                 {idx < 3 && (
                   <div className="hidden md:block absolute top-[40%] right-[-16px] z-10 translate-x-1/2">
                     <span className="text-brand/40 font-mono font-bold">&rarr;</span>
@@ -298,7 +298,7 @@ export default function LandingPage() {
         </div>
 
         <div className="mx-auto max-w-3xl px-6 text-center space-y-6">
-          <Reveal delay={0.05} className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-2.5 py-0.5 font-mono text-[9px] uppercase font-bold tracking-wider text-brand">
+          <Reveal delay={0.05} className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wider text-brand uppercase">
             Terminal Active
           </Reveal>
           <Reveal delay={0.1}>
@@ -307,7 +307,7 @@ export default function LandingPage() {
             </h2>
           </Reveal>
           <Reveal delay={0.15}>
-            <p className="mx-auto max-w-md text-xs leading-relaxed text-ink-muted">
+            <p className="mx-auto max-w-md text-sm leading-relaxed text-ink-muted">
               Get the signal, cut the noise, and access indicators with plain-English insights in seconds.
             </p>
           </Reveal>
