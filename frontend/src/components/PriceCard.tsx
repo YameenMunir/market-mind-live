@@ -84,7 +84,7 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
           { label: "Volume", short: "Volume", value: quote ? formatCompactNumber(quote.volume) : null },
         ].map((item) => (
           <div key={item.label} className="min-w-0">
-            <p className="truncate text-[10px] uppercase font-bold text-ink-faint">
+            <p className="truncate text-2xs uppercase font-bold text-ink-faint">
               <span className="sm:hidden">{item.short}</span>
               <span className="hidden sm:inline">{item.label}</span>
             </p>
@@ -101,10 +101,10 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
         <div className="mt-auto pt-4">
           <div className="flex items-center justify-between gap-2">
             <LastUpdated updatedAt={quote.as_of} live={isLive} isStale={isStale} />
-            {quote.is_delayed && <span className="font-mono text-[10px] uppercase font-bold text-ink-faint">Delayed data</span>}
+            {quote.is_delayed && <span className="font-mono text-2xs uppercase font-bold text-ink-faint">Delayed data</span>}
           </div>
           {isConverted && (
-            <p className="mt-2 font-mono text-[9px] uppercase leading-relaxed text-ink-faint">
+            <p className="mt-2 font-mono text-2xs uppercase leading-relaxed text-ink-faint">
               Converted from {quote.currency} at FX rate.
             </p>
           )}

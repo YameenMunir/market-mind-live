@@ -77,13 +77,13 @@ export function AIChatHistoryList({
               >
                 {confirmingId === session.session_id ? (
                   <div className="flex items-center justify-between gap-2 py-0.5">
-                    <p className="text-[11px] font-medium text-ink">Delete this chat?</p>
+                    <p className="text-xs font-medium text-ink">Delete this chat?</p>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={() => setConfirmingId(null)}
-                        className="h-auto px-2 py-1 text-[10px]"
+                        className="h-auto px-2 py-1 text-2xs"
                       >
                         Cancel
                       </Button>
@@ -94,7 +94,7 @@ export function AIChatHistoryList({
                           onDelete(session.session_id);
                           setConfirmingId(null);
                         }}
-                        className="h-auto border-none bg-bear px-2 py-1 text-[10px] text-white hover:bg-bear/90"
+                        className="h-auto border-none bg-bear px-2 py-1 text-2xs text-white hover:bg-bear/90"
                       >
                         Delete
                       </Button>
@@ -116,8 +116,8 @@ export function AIChatHistoryList({
                           </Badge>
                         )}
                       </div>
-                      <p className="mt-1 truncate text-[11px] text-ink-muted">{session.last_message_preview || "New conversation"}</p>
-                      <p className="mt-0.5 text-[10px] text-ink-faint">{timeAgo(session.updated_at)}</p>
+                      <p className="mt-1 truncate text-xs text-ink-muted">{session.last_message_preview || "New conversation"}</p>
+                      <p className="mt-0.5 text-2xs text-ink-faint">{timeAgo(session.updated_at)}</p>
                     </button>
                     <Button
                       variant="ghost"

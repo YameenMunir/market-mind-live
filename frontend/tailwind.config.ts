@@ -6,8 +6,17 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
+        sans: ["var(--font-sora)", "sans-serif"],
         mono: ["var(--font-jetbrains-mono)", "monospace"],
+      },
+      fontSize: {
+        // Consolidates ad hoc text-[9px]/text-[10px] micro-label sizes (mono eyebrow
+        // tags, badge/meta text) that had drifted across ~20 components into one
+        // deliberate step - the smallest Tailwind's own scale offers is text-xs (12px),
+        // which this dashboard's density genuinely needs to go below for labels
+        // (not body copy). 9px was dropped rather than kept as a third step - too
+        // small to read comfortably even for a label.
+        "2xs": ["0.625rem", { lineHeight: "0.875rem", letterSpacing: "0.02em" }],
       },
       colors: {
         canvas: "rgb(var(--color-canvas) / <alpha-value>)",

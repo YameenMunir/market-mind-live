@@ -39,7 +39,7 @@ export default function LandingPage() {
             </Reveal>
 
             <Reveal delay={0.06}>
-              <h1 className="text-3xl font-bold uppercase tracking-tight text-ink sm:text-5xl font-mono leading-none">
+              <h1 className="text-4xl font-bold uppercase tracking-tight text-ink sm:text-6xl lg:text-7xl font-mono leading-none">
                 Market intelligence,
                 <br />
                 <span className="text-brand">read in plain English.</span>
@@ -91,7 +91,7 @@ export default function LandingPage() {
                 <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3 bg-surface-raised/40">
                   <div className="flex items-center gap-2">
                     <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-sm bg-bull" />
-                    <span className="font-mono text-[11px] uppercase font-bold tracking-wider text-ink-faint">AAPL &middot; reasoning trail</span>
+                    <span className="font-mono text-xs uppercase font-bold tracking-wider text-ink-faint">AAPL &middot; reasoning trail</span>
                   </div>
                   <span className="numeric font-mono text-xs font-bold text-ink">$212.48</span>
                 </div>
@@ -102,7 +102,7 @@ export default function LandingPage() {
                   </span>
                   <div>
                     <p className="font-mono text-xs font-bold uppercase tracking-wider text-bull">Bullish</p>
-                    <p className="font-mono text-[11px] uppercase tracking-wide text-ink-faint">78% confidence</p>
+                    <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">78% confidence</p>
                   </div>
                 </div>
 
@@ -121,7 +121,7 @@ export default function LandingPage() {
                   </ul>
                 </div>
               </div>
-              <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-wider text-ink-faint">Illustrative example - not a live quote.</p>
+              <p className="mt-3 text-center font-mono text-2xs uppercase tracking-wider text-ink-faint">Illustrative example - not a live quote.</p>
             </Reveal>
           </div>
         </div>

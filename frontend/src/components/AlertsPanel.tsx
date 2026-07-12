@@ -72,7 +72,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
             <p id="alerts-panel-title" className="text-sm font-semibold text-ink">
               Alerts
             </p>
-            <p className="truncate text-[11px] text-ink-faint">{symbol}</p>
+            <p className="truncate text-xs text-ink-faint">{symbol}</p>
           </div>
         </div>
         <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close alerts">
@@ -87,7 +87,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
               }}
               className="space-y-3 border-b border-border p-4"
             >
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">New alert</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">New alert</p>
               <div>
                 <label htmlFor="alert-condition" className="mb-1.5 block text-xs font-medium text-ink-muted">
                   Notify me when
@@ -126,7 +126,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
               )}
 
               {!needsThreshold && !optionalThreshold && (
-                <p className="text-[11px] leading-relaxed text-ink-faint">
+                <p className="text-xs leading-relaxed text-ink-faint">
                   Triggers the next time {symbol}'s{" "}
                   {condition === "signal_change" ? "model signal" : "risk level"} differs from what it is right now.
                 </p>
@@ -157,7 +157,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                 <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-4 py-8 text-center">
                   <Bell size={18} className="text-ink-faint" aria-hidden />
                   <p className="text-xs font-medium text-ink-muted">No alerts for {symbol} yet</p>
-                  <p className="max-w-[240px] text-[11px] leading-relaxed text-ink-faint">
+                  <p className="max-w-[240px] text-xs leading-relaxed text-ink-faint">
                     Create one above and we'll notify you the moment the condition is met.
                   </p>
                 </div>
@@ -175,10 +175,10 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                           {CONDITION_LABELS[alert.condition]}
                           {alert.threshold != null ? ` ${alert.threshold}` : ""}
                         </p>
-                        <p className="mt-1 text-[11px] leading-relaxed text-ink-muted">
+                        <p className="mt-1 text-xs leading-relaxed text-ink-muted">
                           {alert.triggered_message ?? "Watching for this condition."}
                         </p>
-                        <p className="mt-1 text-[10px] text-ink-faint">
+                        <p className="mt-1 text-2xs text-ink-faint">
                           {alert.status === "triggered" && alert.triggered_at
                             ? `Triggered ${timeAgo(alert.triggered_at)}`
                             : `Created ${timeAgo(alert.created_at)}`}
@@ -194,7 +194,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                               variant="ghost"
                               size="sm"
                               onClick={() => dismissAlert(alert.id)}
-                              className="h-auto px-1.5 py-1 text-[10px] text-ink-faint hover:text-ink-muted"
+                              className="h-auto px-1.5 py-1 text-2xs text-ink-faint hover:text-ink-muted"
                             >
                               Dismiss
                             </Button>

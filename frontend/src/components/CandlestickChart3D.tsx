@@ -50,7 +50,7 @@ export function CandlestickChart3D({ className }: { className?: string }) {
       {/* Floating dynamic candlestick values */}
       {hoveredIdx !== null && (
         <div 
-          className="absolute z-20 pointer-events-none rounded-sm border border-border bg-surface-raised/95 px-3 py-2 text-[10px] font-mono shadow-xl transition-all duration-100 flex flex-col gap-1 min-w-[90px]"
+          className="absolute z-20 pointer-events-none rounded-sm border border-border bg-surface-raised/95 px-3 py-2 text-2xs font-mono shadow-xl transition-all duration-100 flex flex-col gap-1 min-w-[90px]"
           style={{
             left: `${Math.min(getCoords(hoveredIdx, data[hoveredIdx].h).x + 10, 140)}px`,
             top: `${Math.max(getCoords(hoveredIdx, data[hoveredIdx].h).y - 45, 5)}px`
@@ -233,7 +233,7 @@ export function CandlestickChart3D({ className }: { className?: string }) {
           );
         })}
       </svg>
-      <p className="text-center font-mono text-[9px] uppercase tracking-wider text-ink-faint">
+      <p className="text-center font-mono text-2xs uppercase tracking-wider text-ink-faint">
         Hover candle to read values
       </p>
     </div>

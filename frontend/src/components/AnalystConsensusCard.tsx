@@ -46,7 +46,7 @@ export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: An
           <p className="text-xs font-mono font-bold uppercase text-ink-muted">
             {error.errorCode === "rate_limited" ? "Rate-Limited" : "Load Failed"}
           </p>
-          <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
             {error.errorCode === "rate_limited"
               ? "The market data provider is busy. Automatic retry active."
               : error.message}
@@ -62,7 +62,7 @@ export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: An
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border px-3 py-6 text-center">
           <Users size={18} className="text-ink-faint" aria-hidden />
           <p className="font-mono text-xs font-bold uppercase text-ink-muted">No Analyst Coverage</p>
-          <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
             Not covered by equity analysts.
           </p>
         </div>
@@ -73,7 +73,7 @@ export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: An
               <Icon size={14} className="shrink-0" aria-hidden />
               <span className="truncate">{meta?.label}</span>
             </div>
-            <p className="mt-2 font-mono text-[10px] text-ink-faint uppercase">
+            <p className="mt-2 font-mono text-2xs text-ink-faint uppercase">
               Based on {consensus.total_analysts} analyst{consensus.total_analysts === 1 ? "" : "s"}
             </p>
 
@@ -92,14 +92,14 @@ export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: An
             {consensus.price_target_mean != null && (
               <div className="mt-4 border-t border-border pt-3 font-mono text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <span className="text-[10px] uppercase font-bold text-ink-faint">Target (mean)</span>
+                  <span className="text-2xs uppercase font-bold text-ink-faint">Target (mean)</span>
                   <span className="numeric font-semibold text-ink">
                     {formatPrice(convert(consensus.price_target_mean, nativeCurrency), currency)}
                   </span>
                 </div>
                 {consensus.price_target_low != null && consensus.price_target_high != null && (
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                    <span className="text-[10px] uppercase font-bold text-ink-faint">Target Range</span>
+                    <span className="text-2xs uppercase font-bold text-ink-faint">Target Range</span>
                     <span className="numeric font-semibold text-ink">
                       {formatPrice(convert(consensus.price_target_low, nativeCurrency), currency)} &ndash;{" "}
                       {formatPrice(convert(consensus.price_target_high, nativeCurrency), currency)}

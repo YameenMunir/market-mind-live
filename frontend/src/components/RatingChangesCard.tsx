@@ -30,7 +30,7 @@ export function RatingChangesCard({ changes, isLoading, error }: RatingChangesCa
           <p className="text-xs font-mono font-bold uppercase text-ink-muted">
             {error.errorCode === "rate_limited" ? "Rate-Limited" : "Load Failed"}
           </p>
-          <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
             {error.errorCode === "rate_limited"
               ? "The market data provider is busy. Automatic retry active."
               : error.message}
@@ -50,7 +50,7 @@ export function RatingChangesCard({ changes, isLoading, error }: RatingChangesCa
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border px-3 py-6 text-center">
           <Users size={18} className="text-ink-faint" aria-hidden />
           <p className="font-mono text-xs font-bold uppercase text-ink-muted">No Recent Activity</p>
-          <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
             No analyst rating changes on record for this symbol.
           </p>
         </div>
@@ -71,18 +71,18 @@ export function RatingChangesCard({ changes, isLoading, error }: RatingChangesCa
                   <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-x-1.5 text-xs font-medium text-ink">
                       {change.firm}
-                      <span className={cn("font-mono text-[10px] font-bold uppercase tracking-wider", meta.color)}>
+                      <span className={cn("font-mono text-2xs font-bold uppercase tracking-wider", meta.color)}>
                         {meta.label}
                       </span>
                     </p>
                     {(change.from_grade || change.to_grade) && (
-                      <p className="mt-0.5 text-[11px] text-ink-muted">
+                      <p className="mt-0.5 text-xs text-ink-muted">
                         {change.from_grade && change.to_grade
                           ? `${change.from_grade} → ${change.to_grade}`
                           : change.to_grade ?? change.from_grade}
                       </p>
                     )}
-                    <p className="mt-1 font-mono text-[10px] uppercase text-ink-faint">{timeAgo(change.graded_at)}</p>
+                    <p className="mt-1 font-mono text-2xs uppercase text-ink-faint">{timeAgo(change.graded_at)}</p>
                   </div>
                 </div>
               </li>

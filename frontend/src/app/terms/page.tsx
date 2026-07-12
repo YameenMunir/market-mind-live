@@ -61,7 +61,7 @@ export default function TermsPage() {
               <Reveal delay={0.3}>
                 <p>
                   Questions about these terms can be sent via email to{" "}
-                  <a href="mailto:support@marketmindlive.app" className="text-brand hover:underline font-mono text-[10px] uppercase font-bold tracking-wider">
+                  <a href="mailto:support@marketmindlive.app" className="text-brand hover:underline font-mono text-2xs uppercase font-bold tracking-wider">
                     support@marketmindlive.app
                   </a>.
                 </p>

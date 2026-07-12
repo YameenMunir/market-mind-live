@@ -18,7 +18,7 @@ export function ConfidenceMeter({ confidence }: ConfidenceMeterProps) {
   return (
     <div className="flex flex-col gap-1.5 min-w-[110px] shrink-0">
       <div className="flex items-baseline justify-between font-mono">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-ink-faint">Confidence</span>
+        <span className="text-2xs font-bold uppercase tracking-wider text-ink-faint">Confidence</span>
         <span className="numeric text-xs font-bold text-ink">{Math.round(confidence)}%</span>
       </div>
       <div className="flex gap-0.5">

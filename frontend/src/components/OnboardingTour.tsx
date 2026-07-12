@@ -135,7 +135,7 @@ export function OnboardingTour({ tour }: OnboardingTourProps) {
             className="fixed z-[81] rounded-xl border border-border bg-surface-raised p-4 text-left shadow-panel"
             style={{ top: position.top, left: position.left, width: POPOVER_WIDTH, maxWidth: "calc(100vw - 2rem)" }}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
               Step {stepIndex + 1} of {totalSteps}
             </p>
             <p className="mt-1.5 text-sm font-semibold text-ink">{step.title}</p>

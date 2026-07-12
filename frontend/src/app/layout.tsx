@@ -1,12 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Inter } from "next/font/google";
+import { JetBrains_Mono, Sora } from "next/font/google";
 
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "@/styles/globals.css";
 
-const inter = Inter({
+// Geometric, slightly technical - reads as precision instrumentation rather than a
+// generic humanist sans (see DESIGN_SYSTEM.md's "Direction" section). Replaces Inter,
+// which the design system deliberately moved away from for this reason.
+const sora = Sora({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sora",
   display: "swap",
 });
 
@@ -45,7 +48,7 @@ const THEME_INIT_SCRIPT = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${sora.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

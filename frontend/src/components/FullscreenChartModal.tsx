@@ -117,7 +117,7 @@ export function FullscreenChartModal({
                     {assetName}
                   </span>
                 )}
-                <span className="rounded-full bg-surface-raised/60 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-ink-faint">
+                <span className="rounded-full bg-surface-raised/60 px-2 py-0.5 font-mono text-2xs uppercase font-bold text-ink-faint">
                   {CHART_RANGES.find((r) => r.value === range)?.label}
                 </span>
               </div>
@@ -154,7 +154,7 @@ export function FullscreenChartModal({
                 <div className="flex items-center gap-2">
                   <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", sessionMeta.dot, sessionMeta.dot.includes("bg-bull") && "animate-pulse")} />
                   <SessionIcon size={13} className="text-ink-faint shrink-0" />
-                  <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-ink-muted">{sessionMeta.label}</span>
+                  <span className="font-mono text-2xs uppercase font-bold tracking-wider text-ink-muted">{sessionMeta.label}</span>
                 </div>
               )}
             </div>

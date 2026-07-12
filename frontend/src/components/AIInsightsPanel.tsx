@@ -62,7 +62,7 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                     <p id="ai-insights-panel-title" className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
                       AI Insights
                     </p>
-                    <p className="truncate font-mono text-[9px] uppercase tracking-wider text-ink-faint">
+                    <p className="truncate font-mono text-2xs uppercase tracking-wider text-ink-faint">
                       {context?.asset_name ? `${context.asset_name} · ${asset}` : asset}
                     </p>
                   </div>
@@ -106,11 +106,11 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                       variant="secondary"
                       size="sm"
                       onClick={() => setIsConfirmingClear(false)}
-                      className="h-auto px-2 py-1 text-[11px]"
+                      className="h-auto px-2 py-1 text-xs"
                     >
                       Cancel
                     </Button>
-                    <Button variant="danger" size="sm" onClick={handleClearChat} className="h-auto px-2 py-1 text-[11px]">
+                    <Button variant="danger" size="sm" onClick={handleClearChat} className="h-auto px-2 py-1 text-xs">
                       Clear chat
                     </Button>
                   </div>

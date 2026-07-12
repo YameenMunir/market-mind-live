@@ -61,7 +61,7 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
           className="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
-          <kbd className="hidden shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-ink-faint sm:block">
+          <kbd className="hidden shrink-0 rounded border border-border px-1.5 py-0.5 text-2xs text-ink-faint sm:block">
             esc
           </kbd>
         )}

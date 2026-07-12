@@ -237,7 +237,7 @@ export function StockGraph3D({ className }: { className?: string }) {
       }}
     >
       {/* ================= INTERACTIVE HEADERS / CONTROLS ================= */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] font-bold uppercase tracking-wider">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 font-mono text-2xs font-bold uppercase tracking-wider">
         {/* Timeframe selector */}
         <div className="flex rounded-sm border border-border bg-surface/50 p-0.5">
           {(["1D", "1W", "1M", "1Y"] as Timeframe[]).map(tf => (
@@ -302,7 +302,7 @@ export function StockGraph3D({ className }: { className?: string }) {
         {/* Floating Dynamic HTML Tooltip */}
         {hoveredIdx !== null && (
           <div 
-            className="absolute z-20 pointer-events-none rounded-sm border border-border bg-surface-raised/95 px-3 py-2 text-[10px] font-mono shadow-xl transition-all duration-100 flex flex-col gap-1 min-w-[100px] backdrop-blur-[2px]"
+            className="absolute z-20 pointer-events-none rounded-sm border border-border bg-surface-raised/95 px-3 py-2 text-2xs font-mono shadow-xl transition-all duration-100 flex flex-col gap-1 min-w-[100px] backdrop-blur-[2px]"
             style={{
               left: `${Math.min(points[hoveredIdx].fx + 10, 200)}px`,
               top: `${Math.max(points[hoveredIdx].fy - 50, 10)}px`
@@ -572,7 +572,7 @@ export function StockGraph3D({ className }: { className?: string }) {
           })}
         </svg>
 
-        <p className="mt-2 text-center text-[9px] uppercase tracking-wider text-ink-faint">
+        <p className="mt-2 text-center text-2xs uppercase tracking-wider text-ink-faint">
           Illustrative {timeframe} metrics &middot; Pointer tilts view
         </p>
       </div>

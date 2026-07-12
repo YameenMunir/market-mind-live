@@ -74,7 +74,7 @@ export function AIChatConversation({
                 <button
                   key={q}
                   onClick={() => onSend(q)}
-                  className="rounded-full border border-border bg-surface-raised px-3 py-1.5 text-left text-[11px] text-ink-muted transition-colors hover:border-brand/40 hover:text-ink"
+                  className="rounded-full border border-border bg-surface-raised px-3 py-1.5 text-left text-xs text-ink-muted transition-colors hover:border-brand/40 hover:text-ink"
                 >
                   {q}
                 </button>
@@ -131,7 +131,7 @@ export function AIChatConversation({
             <Send size={15} />
           </Button>
         </div>
-        <p className="mt-3 flex items-start gap-1.5 text-[10px] leading-relaxed text-ink-faint/80">
+        <p className="mt-3 flex items-start gap-1.5 text-2xs leading-relaxed text-ink-faint/80">
           <ShieldAlert size={11} className="mt-0.5 shrink-0" />
           This is for informational purposes only and is not financial advice.
         </p>

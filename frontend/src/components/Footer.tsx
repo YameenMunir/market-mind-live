@@ -32,7 +32,7 @@ export function Footer() {
           </div>
 
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Product</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Product</p>
             <ul className="mt-3 flex flex-col gap-2.5">
               {PRODUCT_LINKS.map((link) => (
                 <li key={link.label}>
@@ -45,7 +45,7 @@ export function Footer() {
           </div>
 
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Legal</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Legal</p>
             <ul className="mt-3 flex flex-col gap-2.5">
               {LEGAL_LINKS.map((link) => (
                 <li key={link.label}>

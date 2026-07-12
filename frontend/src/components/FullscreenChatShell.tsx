@@ -62,7 +62,7 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
                   <Sparkles size={17} className="text-brand" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">AI Insights</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">AI Insights</p>
                   <h2 id="fullscreen-chat-title" className="text-sm font-semibold text-ink">
                     {context?.asset_name ? `${context.asset_name} · ${asset}` : asset}
                   </h2>
@@ -114,11 +114,11 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
                   variant="secondary"
                   size="sm"
                   onClick={() => setIsConfirmingClear(false)}
-                  className="h-auto px-2 py-1 text-[11px]"
+                  className="h-auto px-2 py-1 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button variant="danger" size="sm" onClick={handleClearChat} className="h-auto px-2 py-1 text-[11px]">
+                <Button variant="danger" size="sm" onClick={handleClearChat} className="h-auto px-2 py-1 text-xs">
                   Clear chat
                 </Button>
               </div>

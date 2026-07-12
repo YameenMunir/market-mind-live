@@ -67,7 +67,7 @@ export function Sidebar() {
         </nav>
 
         <div className="mt-auto rounded-sm border border-border bg-surface-raised/60 p-3.5">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">Data source</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-ink-faint">Data source</p>
           <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
             Live quotes are delayed and provided for informational purposes only. Not financial advice.
           </p>

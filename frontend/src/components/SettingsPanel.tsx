@@ -25,7 +25,7 @@ interface SettingsSectionProps {
 function SettingsSection({ eyebrow, title, children }: SettingsSectionProps) {
   return (
     <div className="border-b border-border p-4 last:border-b-0 sm:p-5">
-      <p className="font-mono text-[9px] uppercase font-bold tracking-wider text-ink-faint">{eyebrow}</p>
+      <p className="font-mono text-2xs uppercase font-bold tracking-wider text-ink-faint">{eyebrow}</p>
       <h2 className="mt-0.5 font-mono text-xs uppercase font-bold text-ink border-b border-border/30 pb-1.5">{title}</h2>
       <div className="mt-3.5">{children}</div>
     </div>
@@ -211,19 +211,19 @@ export function SettingsPanel() {
       <SettingsSection eyebrow="Connection" title="Data & refresh">
         <div className="divide-y divide-border/60 border border-border bg-surface-raised/40">
           <div className="flex items-center justify-between gap-4 p-2.5 sm:px-4">
-            <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-ink-faint">API endpoint</span>
+            <span className="shrink-0 font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">API endpoint</span>
             <span className="break-all text-right font-mono text-xs text-ink-muted">{API_BASE_URL}</span>
           </div>
           <div className="flex items-center justify-between gap-4 p-2.5 sm:px-4">
-            <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-ink-faint">WebSocket endpoint</span>
+            <span className="shrink-0 font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">WebSocket endpoint</span>
             <span className="break-all text-right font-mono text-xs text-ink-muted">{WS_BASE_URL}</span>
           </div>
           <div className="flex items-center justify-between gap-4 p-2.5 sm:px-4">
-            <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-ink-faint">Quote polling fallback</span>
+            <span className="shrink-0 font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">Quote polling fallback</span>
             <span className="shrink-0 font-mono text-xs text-ink-muted">{QUOTE_POLL_FALLBACK_MS / 1000}s</span>
           </div>
           <div className="flex items-center justify-between gap-4 p-2.5 sm:px-4">
-            <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-ink-faint">Indicator / prediction refresh</span>
+            <span className="shrink-0 font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">Indicator / prediction refresh</span>
             <span className="shrink-0 font-mono text-xs text-ink-muted">{INDICATOR_POLL_MS / 1000}s</span>
           </div>
         </div>

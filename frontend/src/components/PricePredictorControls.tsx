@@ -49,7 +49,7 @@ export function PricePredictorControls({
               </button>
             ))}
           </div>
-          <span className="text-[11px] italic leading-relaxed text-ink-faint hidden sm:inline">
+          <span className="text-xs italic leading-relaxed text-ink-faint hidden sm:inline">
             Predictions are estimates for educational purposes only and are not financial advice.
           </span>
         </>

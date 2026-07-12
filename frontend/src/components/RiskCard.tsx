@@ -43,7 +43,7 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
         />
       </div>
       {risk ? (
-        <p className={cn("mt-1.5 font-mono text-[10px] font-bold uppercase", meta?.text ?? "text-ink-muted")}>
+        <p className={cn("mt-1.5 font-mono text-2xs font-bold uppercase", meta?.text ?? "text-ink-muted")}>
           Score: {Math.round(risk.risk_score)} / 100
         </p>
       ) : (
@@ -51,13 +51,13 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
       )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-xs">
-        <span className="text-[10px] font-bold uppercase text-ink-faint">Annualized volatility</span>
+        <span className="text-2xs font-bold uppercase text-ink-faint">Annualized volatility</span>
         <span className="numeric font-semibold text-ink">
           {risk ? `${risk.volatility_annualized_pct.toFixed(1)}%` : "--"}
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-xs">
-        <span className="text-[10px] font-bold uppercase text-ink-faint">Max drawdown</span>
+        <span className="text-2xs font-bold uppercase text-ink-faint">Max drawdown</span>
         <span className="numeric font-semibold text-ink">
           {risk?.max_drawdown_pct !== null && risk?.max_drawdown_pct !== undefined
             ? `${risk.max_drawdown_pct.toFixed(1)}%`

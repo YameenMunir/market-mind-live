@@ -114,14 +114,14 @@ export function IndicatorPanel({
         {read.insights.map((insight) => (
           <div key={insight.key} className="py-2.5">
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-              <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase font-bold text-ink-muted">
+              <span className="inline-flex items-center gap-1 font-mono text-2xs uppercase font-bold text-ink-muted">
                 {insight.label}
                 <InfoTooltip articleId={GLOSSARY_ID_BY_INDICATOR_KEY[insight.key]} />
               </span>
               <span className={cn("numeric font-mono text-xs font-semibold", TONE_TEXT[insight.tone])}>{insight.value}</span>
             </div>
             <div className="mt-1 flex items-start justify-between gap-2">
-              <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-ink-muted">{insight.note}</p>
+              <p className="min-w-0 flex-1 text-xs leading-relaxed text-ink-muted">{insight.note}</p>
               <Badge
                 size="sm"
                 uppercase
@@ -137,7 +137,7 @@ export function IndicatorPanel({
 
       <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3">
         <div>
-          <span className="inline-flex items-center gap-1 font-mono text-[9px] uppercase font-bold tracking-wider text-ink-faint">
+          <span className="inline-flex items-center gap-1 font-mono text-2xs uppercase font-bold tracking-wider text-ink-faint">
             Support
             <InfoTooltip articleId={SUPPORT_RESISTANCE_GLOSSARY_ID} />
           </span>
@@ -152,10 +152,10 @@ export function IndicatorPanel({
               <span className="font-mono text-xs text-ink-faint">--</span>
             )}
           </div>
-          <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">{read.support.note}</p>
+          <p className="mt-1 text-2xs leading-relaxed text-ink-faint">{read.support.note}</p>
         </div>
         <div>
-          <span className="inline-flex items-center gap-1 font-mono text-[9px] uppercase font-bold tracking-wider text-ink-faint">
+          <span className="inline-flex items-center gap-1 font-mono text-2xs uppercase font-bold tracking-wider text-ink-faint">
             Resistance
             <InfoTooltip articleId={SUPPORT_RESISTANCE_GLOSSARY_ID} />
           </span>
@@ -170,12 +170,12 @@ export function IndicatorPanel({
               <span className="font-mono text-xs text-ink-faint">--</span>
             )}
           </div>
-          <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">{read.resistance.note}</p>
+          <p className="mt-1 text-2xs leading-relaxed text-ink-faint">{read.resistance.note}</p>
         </div>
       </div>
 
       <div className={cn("mt-3 rounded-sm border p-3", TONE_SUMMARY_BOX[read.summaryTone])}>
-        <p className="font-mono text-[9px] uppercase font-bold tracking-wider text-ink-muted">Overall Technical Read</p>
+        <p className="font-mono text-2xs uppercase font-bold tracking-wider text-ink-muted">Overall Technical Read</p>
         <p className="mt-1 text-xs leading-relaxed text-ink-muted">{read.summary}</p>
       </div>
 

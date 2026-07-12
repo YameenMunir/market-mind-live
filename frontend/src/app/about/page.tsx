@@ -95,7 +95,7 @@ export default function AboutPage() {
               </Reveal>
 
               <Reveal delay={0.06}>
-                <h1 className="text-3xl font-bold uppercase tracking-tight text-ink sm:text-5xl font-mono leading-none">
+                <h1 className="text-4xl font-bold uppercase tracking-tight text-ink sm:text-6xl lg:text-7xl font-mono leading-none">
                   Learn the stock market
                   <br />
                   <span className="text-brand">by watching it move.</span>
@@ -148,7 +148,7 @@ export default function AboutPage() {
               </div>
 
               <div className="space-y-4">
-                <h2 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Who it&rsquo;s for</h2>
+                <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">Who it&rsquo;s for</h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   {AUDIENCE.map((item, i) => (
                     <Reveal key={item.title} delay={i * 0.08} trigger="scroll" className="flex flex-col rounded-sm border border-border bg-surface p-4 space-y-3">

@@ -144,7 +144,7 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
     >
       <div className="mb-3 flex items-center gap-2 text-ink-faint border-b border-border/60 pb-2">
         <Sparkles size={13} className="text-brand" />
-        <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-ink-muted">AI Insights</p>
+        <p className="font-mono text-2xs font-bold uppercase tracking-wider text-ink-muted">AI Insights</p>
       </div>
 
       {insight.intro && (
@@ -166,7 +166,7 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
                 <Icon size={14} className={meta.iconClass} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-ink-faint">{section.label}</p>
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">{section.label}</p>
                 <p className={cn("mt-1 leading-relaxed text-ink-muted", isFullscreen ? "text-sm" : "text-xs")}>
                   {renderRichText(section.body)}
                 </p>
@@ -177,7 +177,7 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
       </div>
 
       {insight.footer && (
-        <div className="mt-4 flex items-start gap-2 border-t border-border/60 pt-3 font-mono text-[9px] uppercase tracking-wide leading-relaxed text-ink-faint/80">
+        <div className="mt-4 flex items-start gap-2 border-t border-border/60 pt-3 font-mono text-2xs uppercase tracking-wide leading-relaxed text-ink-faint/80">
           <AlertTriangle size={12} className="mt-0.5 shrink-0" />
           <p>{renderRichText(insight.footer)}</p>
         </div>

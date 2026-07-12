@@ -22,7 +22,7 @@ export function NewsFeedCard({ news, isLoading, error }: NewsFeedCardProps) {
           <p className="text-xs font-mono font-bold uppercase text-ink-muted">
             {error.errorCode === "rate_limited" ? "Rate-Limited" : "Load Failed"}
           </p>
-          <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
             {error.errorCode === "rate_limited"
               ? "The market data provider is busy. Automatic retry active."
               : error.message}
@@ -42,7 +42,7 @@ export function NewsFeedCard({ news, isLoading, error }: NewsFeedCardProps) {
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border px-3 py-6 text-center">
           <Newspaper size={18} className="text-ink-faint" aria-hidden />
           <p className="font-mono text-xs font-bold uppercase text-ink-muted">No Recent News</p>
-          <p className="font-mono text-[10px] leading-relaxed text-ink-faint">
+          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
             No headlines available for this symbol right now.
           </p>
         </div>
@@ -60,7 +60,7 @@ export function NewsFeedCard({ news, isLoading, error }: NewsFeedCardProps) {
                   <p className="text-xs font-medium leading-snug text-ink group-hover:text-brand">
                     {article.title}
                   </p>
-                  <p className="mt-1 font-mono text-[10px] uppercase text-ink-faint">
+                  <p className="mt-1 font-mono text-2xs uppercase text-ink-faint">
                     {[article.publisher, article.published_at ? timeAgo(article.published_at) : null]
                       .filter(Boolean)
                       .join(" · ")}

@@ -51,9 +51,19 @@ down-arrow icon or "-" sign, never color alone).
 
 - **Sora** (`--font-sora`) — UI text and headings. Geometric, slightly technical,
   reads as precision instrumentation rather than a generic humanist sans.
-- **JetBrains Mono** (`--font-jetbrains-mono`) — numeric/data values via the `.numeric`
-  utility class (`font-variant-numeric: tabular-nums`) so prices, percentages, and
-  table columns align on their decimal points instead of jittering as digits change.
+- **JetBrains Mono** (`--font-jetbrains-mono`) — two distinct jobs, not one: (1)
+  numeric/data values via the `.numeric` utility class (`font-variant-numeric:
+  tabular-nums`) so prices, percentages, and table columns align on their decimal
+  points instead of jittering as digits change; (2) the app's uppercase/tracked
+  "readout" label voice - eyebrows, panel titles, badges, nav items, and hero
+  headlines all set in mono + uppercase + `tracking-wide`/`tracking-wider` - the
+  single most repeated, recognizable type treatment in the app, reinforcing the
+  "precision instrument panel" identity everywhere a heading or label appears.
+- **Type scale** — Tailwind's default `text-*` scale, extended with one custom step:
+  `text-2xs` (10px/14px line-height, 0.02em tracking) for micro labels/captions below
+  Tailwind's own floor (`text-xs` = 12px) - dashboard density needs to go smaller than
+  12px for meta text (timestamps, badge counts) in a way body copy never should.
+  Anything that reads as prose stays at `text-xs` or larger.
 
 ## Spacing & layout
 

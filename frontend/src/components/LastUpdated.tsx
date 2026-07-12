@@ -18,13 +18,13 @@ export function LastUpdated({ updatedAt, isStale, className, live }: LastUpdated
   useNow(1000);
 
   if (!updatedAt) {
-    return <span className={cn("text-[11px] text-ink-faint", className)}>Awaiting data...</span>;
+    return <span className={cn("text-xs text-ink-faint", className)}>Awaiting data...</span>;
   }
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 text-[11px]",
+        "inline-flex items-center gap-1.5 text-xs",
         isStale ? "text-warn" : "text-ink-faint",
         className
       )}

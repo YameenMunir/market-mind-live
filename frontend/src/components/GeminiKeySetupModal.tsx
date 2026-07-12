@@ -112,7 +112,7 @@ export function GeminiKeySetupModal({
         }}
       />
 
-      <div className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-ink-faint">
+      <div className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-ink-faint">
         <ShieldCheck size={13} className="mt-0.5 shrink-0" aria-hidden />
         <span>Encrypted and stored only for this browser. It is never shown again after saving.</span>
       </div>
