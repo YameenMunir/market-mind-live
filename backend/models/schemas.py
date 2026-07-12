@@ -207,6 +207,32 @@ class AnalystConsensus(BaseModel):
     is_stale: bool = False
 
 
+class RatingChangeAction(str, Enum):
+    UPGRADE = "upgrade"
+    DOWNGRADE = "downgrade"
+    INITIATED = "initiated"
+    REITERATED = "reiterated"
+    # Yahoo's raw action code didn't match a known one - from_grade/to_grade are still
+    # populated so the change itself is still visible even when this label isn't.
+    OTHER = "other"
+
+
+class RatingChange(BaseModel):
+    firm: str
+    action: RatingChangeAction
+    from_grade: str | None = None
+    to_grade: str | None = None
+    graded_at: str
+
+
+class RatingChangeFeed(BaseModel):
+    symbol: str
+    changes: list[RatingChange] = Field(default_factory=list)
+    as_of: str
+    # See AnalystConsensus.is_stale - same meaning.
+    is_stale: bool = False
+
+
 class NewsArticle(BaseModel):
     title: str
     summary: str | None = None
@@ -368,6 +394,10 @@ class AIAssetContext(BaseModel):
     risk: AIRiskContext | None = None
     backtesting: AIBacktestContext | None = None
     news: list[AINewsItem] = Field(default_factory=list)
+    # Reuses RatingChange as-is (unlike AINewsItem vs NewsArticle) - every field on it
+    # (firm/action/from_grade/to_grade/graded_at) is already lean and useful grounding,
+    # nothing to trim before it goes into the Gemini prompt.
+    rating_changes: list[RatingChange] = Field(default_factory=list)
     prediction_history_count: int = 0
     missing_data: list[str] = Field(default_factory=list)
 

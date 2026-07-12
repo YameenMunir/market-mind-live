@@ -26,6 +26,7 @@ import { Panel } from "@/components/Panel";
 import { PredictionCard } from "@/components/PredictionCard";
 import { PriceCard } from "@/components/PriceCard";
 import { PricePredictorControls } from "@/components/PricePredictorControls";
+import { RatingChangesCard } from "@/components/RatingChangesCard";
 import { RiskCard } from "@/components/RiskCard";
 import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
@@ -44,6 +45,7 @@ import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
 import { useNews } from "@/hooks/useNews";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { usePriceForecast } from "@/hooks/usePriceForecast";
+import { useRatingChanges } from "@/hooks/useRatingChanges";
 import { useTheme } from "@/hooks/useTheme";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { buildAssetContext } from "@/lib/aiContext";
@@ -107,6 +109,7 @@ export default function DashboardPage() {
   const alertsState = useAlerts(symbol);
   const analyst = useAnalystConsensus(symbol);
   const news = useNews(symbol);
+  const ratingChanges = useRatingChanges(symbol);
   const isLive = snapshot.connectionState === "live" || snapshot.connectionState === "polling";
   const activeAlertCount = alertsState.alerts.filter((a) => a.status === "active" || a.status === "triggered").length;
 
@@ -298,7 +301,12 @@ export default function DashboardPage() {
           {isAdvanced && <ExplanationPanel prediction={snapshot.prediction} />}
         </div>
 
-        <NewsFeedCard news={news.data} isLoading={news.isLoading} error={news.error} />
+        <div className={cn("grid grid-cols-1 gap-4", isAdvanced && "lg:grid-cols-2")}>
+          <NewsFeedCard news={news.data} isLoading={news.isLoading} error={news.error} />
+          {isAdvanced && (
+            <RatingChangesCard changes={ratingChanges.data} isLoading={ratingChanges.isLoading} error={ratingChanges.error} />
+          )}
+        </div>
       </main>
 
       <FullscreenChartModal
@@ -349,6 +357,7 @@ export default function DashboardPage() {
             prediction: snapshot.prediction,
             risk: snapshot.risk,
             news: news.data,
+            ratingChanges: ratingChanges.data,
           })
         }
       />

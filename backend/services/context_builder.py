@@ -18,10 +18,11 @@ from models.schemas import (
     AIRiskContext,
     AITechnicalContext,
     PredictionDirection,
+    RatingChange,
 )
 from prediction.engine import generate_prediction
 from prediction.history_store import history_store
-from services import news_service, price_service
+from services import news_service, price_service, rating_change_service
 from services.asset_service import resolve_asset_metadata
 from services.indicator_service import compute_indicators
 from services.market_status_service import get_market_status
@@ -151,6 +152,14 @@ def build_asset_context(symbol: str) -> AIAssetContext:
     except AppError as exc:
         missing.append(f"News headlines unavailable: {exc.message}")
 
+    # Same "empty is normal, only a fetch failure goes in missing_data" rule as news.
+    rating_changes: list[RatingChange] = []
+    try:
+        rating_feed = rating_change_service.get_rating_changes(symbol, count=3)
+        rating_changes = rating_feed.changes
+    except AppError as exc:
+        missing.append(f"Analyst rating changes unavailable: {exc.message}")
+
     history_count = len(history_store.get_history(symbol))
 
     return AIAssetContext(
@@ -169,6 +178,7 @@ def build_asset_context(symbol: str) -> AIAssetContext:
         risk=risk_ctx,
         backtesting=None,
         news=news_items,
+        rating_changes=rating_changes,
         prediction_history_count=history_count,
         missing_data=missing,
     )

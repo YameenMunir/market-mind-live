@@ -205,6 +205,23 @@ export interface AnalystConsensus {
   is_stale: boolean;
 }
 
+export type RatingChangeAction = "upgrade" | "downgrade" | "initiated" | "reiterated" | "other";
+
+export interface RatingChange {
+  firm: string;
+  action: RatingChangeAction;
+  from_grade: string | null;
+  to_grade: string | null;
+  graded_at: string;
+}
+
+export interface RatingChangeFeed {
+  symbol: string;
+  changes: RatingChange[];
+  as_of: string;
+  is_stale: boolean;
+}
+
 export interface NewsArticle {
   title: string;
   summary: string | null;
@@ -325,6 +342,7 @@ export interface AIAssetContext {
   risk: AIRiskContext | null;
   backtesting: AIBacktestContext | null;
   news: AINewsItem[];
+  rating_changes: RatingChange[];
   prediction_history_count: number;
   missing_data: string[];
 }

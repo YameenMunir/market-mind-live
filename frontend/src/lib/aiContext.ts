@@ -12,6 +12,7 @@ import type {
   PredictionHistoryEntry,
   PredictionResult,
   PriceQuote,
+  RatingChangeFeed,
   RiskAssessment,
 } from "@/types";
 
@@ -56,6 +57,7 @@ interface BuildContextInput {
   backtest?: BacktestResult | null;
   predictionHistory?: PredictionHistoryEntry[] | null;
   news?: NewsFeed | null;
+  ratingChanges?: RatingChangeFeed | null;
 }
 
 /** Mirrors backend/services/context_builder.py so the assistant is grounded in
@@ -136,6 +138,10 @@ export function buildAssetContext(input: BuildContextInput): AIAssetContext {
     summary: article.summary,
   }));
 
+  // Mirrors context_builder.py's count=3 cap - reuses RatingChange as-is (see
+  // AIAssetContext.rating_changes' comment backend-side for why no trimming is needed).
+  const ratingChangeItems = (input.ratingChanges?.changes ?? []).slice(0, 3);
+
   return {
     asset: input.asset,
     asset_name: input.assetName ?? null,
@@ -152,6 +158,7 @@ export function buildAssetContext(input: BuildContextInput): AIAssetContext {
     risk: riskCtx,
     backtesting: backtestCtx,
     news: newsItems,
+    rating_changes: ratingChangeItems,
     prediction_history_count: input.predictionHistory?.length ?? 0,
     missing_data: missing,
   };

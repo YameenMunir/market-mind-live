@@ -24,7 +24,10 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
   data, with an equity curve, win rate, and full trade log.
 - **Analyst consensus** - buy/hold/sell breakdown and price targets sourced from Yahoo's analyst
   coverage, collapsed into the same bullish/neutral/bearish shape as the app's own prediction so
-  the two are directly comparable.
+  the two are directly comparable. A companion **rating changes** feed
+  (`/api/analysts/{symbol}/rating-changes`) surfaces the individual upgrade/downgrade/initiated/
+  reiterated events behind that aggregate (firm, from/to grade, date) - more actionable than the
+  static snapshot alone, and also fed into the AI Insights context.
 - **AI Insights assistant** - a Gemini-powered chat assistant grounded in the same live data shown
   on the dashboard (falls back to a deterministic mock provider if no Gemini API key is configured,
   so the feature works out of the box).

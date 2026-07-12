@@ -248,6 +248,34 @@ def _parse_news_article(raw: dict) -> dict | None:
     }
 
 
+# Yahoo's `upgradeDowngradeHistory` "Action" field is an undocumented short code.
+# "up"/"down"/"init"/"reit" are well-attested across other tools consuming the same
+# Yahoo endpoint. "main" (maintained) was confirmed against live data during
+# development: rows with an unrecognized code and identical from_grade/to_grade (the
+# same signature "reit" rows have) turned out to carry this code - i.e. it's another
+# spelling of the same "no change" event, not a distinct action. Anything still
+# unrecognized after that maps to "other" rather than a further guess, since
+# from_grade/to_grade are surfaced either way and the caller can read the actual grade
+# text regardless of whether this label is right.
+_RATING_ACTION_MAP = {
+    "up": "upgrade",
+    "down": "downgrade",
+    "init": "initiated",
+    "reit": "reiterated",
+    "main": "reiterated",
+}
+
+
+def _clean_str(value: object) -> str | None:
+    """NaN-safe string extraction from a pandas cell - `upgrades_downgrades` rows can
+    have missing Firm/FromGrade/ToGrade values, which pandas represents as float NaN,
+    not None."""
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
 class YFinanceProvider(MarketDataProvider):
     """Live market data via the unofficial Yahoo Finance API (yfinance).
 
@@ -461,6 +489,47 @@ class YFinanceProvider(MarketDataProvider):
 
         articles = [_parse_news_article(raw) for raw in raw_items]
         return [a for a in articles if a is not None][:count]
+
+    def get_rating_changes(self, symbol: str, count: int = 20) -> list[dict]:
+        ticker = yf.Ticker(symbol)
+        try:
+            df = _call_with_retry(
+                lambda: ticker.upgrades_downgrades, description=f"get_rating_changes({symbol})"
+            )
+        except (NetworkError, RateLimitedError):
+            raise
+        except YFDataException:
+            # yfinance's own signal that there's no rating-change history for this
+            # symbol - a normal outcome (most crypto/forex/commodity/index symbols and
+            # many small caps have no analyst coverage), not a real error.
+            df = None
+        except Exception as exc:
+            raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
+
+        if df is None or df.empty:
+            return []
+
+        # Indexed by GradeDate (tz-naive datetime derived from a Unix epoch - see
+        # yfinance's quote.py, which builds this DataFrame from upgradeDowngradeHistory
+        # and always sets the index that way), newest first.
+        df = df.sort_index(ascending=False)
+        changes: list[dict] = []
+        for graded_at, row in df.head(count).iterrows():
+            firm = _clean_str(row.get("Firm"))
+            if firm is None:
+                continue
+            action_code = _clean_str(row.get("Action"))
+            ts = pd.Timestamp(graded_at)
+            if ts.tzinfo is None:
+                ts = ts.tz_localize("UTC")
+            changes.append({
+                "firm": firm,
+                "action": _RATING_ACTION_MAP.get((action_code or "").lower(), "other"),
+                "from_grade": _clean_str(row.get("FromGrade")),
+                "to_grade": _clean_str(row.get("ToGrade")),
+                "graded_at": ts.isoformat(),
+            })
+        return changes
 
 
 provider = YFinanceProvider()

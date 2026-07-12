@@ -30,6 +30,7 @@ import type {
   PredictionResult,
   PriceForecast,
   PriceQuote,
+  RatingChangeFeed,
   RiskAssessment,
   SessionDetailResponse,
   SessionListResponse,
@@ -132,6 +133,8 @@ export const api = {
     request<AlertActionResponse>(`/api/alerts/${encodeURIComponent(alertId)}/dismiss`, { method: "POST" }),
   getFxRates: () => request<FxRates>(`/api/fx/rates`),
   getAnalystConsensus: (symbol: string) => request<AnalystConsensus>(`/api/analysts/${encodeURIComponent(symbol)}`),
+  getRatingChanges: (symbol: string, count = 20) =>
+    request<RatingChangeFeed>(`/api/analysts/${encodeURIComponent(symbol)}/rating-changes?count=${count}`),
   getNews: (symbol: string, count = 10) =>
     request<NewsFeed>(`/api/news/${encodeURIComponent(symbol)}?count=${count}`),
   getKnowledgeArticles: () => request<KnowledgeArticle[]>(`/api/knowledge/articles`),

@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # quote/candle cadence - 15 minutes keeps the panel reasonably fresh without hitting
     # Yahoo's news endpoint on every dashboard poll.
     news_cache_ttl_seconds: int = 900
+    # Individual rating-change events are even rarer than the aggregate consensus
+    # updating - same TTL as analyst_cache_ttl_seconds for the same reason.
+    rating_changes_cache_ttl_seconds: int = 1800
 
     # Cadence at which each connected client receives a push over the WebSocket. This is
     # independent of how often the server actually calls out to Yahoo (see hub settings

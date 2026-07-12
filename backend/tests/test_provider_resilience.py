@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import time
 
+import pandas as pd
 import pytest
 from yfinance.exceptions import YFDataException, YFRateLimitError
 
@@ -345,3 +346,117 @@ def test_get_news_skips_articles_missing_title_or_link(monkeypatch):
     monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
 
     assert provider_module.provider.get_news("AAPL") == []
+
+
+def _fake_upgrades_downgrades_df(rows: list[dict]) -> pd.DataFrame:
+    """Builds a DataFrame matching yfinance's own upgrades_downgrades shape (see
+    yfinance/scrapers/quote.py): indexed by GradeDate, columns Firm/ToGrade/FromGrade/
+    Action."""
+    df = pd.DataFrame(rows)
+    df.index = pd.to_datetime(df.pop("GradeDate"), unit="s")
+    df.index.name = "GradeDate"
+    return df
+
+
+def test_get_rating_changes_treats_genuine_yf_data_exception_as_empty_list(monkeypatch):
+    class _FakeTicker:
+        @property
+        def upgrades_downgrades(self):
+            raise YFDataException("no rating history")
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    assert provider_module.provider.get_rating_changes("BTC-USD") == []
+
+
+def test_get_rating_changes_raises_network_error_for_unrecognized_exception(monkeypatch):
+    class _CertificateVerifyError(Exception):
+        pass
+
+    class _FakeTicker:
+        @property
+        def upgrades_downgrades(self):
+            raise _CertificateVerifyError("SSL certificate problem")
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    with pytest.raises(NetworkError):
+        provider_module.provider.get_rating_changes("AAPL")
+
+
+def test_get_rating_changes_propagates_rate_limit_instead_of_fake_empty_result(monkeypatch):
+    class _FakeTicker:
+        @property
+        def upgrades_downgrades(self):
+            raise _FakeHTTPError(429)
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    with pytest.raises(RateLimitedError):
+        provider_module.provider.get_rating_changes("AAPL")
+
+
+def test_get_rating_changes_parses_and_maps_known_action_codes(monkeypatch):
+    df = _fake_upgrades_downgrades_df([
+        {"GradeDate": 1752148800, "Firm": "Example Capital", "ToGrade": "Buy", "FromGrade": "Hold", "Action": "up"},
+        {"GradeDate": 1751976000, "Firm": "Other Research", "ToGrade": "Sell", "FromGrade": "Hold", "Action": "down"},
+        {"GradeDate": 1751803200, "Firm": "New Coverage LLC", "ToGrade": "Overweight", "FromGrade": "", "Action": "init"},
+        {"GradeDate": 1751630400, "Firm": "Steady Analytics", "ToGrade": "Hold", "FromGrade": "Hold", "Action": "reit"},
+        {"GradeDate": 1751457600, "Firm": "Maintain Partners", "ToGrade": "Buy", "FromGrade": "Buy", "Action": "main"},
+        {"GradeDate": 1751284800, "Firm": "Mystery Firm", "ToGrade": "Hold", "FromGrade": "Hold", "Action": "wat"},
+    ])
+
+    class _FakeTicker:
+        @property
+        def upgrades_downgrades(self):
+            return df
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    changes = provider_module.provider.get_rating_changes("AAPL")
+
+    # Newest first.
+    assert [c["firm"] for c in changes] == [
+        "Example Capital", "Other Research", "New Coverage LLC", "Steady Analytics", "Maintain Partners", "Mystery Firm",
+    ]
+    assert changes[0]["action"] == "upgrade"
+    assert changes[0]["from_grade"] == "Hold"
+    assert changes[0]["to_grade"] == "Buy"
+    assert changes[0]["graded_at"] == "2025-07-10T12:00:00+00:00"
+    assert changes[1]["action"] == "downgrade"
+    assert changes[2]["action"] == "initiated"
+    assert changes[2]["from_grade"] is None  # empty string normalizes to None
+    assert changes[3]["action"] == "reiterated"
+    assert changes[4]["action"] == "reiterated"  # "main" is another spelling of the same "no change" event as "reit"
+    assert changes[5]["action"] == "other"  # unrecognized code, not a guess
+
+
+def test_get_rating_changes_skips_rows_missing_firm(monkeypatch):
+    df = _fake_upgrades_downgrades_df([
+        {"GradeDate": 1752148800, "Firm": float("nan"), "ToGrade": "Buy", "FromGrade": "Hold", "Action": "up"},
+    ])
+
+    class _FakeTicker:
+        @property
+        def upgrades_downgrades(self):
+            return df
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    assert provider_module.provider.get_rating_changes("AAPL") == []
+
+
+def test_get_rating_changes_respects_count_limit(monkeypatch):
+    df = _fake_upgrades_downgrades_df([
+        {"GradeDate": 1752148800 - i * 86400, "Firm": f"Firm {i}", "ToGrade": "Buy", "FromGrade": "Hold", "Action": "up"}
+        for i in range(5)
+    ])
+
+    class _FakeTicker:
+        @property
+        def upgrades_downgrades(self):
+            return df
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    assert len(provider_module.provider.get_rating_changes("AAPL", count=2)) == 2

@@ -52,6 +52,14 @@ class MarketDataProvider(ABC):
         not an error."""
         ...
 
+    @abstractmethod
+    def get_rating_changes(self, symbol: str, count: int = 20) -> list[dict]:
+        """Analyst rating-change events (upgrade/downgrade/initiated/reiterated) for a
+        symbol, newest first. An empty list is a normal, valid result (most crypto/
+        forex/commodity/index symbols and many small caps have no analyst coverage at
+        all) - not an error."""
+        ...
+
 
 def infer_asset_type(symbol: str) -> AssetType:
     s = symbol.upper().strip()

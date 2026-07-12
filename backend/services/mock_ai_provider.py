@@ -34,6 +34,9 @@ def _intent(message: str) -> str:
         return "compare"
     if any(k in m for k in ("beginner", "simple", "explain like", "eli5")):
         return "beginner"
+    # Checked before "signal" - "upgraded to buy" would otherwise match "buy" first.
+    if any(k in m for k in ("upgrade", "downgrade", "rating change", "analyst action")):
+        return "rating_changes"
     if any(k in m for k in ("signal", "buy", "sell", "hold", "should i")):
         return "signal"
     if any(k in m for k in ("indicator", "rsi", "macd", "bollinger", "moving average", "sma", "ema")):
@@ -150,6 +153,23 @@ def generate_mock_reply(context: AIAssetContext, message: str, history: list[Cha
         if ti.bollinger_position:
             parts.append(f"price is {ti.bollinger_position}")
         lines.append(f"For {asset}: " + "; ".join(parts) + "." if parts else "Indicator data is limited right now.")
+
+    elif intent == "rating_changes":
+        if context.rating_changes:
+            lines.append(f"Recent analyst rating changes for {asset}:")
+            for change in context.rating_changes[:3]:
+                grade_move = (
+                    f"{change.from_grade} → {change.to_grade}"
+                    if change.from_grade and change.to_grade
+                    else change.to_grade or change.from_grade or "rating updated"
+                )
+                lines.append(f"- {change.firm}: {grade_move} ({change.action.value}) on {change.graded_at[:10]}")
+            lines.append(
+                "A single firm's move isn't the whole picture - check the overall analyst consensus "
+                "(buy/hold/sell breakdown) for the aggregate view."
+            )
+        else:
+            lines.append(f"I don't have any recent analyst rating changes on record for {asset}.")
 
     elif intent == "news":
         if context.news:
