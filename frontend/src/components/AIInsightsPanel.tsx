@@ -153,6 +153,7 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                   isLoadingSession={chat.isLoadingSession}
                   error={chat.error}
                   onSend={chat.sendMessage}
+                  onRegenerate={chat.regenerate}
                   onFeedback={chat.sendFeedback}
                   feedbackGiven={chat.feedbackGiven}
                   size="compact"

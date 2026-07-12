@@ -409,6 +409,16 @@ class ChatRequest(BaseModel):
     client_context: AIAssetContext | None = None
 
 
+class RegenerateRequest(BaseModel):
+    """No `message` field, unlike ChatRequest - regenerate re-answers the session's
+    existing last question (looked up server-side from chat_store) rather than adding
+    a new one."""
+
+    session_id: str = Field(min_length=1, max_length=128)
+    asset: str
+    client_context: AIAssetContext | None = None
+
+
 class ChatResponse(BaseModel):
     session_id: str
     message_id: str

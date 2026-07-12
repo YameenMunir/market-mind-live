@@ -32,6 +32,7 @@ import type {
   PriceForecast,
   PriceQuote,
   RatingChangeFeed,
+  RegenerateRequest,
   RiskAssessment,
   SessionDetailResponse,
   SessionListResponse,
@@ -88,18 +89,24 @@ export interface ChatStreamHandlers {
   onError: (error: ApiError) => void;
 }
 
-/** Streams `/api/ai/insights/chat/stream` via `fetch` + a `ReadableStream` reader
- * (not `EventSource`, which can't send a POST body) and hand-parses the Server-Sent
- * Events framing - see backend/api/ai_insights.py::chat_stream for the event shapes.
- * Deliberately has no overall timeout the way `request()` does: a stalled connection
- * with no bytes at all still resolves eventually via the browser's own TCP-level
- * timeout, and capping total stream *duration* would cut off a slow-but-real answer
- * partway through, which a flat timeout on a single JSON response never risked.
- * Cancellation is `signal`'s job (see useAIChat's `stopGenerating`), not a timer. */
-async function streamAIChat(body: ChatRequest, handlers: ChatStreamHandlers, signal: AbortSignal): Promise<void> {
+/** Streams an SSE chat endpoint (`/chat/stream` or `/chat/regenerate`) via `fetch` + a
+ * `ReadableStream` reader (not `EventSource`, which can't send a POST body) and
+ * hand-parses the Server-Sent Events framing - see backend/api/ai_insights.py's
+ * `_sse_response` for the event shapes both endpoints share. Deliberately has no
+ * overall timeout the way `request()` does: a stalled connection with no bytes at all
+ * still resolves eventually via the browser's own TCP-level timeout, and capping total
+ * stream *duration* would cut off a slow-but-real answer partway through, which a flat
+ * timeout on a single JSON response never risked. Cancellation is `signal`'s job (see
+ * useAIChat's `stopGenerating`), not a timer. */
+async function streamSSE(
+  path: string,
+  body: ChatRequest | RegenerateRequest,
+  handlers: ChatStreamHandlers,
+  signal: AbortSignal
+): Promise<void> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/ai/insights/chat/stream`, {
+    res = await fetch(`${API_BASE_URL}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Device-Id": getDeviceId() },
       body: JSON.stringify(body),
@@ -171,6 +178,12 @@ async function streamAIChat(body: ChatRequest, handlers: ChatStreamHandlers, sig
   }
 }
 
+const streamAIChat = (body: ChatRequest, handlers: ChatStreamHandlers, signal: AbortSignal) =>
+  streamSSE("/api/ai/insights/chat/stream", body, handlers, signal);
+
+const streamRegenerate = (body: RegenerateRequest, handlers: ChatStreamHandlers, signal: AbortSignal) =>
+  streamSSE("/api/ai/insights/chat/regenerate", body, handlers, signal);
+
 export const api = {
   searchAssets: (query: string, assetType?: AssetType) => {
     const params = new URLSearchParams({ q: query });
@@ -200,6 +213,7 @@ export const api = {
   aiChat: (body: ChatRequest) =>
     request<ChatResponse>(`/api/ai/insights/chat`, { method: "POST", body: JSON.stringify(body) }),
   streamAIChat,
+  streamRegenerate,
   getAIContext: (asset: string) =>
     request<AIAssetContext>(`/api/ai/insights/context/${encodeURIComponent(asset)}`),
   sendAIFeedback: (body: FeedbackRequest) =>

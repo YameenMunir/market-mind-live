@@ -4,6 +4,7 @@ import {
   BarChart3,
   Clock,
   Minus,
+  RotateCw,
   ShieldAlert,
   Sparkles,
   ThumbsDown,
@@ -21,6 +22,11 @@ interface AIChatMessageProps {
   message: ChatMessage;
   onFeedback?: (rating: FeedbackRating) => void;
   feedbackGiven?: FeedbackRating;
+  /** Only wired for the conversation's single most recent assistant reply - regenerating
+   * an earlier one would leave it "replaced in place" out of chronological order without
+   * also discarding everything after it, which this simple (non-branching) chat history
+   * doesn't support. */
+  onRegenerate?: () => void;
   /** Slightly larger type/spacing in full-screen mode where there's room to breathe. */
   size?: "compact" | "fullscreen";
   /** True while this specific message is the one actively streaming - drives the
@@ -186,6 +192,7 @@ export function AIChatMessage({
   message,
   onFeedback,
   feedbackGiven,
+  onRegenerate,
   size = "compact",
   isStreaming,
   skipAnimation,
@@ -230,32 +237,47 @@ export function AIChatMessage({
         </div>
       )}
 
-      {!isUser && onFeedback && !isStreaming && (
+      {!isUser && !isStreaming && (onFeedback || onRegenerate) && (
         <div className="flex items-center gap-1 px-1">
-          <button
-            type="button"
-            aria-label="Good response"
-            onClick={() => onFeedback("up")}
-            aria-pressed={feedbackGiven === "up"}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
-              feedbackGiven === "up" ? "bg-bull/15 text-bull" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
-            )}
-          >
-            <ThumbsUp size={12} />
-          </button>
-          <button
-            type="button"
-            aria-label="Poor response"
-            onClick={() => onFeedback("down")}
-            aria-pressed={feedbackGiven === "down"}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
-              feedbackGiven === "down" ? "bg-bear/15 text-bear" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
-            )}
-          >
-            <ThumbsDown size={12} />
-          </button>
+          {onFeedback && (
+            <>
+              <button
+                type="button"
+                aria-label="Good response"
+                onClick={() => onFeedback("up")}
+                aria-pressed={feedbackGiven === "up"}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+                  feedbackGiven === "up" ? "bg-bull/15 text-bull" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
+                )}
+              >
+                <ThumbsUp size={12} />
+              </button>
+              <button
+                type="button"
+                aria-label="Poor response"
+                onClick={() => onFeedback("down")}
+                aria-pressed={feedbackGiven === "down"}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+                  feedbackGiven === "down" ? "bg-bear/15 text-bear" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
+                )}
+              >
+                <ThumbsDown size={12} />
+              </button>
+            </>
+          )}
+          {onRegenerate && (
+            <button
+              type="button"
+              aria-label="Regenerate response"
+              title="Regenerate response"
+              onClick={onRegenerate}
+              className="flex h-9 w-9 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
+            >
+              <RotateCw size={12} />
+            </button>
+          )}
         </div>
       )}
     </div>

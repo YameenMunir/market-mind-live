@@ -23,6 +23,7 @@ interface AIChatConversationProps {
   isLoadingSession: boolean;
   error: string | null;
   onSend: (text: string) => void;
+  onRegenerate: () => void;
   onFeedback: (messageId: string, rating: FeedbackRating) => void;
   feedbackGiven: Record<string, FeedbackRating>;
   /** Slightly larger type/spacing in full-screen mode where there's room to breathe. */
@@ -43,6 +44,7 @@ export function AIChatConversation({
   isLoadingSession,
   error,
   onSend,
+  onRegenerate,
   onFeedback,
   feedbackGiven,
   size = "compact",
@@ -81,6 +83,10 @@ export function AIChatConversation({
     setInput("");
     setSkipAnimation(false);
   };
+
+  // Regenerate is only offered on the single most recent assistant reply - see
+  // AIChatMessage's onRegenerate prop doc for why earlier ones aren't candidates.
+  const lastAssistantId = [...messages].reverse().find((m) => m.role === "assistant")?.message_id;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -127,6 +133,7 @@ export function AIChatConversation({
               message={message}
               onFeedback={message.role === "assistant" ? (rating) => onFeedback(message.message_id, rating) : undefined}
               feedbackGiven={feedbackGiven[message.message_id]}
+              onRegenerate={message.message_id === lastAssistantId ? onRegenerate : undefined}
               size={size}
               isStreaming={message.message_id === streamingMessageId}
               skipAnimation={skipAnimation}

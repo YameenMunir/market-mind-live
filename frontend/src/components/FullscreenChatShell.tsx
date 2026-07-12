@@ -146,6 +146,7 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
               isLoadingSession={chat.isLoadingSession}
               error={chat.error}
               onSend={chat.sendMessage}
+              onRegenerate={chat.regenerate}
               onFeedback={chat.sendFeedback}
               feedbackGiven={chat.feedbackGiven}
               size="fullscreen"

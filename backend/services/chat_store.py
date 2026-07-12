@@ -171,6 +171,21 @@ class ChatSessionStore:
             session.commit()
             return existed
 
+    def delete_message(self, session_id: str, message_id: str) -> bool:
+        """Removes a single message row - used by regenerate to discard the stale
+        assistant reply being replaced, without touching the rest of the session."""
+        with Session(engine) as session:
+            record = session.exec(
+                select(ChatMessageRecord).where(
+                    ChatMessageRecord.session_id == session_id, ChatMessageRecord.message_id == message_id
+                )
+            ).first()
+            if record is None:
+                return False
+            session.delete(record)
+            session.commit()
+            return True
+
 
 @dataclass
 class FeedbackEntry:

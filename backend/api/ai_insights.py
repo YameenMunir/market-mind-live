@@ -17,6 +17,7 @@ from models.schemas import (
     FeedbackResponse,
     NewSessionRequest,
     NewSessionResponse,
+    RegenerateRequest,
     SessionDetailResponse,
     SessionListResponse,
     SummariseRequest,
@@ -34,24 +35,22 @@ async def chat(request: ChatRequest, device_id: str = Depends(get_device_id)):
     return await ai_insights_service.handle_chat(request, device_id)
 
 
-@router.post("/chat/stream")
-async def chat_stream(request: ChatRequest, device_id: str = Depends(get_device_id)):
-    """Server-Sent Events counterpart to `/chat` - each event is a JSON-encoded
-    `{"type": "chunk" | "done" | "error", ...}` line (see
-    `ai_insights_service.handle_chat_stream`). A client disconnect (the frontend
-    aborting its fetch when the user clicks "Stop generating") is detected by
-    Starlette itself, which cancels this generator - `handle_chat_stream` persists
-    whatever partial reply had been generated via a `finally` block, so cancellation
-    doesn't need to be handled specially here.
+def _sse_response(agen) -> StreamingResponse:
+    """Wraps a `handle_*_stream` async generator (yielding event dicts) as an SSE
+    `StreamingResponse`. A client disconnect (the frontend aborting its fetch when the
+    user clicks "Stop generating") is detected by Starlette itself, which cancels the
+    generator this wraps - the service-layer generators persist whatever partial reply
+    had been generated via a `finally` block, so cancellation doesn't need any special
+    handling here.
     """
 
     async def event_stream():
         try:
-            async for event in ai_insights_service.handle_chat_stream(request, device_id):
+            async for event in agen:
                 yield f"data: {json.dumps(event)}\n\n"
         except Exception:
-            # Last-resort safety net for a genuinely unexpected failure - anything
-            # handle_chat_stream itself anticipates (rate limits, provider errors) is
+            # Last-resort safety net for a genuinely unexpected failure - anything the
+            # service layer itself anticipates (rate limits, provider errors) is
             # already translated into a normal {"type": "error", ...} event and never
             # reaches here. Deliberately `except Exception`, not a bare `except`, so
             # asyncio.CancelledError (raised on client disconnect - see docstring
@@ -64,6 +63,22 @@ async def chat_stream(request: ChatRequest, device_id: str = Depends(get_device_
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
     )
+
+
+@router.post("/chat/stream")
+async def chat_stream(request: ChatRequest, device_id: str = Depends(get_device_id)):
+    """Server-Sent Events counterpart to `/chat` - each event is a JSON-encoded
+    `{"type": "chunk" | "done" | "error", ...}` line (see
+    `ai_insights_service.handle_chat_stream`)."""
+    return _sse_response(ai_insights_service.handle_chat_stream(request, device_id))
+
+
+@router.post("/chat/regenerate")
+async def chat_regenerate(request: RegenerateRequest, device_id: str = Depends(get_device_id)):
+    """SSE counterpart to `/chat/stream` for the "Regenerate" button - re-answers the
+    session's most recent question in place, discarding the stale reply (see
+    `ai_insights_service.handle_regenerate_stream`)."""
+    return _sse_response(ai_insights_service.handle_regenerate_stream(request, device_id))
 
 
 @router.get("/context/{asset}", response_model=AIAssetContext)

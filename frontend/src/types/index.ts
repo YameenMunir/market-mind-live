@@ -354,6 +354,14 @@ export interface ChatRequest {
   client_context?: AIAssetContext | null;
 }
 
+/** No `message` field, unlike ChatRequest - regenerate re-answers the session's
+ * existing last question (looked up server-side) rather than adding a new one. */
+export interface RegenerateRequest {
+  session_id: string;
+  asset: string;
+  client_context?: AIAssetContext | null;
+}
+
 export type ChatProvider = "gemini" | "gemini-cached" | "gemini-interrupted" | "mock" | "mock-fallback";
 
 export interface ChatResponse {

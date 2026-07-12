@@ -21,6 +21,7 @@ from models.schemas import (
     FeedbackRequest,
     NewSessionRequest,
     NewSessionResponse,
+    RegenerateRequest,
     SessionDetailResponse,
     SessionListResponse,
     SummariseRequest,
@@ -336,6 +337,144 @@ async def handle_chat_stream(request: ChatRequest, device_id: str) -> AsyncItera
     # Unreachable on cancellation (the `finally` above still ran, but execution never
     # returns here) - the frontend's stream simply ending without a "done" event is
     # itself the signal that generation was stopped/interrupted before completing.
+    yield {
+        "type": "done",
+        "session_id": request.session_id,
+        "message_id": assistant_msg_id,
+        "provider": provider,
+        "context_used": context.model_dump(mode="json"),
+        "disclaimer": DISCLAIMER,
+        "created_at": created_at,
+    }
+
+
+async def handle_regenerate_stream(request: RegenerateRequest, device_id: str) -> AsyncIterator[dict]:
+    """Re-answers a session's most recent question with a fresh reply, discarding the
+    stale assistant reply it's replacing - the "Regenerate" button's backend.
+
+    Deliberately close to `handle_chat_stream`'s own structure (same rate-limit/cache/
+    Gemini-fallback/cancellation-safe-persistence behavior - see its docstring for the
+    shared rationale) rather than factored into a shared helper: the two differ in
+    exactly what gets looked up/deleted/persisted at the edges (a fresh user message
+    here vs. a reused one there), and an async generator can't itself return a value
+    (PEP 525), which would make sharing the chunk-yielding middle section awkward
+    without a materially simpler result.
+    """
+    if not _get_chat_rate_limiter().check(request.session_id):
+        exc = ChatRateLimitedError()
+        yield {"type": "error", "error_code": exc.error_code.value, "message": exc.message}
+        return
+
+    full_history = chat_store.get_history(request.session_id)
+    last_user_index = next(
+        (i for i in range(len(full_history) - 1, -1, -1) if full_history[i].role == ChatRole.USER), None
+    )
+    if last_user_index is None:
+        yield {
+            "type": "error",
+            "error_code": ErrorCode.VALIDATION_ERROR.value,
+            "message": "There's no question yet to regenerate a reply for.",
+        }
+        return
+
+    user_message = full_history[last_user_index]
+    stale_assistant_id: str | None = None
+    if last_user_index + 1 < len(full_history) and full_history[last_user_index + 1].role == ChatRole.ASSISTANT:
+        stale_assistant_id = full_history[last_user_index + 1].message_id
+        chat_store.delete_message(request.session_id, stale_assistant_id)
+
+    settings = get_settings()
+    # Everything *before* the question being re-answered - deliberately excludes the
+    # stale reply just deleted above, so Gemini isn't shown its own about-to-be-
+    # discarded answer as if it were prior conversation context.
+    history_prefix = full_history[:last_user_index]
+    limit = settings.ai_max_history_messages
+    history = history_prefix[-limit:] if limit > 0 else history_prefix
+
+    context = resolve_context(request.asset, request.client_context)
+    system_instruction = _build_system_instruction(context, user_message.content)
+
+    provider = "mock"
+    accumulated = ""
+    assistant_msg_id: str | None = None
+    created_at: str | None = None
+    api_key = _resolve_gemini_api_key(device_id, settings)
+
+    try:
+        if api_key:
+            cache_key = "gemini_reply:" + hashlib.sha256(
+                f"{system_instruction}\x1f{user_message.content}".encode()
+            ).hexdigest()
+            cached_reply = cache.get(cache_key)
+            if cached_reply is not None:
+                for chunk in _chunk_text(cached_reply):
+                    accumulated += chunk
+                    yield {"type": "chunk", "text": chunk}
+                provider = "gemini-cached"
+            else:
+                try:
+                    async for piece in gemini_service.stream_reply(
+                        system_instruction=system_instruction,
+                        history=history,
+                        user_message=user_message.content,
+                        model=settings.gemini_model,
+                        api_key=api_key,
+                        timeout_seconds=settings.gemini_timeout_seconds,
+                    ):
+                        accumulated += piece
+                        yield {"type": "chunk", "text": piece}
+                    provider = "gemini"
+                    cache.set(cache_key, accumulated, settings.ai_response_cache_ttl_seconds)
+                except gemini_service.GeminiRateLimitError as exc:
+                    if not accumulated:
+                        yield {"type": "error", "error_code": exc.error_code.value, "message": exc.message}
+                        return
+                    provider = "gemini-interrupted"
+                except AppError:
+                    if accumulated:
+                        provider = "gemini-interrupted"
+                    else:
+                        for chunk in _chunk_text(
+                            mock_ai_provider.generate_mock_reply(context, user_message.content, history)
+                        ):
+                            accumulated += chunk
+                            yield {"type": "chunk", "text": chunk}
+                        provider = "mock-fallback"
+
+                if provider == "gemini-interrupted":
+                    note = "\n\n_(Connection to the AI assistant was interrupted - showing the partial response above.)_"
+                    accumulated += note
+                    yield {"type": "chunk", "text": note}
+                elif provider == "mock-fallback":
+                    note = "\n\n_(Live AI assistant temporarily unavailable - showing a local summary instead.)_"
+                    accumulated += note
+                    yield {"type": "chunk", "text": note}
+        else:
+            for chunk in _chunk_text(mock_ai_provider.generate_mock_reply(context, user_message.content, history)):
+                accumulated += chunk
+                yield {"type": "chunk", "text": chunk}
+            provider = "mock"
+    finally:
+        # Same cancellation-safety rationale as handle_chat_stream's finally block -
+        # only the new assistant reply is persisted here (the question already exists
+        # in chat_store from its original turn).
+        if accumulated:
+            assistant_msg_id = str(uuid.uuid4())
+            created_at = _now_iso()
+            assistant_msg = ChatMessage(
+                message_id=assistant_msg_id, role=ChatRole.ASSISTANT, content=accumulated, created_at=created_at
+            )
+            chat_store.append(request.session_id, assistant_msg)
+            chat_store.touch(
+                request.session_id,
+                asset=context.asset,
+                asset_name=context.asset_name,
+                preview=user_message.content,
+                signal=context.prediction.signal if context.prediction else None,
+                risk_level=context.risk.level if context.risk else None,
+                device_id=device_id,
+            )
+
     yield {
         "type": "done",
         "session_id": request.session_id,

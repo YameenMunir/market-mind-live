@@ -235,6 +235,66 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
     [asset, buildContext, isSending, sessionId]
   );
 
+  const regenerate = useCallback(async () => {
+    if (isSending || !sessionId) return;
+    const lastAssistantIndex = [...messages].reverse().findIndex((m) => m.role === "assistant");
+    if (lastAssistantIndex === -1) return;
+    const index = messages.length - 1 - lastAssistantIndex;
+    const originalMessage = messages[index];
+
+    setError(null);
+    setIsSending(true);
+
+    const streamingId = `local-regenerate-${Date.now()}`;
+    // Replaces the stale reply in place (same position) rather than appending a new
+    // message at the end - mirrors sendMessage's "same bubble grows in place" approach
+    // so there's no layout jump between the old answer disappearing and the new one
+    // starting to stream in.
+    setMessages((prev) =>
+      prev.map((m, i) => (i === index ? { message_id: streamingId, role: "assistant", content: "", created_at: new Date().toISOString() } : m))
+    );
+    setStreamingMessageId(streamingId);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    let receivedAny = false;
+
+    const context = buildContext();
+    await api.streamRegenerate(
+      { session_id: sessionId, asset, client_context: context },
+      {
+        onChunk: (delta) => {
+          receivedAny = true;
+          setMessages((prev) =>
+            prev.map((m) => (m.message_id === streamingId ? { ...m, content: m.content + delta } : m))
+          );
+        },
+        onDone: (final) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.message_id === streamingId ? { ...m, message_id: final.message_id, created_at: final.created_at } : m
+            )
+          );
+          setStreamingMessageId(null);
+          setIsSending(false);
+          abortControllerRef.current = null;
+        },
+        onError: (err) => {
+          setStreamingMessageId(null);
+          setIsSending(false);
+          abortControllerRef.current = null;
+          if (!receivedAny) {
+            // Regeneration failed before producing anything - restore the original
+            // reply rather than leaving an empty bubble or losing it outright.
+            setMessages((prev) => prev.map((m) => (m.message_id === streamingId ? originalMessage : m)));
+            setError(err.message);
+          }
+        },
+      },
+      controller.signal
+    );
+  }, [asset, buildContext, isSending, messages, sessionId]);
+
   const sendFeedback = useCallback(
     async (messageId: string, rating: FeedbackRating) => {
       if (!sessionId) return;
@@ -258,6 +318,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
     isLoadingSession,
     error,
     sendMessage,
+    regenerate,
     sendFeedback,
     feedbackGiven,
     startNewChat,
