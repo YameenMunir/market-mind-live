@@ -36,6 +36,10 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
   dashboard surfaces, remembered server-side across sessions.
 - **First-run onboarding tour** - a guided walkthrough of the dashboard's key panels for new users,
   restartable any time from the view menu.
+- **Marketing site** - a public landing page, About page, and Privacy/Terms pages, with a responsive
+  Navbar (desktop nav + mobile hamburger menu, active-route highlighting) shared across them. Several
+  "3D" visualizations (market globe, backtesting simulation, candlestick/network/product previews) are
+  CSS/SVG-driven, not WebGL - no three.js or similar dependency is required.
 
 ## Tech stack
 
@@ -60,6 +64,7 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
 - Tailwind CSS with a semantic design-token system (dark/light mode)
 - `lightweight-charts` for candlestick charts, `recharts` for the backtest equity curve
 - Framer Motion for transitions, `lucide-react` for icons
+- Vitest + React Testing Library for component/hook/unit tests
 
 ## Project structure
 
@@ -77,11 +82,12 @@ backend/
 
 frontend/
   src/app/        # Next.js App Router pages: dashboard/backtesting/settings (app group) +
-                  #   marketing site (landing, about, contact, privacy, terms)
-  src/components/ # reusable UI (design-system primitives + dashboard cards/panels)
+                  #   marketing site (landing, about, privacy, terms) with a shared Navbar
+  src/components/ # reusable UI (design-system primitives, dashboard cards/panels, Navbar,
+                  #   CSS/SVG "3D" visualizations for the marketing site)
   src/hooks/      # live data, AI chat, alerts, chart preferences, onboarding tour, etc.
   src/lib/        # API client, formatting helpers, design tokens/constants
-  src/charts/     # chart wrapper components
+  src/charts/     # chart wrapper components (candlestick + equity curve)
 ```
 
 ## Getting started
@@ -117,11 +123,29 @@ non-default backend URL (`NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_WS_BASE_URL`,
 ```bash
 # Backend
 python -c "import main"        # sanity-check the app imports cleanly
+pip install -r requirements-dev.txt && pytest   # run the backend test suite
 
 # Frontend
 npm run build                  # production build (also runs the TypeScript check)
 npx tsc --noEmit                # typecheck only, faster than a full build
+npm run test                    # run the Vitest suite
 ```
+
+## Contributing
+
+Have an idea for a new feature? Open a pull request:
+
+1. Fork the repo and create a branch off `main` (e.g. `feat/short-description`).
+2. Make your changes, following the conventions in `CLAUDE.md` (project structure, where new
+   backend errors/schemas/API calls belong, semantic Tailwind tokens, etc.).
+3. Verify before pushing:
+   - Backend: `python -c "import main"` and, if relevant, `pytest` (`backend/requirements-dev.txt`).
+   - Frontend: `npx tsc --noEmit`, `npm run build`, and `npm run test`.
+4. Open a PR against `main` describing the feature/suggestion and why it's useful - a small PR
+   with a clear rationale is easier to review than a large one bundling multiple ideas.
+
+Not ready to write code? Open a [GitHub issue](https://github.com/YameenMunir/market-mind-live/issues)
+describing the feature suggestion instead.
 
 ## Deployment
 
