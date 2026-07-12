@@ -1,49 +1,21 @@
+"use client";
+
 import Link from "next/link";
-import { Activity, ArrowUpRight, BarChart3, Brain, Gauge, LineChart, ShieldCheck, Sparkles } from "lucide-react";
+import { Activity, ArrowUpRight, BarChart3, Brain, Gauge, LineChart, ShieldCheck, Sparkles, Check } from "lucide-react";
 
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { Reveal } from "@/components/Reveal";
 import { BUTTON_SIZE_STYLES, BUTTON_VARIANT_STYLES } from "@/components/Button";
 import { StockGraph3D } from "@/components/StockGraph3D";
+import { ProductPreview3D } from "@/components/ProductPreview3D";
+import { CandlestickChart3D } from "@/components/CandlestickChart3D";
+import { BacktestingSimulation3D } from "@/components/BacktestingSimulation3D";
+import { EvidenceNetwork3D } from "@/components/EvidenceNetwork3D";
+import { MarketGlobe3D } from "@/components/MarketGlobe3D";
 import { cn } from "@/lib/utils";
 
 const ASSET_CLASSES = ["Stocks", "ETFs", "Crypto", "Forex", "Commodities", "Indices"];
-
-const FEATURES = [
-  {
-    icon: LineChart,
-    title: "Institutional-grade charting",
-    description:
-      "TradingView-caliber candlesticks with zoom, pan, moving averages, Bollinger Bands, and support/resistance zones.",
-  },
-  {
-    icon: Brain,
-    title: "Transparent predictions",
-    description:
-      "A rules-based signal engine combining trend, momentum, and volatility - with plain-English reasoning, not a black box.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Risk-aware by default",
-    description: "Every asset ships with a volatility-calibrated risk score so you understand exposure before you act.",
-  },
-  {
-    icon: BarChart3,
-    title: "Strategy backtesting",
-    description: "Stress-test the signal engine against years of historical data with full equity curves and trade logs.",
-  },
-  {
-    icon: Activity,
-    title: "Always-on live feed",
-    description: "WebSocket streaming with automatic polling fallback, so you never lose the thread on market moves.",
-  },
-  {
-    icon: Gauge,
-    title: "Confidence, quantified",
-    description: "Every signal carries a calibrated confidence score - know when the model is certain, and when it isn't.",
-  },
-];
 
 const REASONING_FACTORS = [
   "SMA-20 crossed above SMA-50, twelve sessions ago",
@@ -56,6 +28,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-canvas">
       <Navbar />
 
+      {/* ================= HERO SECTION ================= */}
       <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-12 sm:pt-16 lg:py-24">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Column: Heading, Supporting Text, CTAs */}
@@ -154,6 +127,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ================= ASSET CLASSES RIBBON ================= */}
       <section className="border-y border-border bg-surface/40 py-3.5">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-10 gap-y-2 px-6 font-mono text-[10px] uppercase font-semibold tracking-wider text-ink-faint">
           {ASSET_CLASSES.map((label) => (
@@ -162,27 +136,194 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-20">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">Built like a trading desk, not a demo</h2>
-          <p className="mt-2 text-xs text-ink-muted">Every card on the dashboard answers one question a trader actually asks.</p>
+      {/* ================= PRODUCT PREVIEW SECTION ================= */}
+      <section className="relative mx-auto max-w-7xl px-6 py-20 border-b border-border">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+          {/* Left: 3D Product Mockup */}
+          <div className="lg:col-span-5 w-full">
+            <Reveal delay={0.1}>
+              <ProductPreview3D className="mx-auto max-w-[320px] lg:max-w-none" />
+            </Reveal>
+          </div>
+          
+          {/* Right: Feature Description */}
+          <div className="lg:col-span-7 space-y-6">
+            <Reveal delay={0.05}>
+              <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">
+                A Unified, Layered Workspace
+              </h2>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <p className="text-xs leading-relaxed text-ink-muted">
+                Ditch the tab-clutter. Market Mind Live brings charting, order books, and real-time AI signal panels 
+                together inside a clean desktop terminal model. Everything behaves reactively and stays visible 
+                at a single glance, adapting beautifully to standard mobile viewports.
+              </p>
+            </Reveal>
+            <Reveal delay={0.15}>
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-4">
+                {[
+                  "Real-time canvas updates",
+                  "Layered, high-contrast layouts",
+                  "Pulsing status parameters",
+                  "Fluid viewport adaptation"
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 font-mono text-[10px] uppercase font-bold text-ink-muted">
+                    <Check size={12} className="text-brand shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= INTERACTIVE FEATURES SHOWCASE ================= */}
+      <section className="mx-auto max-w-7xl px-6 py-20 space-y-28">
+        
+        {/* Feature 1: Charting */}
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-7 space-y-4">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Workspace primitive</span>
+            <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Institutional Charting</h3>
+            <p className="text-xs leading-relaxed text-ink-muted">
+              Analyze price action with high-density candlestick visualizations. Overlays are built to run 
+              smoothly on low-power mobile engines, offering moving averages, Bollinger Bands, and 
+              calculated support/resistance regions without visual overlap.
+            </p>
+          </div>
+          <div className="lg:col-span-5 w-full">
+            <Reveal delay={0.1} trigger="scroll">
+              <CandlestickChart3D className="mx-auto max-w-[220px] lg:max-w-none" />
+            </Reveal>
+          </div>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((feature, i) => (
-            <Reveal
-              key={feature.title}
-              trigger="scroll"
-              delay={(i % 3) * 0.08}
-              className="rounded-sm border border-border bg-surface p-6 transition-colors hover:border-brand/35"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-sm border border-brand/25 bg-brand/5">
-                <feature.icon size={16} className="text-brand" />
-              </div>
-              <h3 className="mt-4 font-mono text-xs font-bold uppercase tracking-wider text-ink">{feature.title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-ink-muted">{feature.description}</p>
+        {/* Feature 2: Backtesting */}
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-5 w-full order-last lg:order-first">
+            <Reveal delay={0.1} trigger="scroll">
+              <BacktestingSimulation3D className="mx-auto max-w-[220px] lg:max-w-none" />
             </Reveal>
-          ))}
+          </div>
+          <div className="lg:col-span-7 space-y-4">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Risk verification</span>
+            <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Strategy Backtesting</h3>
+            <p className="text-xs leading-relaxed text-ink-muted">
+              Stress-test indicators across historical intervals. Compare strategy performance 
+              against index benchmarks side-by-side in 3D projection, tracking entry flags, exit flags, 
+              and drawdown valleys with precision metrics.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature 3: AI Insights */}
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-7 space-y-4">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Explainable AI</span>
+            <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Evidence-Based Insights</h3>
+            <p className="text-xs leading-relaxed text-ink-muted">
+              No black boxes. The system outlines its signal reasoning using an interconnected evidence network. 
+              Technical crossovers, momentum status, and volume signals converge transparently into a 
+              final bullish or bearish confidence rating.
+            </p>
+          </div>
+          <div className="lg:col-span-5 w-full">
+            <Reveal delay={0.1} trigger="scroll">
+              <EvidenceNetwork3D className="mx-auto max-w-[220px] lg:max-w-none" />
+            </Reveal>
+          </div>
+        </div>
+
+        {/* Feature 4: Global Market Coverage */}
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-5 w-full order-last lg:order-first">
+            <Reveal delay={0.1} trigger="scroll">
+              <MarketGlobe3D className="mx-auto max-w-[220px] lg:max-w-none" />
+            </Reveal>
+          </div>
+          <div className="lg:col-span-7 space-y-4">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand">Data ecosystem</span>
+            <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Connected Global Streams</h3>
+            <p className="text-xs leading-relaxed text-ink-muted">
+              Monitor active market exchanges, crypto channels, forex networks, and commodities indexes globally. 
+              Data feeds route through low-overhead pipelines to update values rapidly without clogging threads 
+              or battery cycles on mobile hardware.
+            </p>
+          </div>
+        </div>
+
+      </section>
+
+      {/* ================= SEQUENCE / HOW IT WORKS SECTION ================= */}
+      <section className="border-t border-border bg-surface/20 py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mx-auto max-w-2xl text-center mb-16">
+            <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">
+              Structured Terminal Operations
+            </h2>
+            <p className="mt-2 text-xs text-ink-muted">
+              How the platform synthesizes raw quotes into clear, actionable insights in four steps.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+            {[
+              { step: "01", title: "Select Ticker", desc: "Choose a global stock, forex pair, index, or cryptocurrency to initialize." },
+              { step: "02", title: "Parse Technicals", desc: "Calculates candlesticks, moving average crossover, and volatility indices." },
+              { step: "03", title: "Inspect Signal", desc: "Read plain-English AI reasoning logs detailing indicator configurations." },
+              { step: "04", title: "Simulate Strategy", desc: "Simulate strategy parameters historically to verify risk performance." }
+            ].map((s, idx) => (
+              <Reveal key={idx} trigger="scroll" delay={idx * 0.08} className="relative rounded-sm border border-border bg-surface p-5 space-y-3">
+                <div className="font-mono text-2xl font-bold text-brand/20">{s.step}</div>
+                <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">{s.title}</h4>
+                <p className="text-[11px] leading-relaxed text-ink-muted">{s.desc}</p>
+                {idx < 3 && (
+                  <div className="hidden md:block absolute top-[40%] right-[-16px] z-10 translate-x-1/2">
+                    <span className="text-brand/40 font-mono font-bold">&rarr;</span>
+                  </div>
+                )}
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================= FINAL CTA ================= */}
+      <section className="relative overflow-hidden border-t border-border py-24 bg-surface-raised/10">
+        {/* Subtle background visual curve */}
+        <div className="absolute inset-0 -z-10 opacity-30 flex items-center justify-center translate-y-16">
+          <StockGraph3D className="w-[600px] h-auto opacity-10" />
+        </div>
+
+        <div className="mx-auto max-w-3xl px-6 text-center space-y-6">
+          <Reveal delay={0.05} className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-2.5 py-0.5 font-mono text-[9px] uppercase font-bold tracking-wider text-brand">
+            Terminal Active
+          </Reveal>
+          <Reveal delay={0.1}>
+            <h2 className="text-2xl font-bold uppercase tracking-wide font-mono text-ink sm:text-4xl">
+              Professional asset analytics.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <p className="mx-auto max-w-md text-xs leading-relaxed text-ink-muted">
+              Get the signal, cut the noise, and access indicators with plain-English insights in seconds.
+            </p>
+          </Reveal>
+          <Reveal delay={0.2} className="pt-4">
+            <Link
+              href="/dashboard"
+              className={cn(
+                BUTTON_VARIANT_STYLES.primary,
+                BUTTON_SIZE_STYLES.lg,
+                "group inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+              )}
+            >
+              Open Live Terminal
+              <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </Link>
+          </Reveal>
         </div>
       </section>
 
