@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Inter } from "next/font/google";
 
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "@/styles/globals.css";
 
 const inter = Inter({
@@ -19,12 +20,18 @@ export const metadata: Metadata = {
   title: "Market Mind Live | Market Intelligence Terminal",
   description:
     "Live market intelligence for stocks, ETFs, crypto, forex, commodities, and indices - predictions, risk, and backtesting in one terminal.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Market Mind Live",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#090b10",
 };
 
 const THEME_INIT_SCRIPT = `
@@ -47,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         {children}
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
