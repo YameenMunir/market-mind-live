@@ -150,7 +150,7 @@ export default function DashboardPage() {
         title="Live Dashboard"
       />
 
-      <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">
+      <main className="flex-1 space-y-4 overflow-y-auto p-4 pb-20 sm:space-y-5 sm:p-6 lg:pb-6">
         {snapshot.errorMessage && <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />}
 
         <div

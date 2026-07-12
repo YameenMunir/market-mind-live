@@ -79,7 +79,7 @@ export default function BacktestingPage() {
         </div>
       </header>
 
-      <main className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-6">
+      <main className="flex-1 space-y-4 overflow-y-auto p-4 pb-20 sm:space-y-5 sm:p-6 lg:pb-6">
         <Panel eyebrow="Strategy Backtest" title="SMA 20/50 + MACD trend-following">
           <p className="mb-4 text-xs leading-relaxed text-ink-muted">
             Simulates going long when SMA-20 crosses above SMA-50 with positive MACD momentum, and moving to
