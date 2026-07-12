@@ -93,7 +93,7 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
     }
   }, []);
 
-  const origin = { x: 30, y: 135 };
+  const origin = { x: 45, y: 90 };
   const cos30 = 0.866;
   const sin30 = 0.5;
 
@@ -102,9 +102,9 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
 
   // Helper to project point coordinates
   const getCoords = (idx: number, val: number, isBenchmark: boolean) => {
-    const stepX = 25;
+    const stepX = 18;
     const tx = idx * stepX;
-    const ty = (val - 80) * 0.9;
+    const ty = (val - 80) * 0.7;
     const zOffset = isBenchmark ? -10 : 10;
     
     const x = origin.x + tx * cos30 + zOffset * -0.866;
@@ -113,7 +113,7 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
   };
 
   const getFloorCoords = (idx: number, isBenchmark: boolean) => {
-    const stepX = 25;
+    const stepX = 18;
     const tx = idx * stepX;
     const zOffset = isBenchmark ? -10 : 10;
     
@@ -148,7 +148,7 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
       className={cn("w-full space-y-4 select-none", className)}
     >
       {/* Strategy Toggles */}
-      <div className="flex rounded-sm border border-border bg-surface/50 p-0.5 font-mono text-[9px] font-bold uppercase tracking-wider w-fit mx-auto">
+      <div className="flex rounded-sm border border-border bg-surface/50 p-0.5 font-mono text-xs font-bold uppercase tracking-wider w-fit mx-auto">
         {(["gold", "reversion", "breakout"] as StrategyType[]).map(sc => (
           <button
             key={sc}
@@ -168,7 +168,7 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
       <div className="relative rounded-sm border border-border bg-surface p-4 shadow-xl">
         
         {/* Flag explanation popover */}
-        <div className="absolute top-2 left-2 z-10 font-mono text-[9px] text-ink-muted max-w-[200px] bg-surface-raised/95 border border-border px-2 py-1 rounded-sm">
+        <div className="absolute top-2 left-2 z-10 font-mono text-xs text-ink-muted max-w-[200px] bg-surface-raised/95 border border-border px-2 py-1 rounded-sm">
           <span className="font-bold text-ink uppercase">Hover indicators:</span> {getTooltipText()}
         </div>
 
@@ -271,7 +271,7 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
 
           {/* ================= TRANSACTION: BUY FLAG (B) ================= */}
           <g 
-            transform={`translate(${buyPt.x}, ${buyPt.y - 12})`}
+            transform={`translate(${buyPt.x}, ${buyPt.y - 14})`}
             className="cursor-pointer transition-transform hover:scale-110"
             onMouseEnter={() => setHoveredFlag("buy")}
             onMouseLeave={() => setHoveredFlag(null)}
@@ -279,14 +279,14 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
             onFocus={() => setHoveredFlag("buy")}
             onBlur={() => setHoveredFlag(null)}
           >
-            <line x1="0" y1="12" x2="0" y2="0" stroke="#10b981" strokeWidth="1.2" />
-            <rect x="0" y="0" width="10" height="8" fill="#10b981" rx="1.5" />
-            <text x="2.5" y="6.5" fill="#020617" fontSize="5.5" fontWeight="bold" fontFamily="monospace">B</text>
+            <line x1="0" y1="14" x2="0" y2="0" stroke="#10b981" strokeWidth="1.2" />
+            <rect x="0" y="0" width="12" height="10" fill="#10b981" rx="1.5" />
+            <text x="3.5" y="8" fill="#020617" fontSize="7.5" fontWeight="bold" fontFamily="monospace">B</text>
           </g>
 
           {/* ================= TRANSACTION: SELL FLAG (S) ================= */}
           <g 
-            transform={`translate(${sellPt.x}, ${sellPt.y - 12})`}
+            transform={`translate(${sellPt.x}, ${sellPt.y - 14})`}
             className="cursor-pointer transition-transform hover:scale-110"
             onMouseEnter={() => setHoveredFlag("sell")}
             onMouseLeave={() => setHoveredFlag(null)}
@@ -294,13 +294,13 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
             onFocus={() => setHoveredFlag("sell")}
             onBlur={() => setHoveredFlag(null)}
           >
-            <line x1="0" y1="12" x2="0" y2="0" stroke="#ef4444" strokeWidth="1.2" />
-            <rect x="0" y="0" width="10" height="8" fill="#ef4444" rx="1.5" />
-            <text x="2.5" y="6.5" fill="#f8fafc" fontSize="5.5" fontWeight="bold" fontFamily="monospace">S</text>
+            <line x1="0" y1="14" x2="0" y2="0" stroke="#ef4444" strokeWidth="1.2" />
+            <rect x="0" y="0" width="12" height="10" fill="#ef4444" rx="1.5" />
+            <text x="3.5" y="8" fill="#f8fafc" fontSize="7.5" fontWeight="bold" fontFamily="monospace">S</text>
           </g>
         </svg>
 
-        <p className="mt-2 text-center text-[9px] uppercase tracking-wider text-ink-faint">
+        <p className="mt-2 text-center text-xs uppercase tracking-wider text-ink-faint">
           Illustrative performance &middot; Strategy vs benchmark
         </p>
       </div>
