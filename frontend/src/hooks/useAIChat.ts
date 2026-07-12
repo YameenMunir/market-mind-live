@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "@/lib/api";
+import { useGeminiKey } from "@/hooks/useGeminiKey";
 import type { AIAssetContext, ChatMessage, ChatSessionSummary, FeedbackRating } from "@/types";
 import { ApiError } from "@/types";
 
@@ -42,6 +43,17 @@ interface UseAIChatOptions {
 }
 
 export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
+  const { remove: removeGeminiKey } = useGeminiKey();
+
+  const handleApiKeyError = useCallback(
+    async (err: unknown) => {
+      if (err instanceof ApiError && err.errorCode === "missing_api_key") {
+        await removeGeminiKey();
+      }
+    },
+    [removeGeminiKey]
+  );
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionAsset, setSessionAsset] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -73,11 +85,12 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
       setMessages([res.welcome_message]);
       setFeedbackGiven({});
     } catch (err) {
+      await handleApiKeyError(err);
       setError(err instanceof ApiError ? err.message : "Couldn't start a new chat session.");
     } finally {
       setIsLoadingSession(false);
     }
-  }, [asset, buildContext]);
+  }, [asset, buildContext, handleApiKeyError]);
 
   const loadSession = useCallback(async (id: string) => {
     abortControllerRef.current?.abort();
@@ -93,11 +106,12 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
       setFeedbackGiven({});
       if (detail.asset) writeActiveSession(detail.asset, detail.session_id);
     } catch (err) {
+      await handleApiKeyError(err);
       setError(err instanceof ApiError ? err.message : "Couldn't load that conversation.");
     } finally {
       setIsLoadingSession(false);
     }
-  }, []);
+  }, [handleApiKeyError]);
 
   useEffect(() => {
     if (!enabled || resolvedForAssetRef.current === asset) return;
@@ -221,18 +235,13 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
               );
               setError(err.message);
             }
-            // A mid-stream interruption with content already shown is handled
-            // server-side instead (an interruption note gets appended to the reply
-            // itself and the stream still ends with a normal "done" event) - onError
-            // firing after real content was already streamed shouldn't normally
-            // happen, but if it does, the partial content stays visible rather than
-            // being discarded.
+            handleApiKeyError(err);
           },
         },
         controller.signal
       );
     },
-    [asset, buildContext, isSending, sessionId]
+    [asset, buildContext, isSending, sessionId, handleApiKeyError]
   );
 
   const regenerate = useCallback(async () => {
@@ -289,11 +298,12 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
             setMessages((prev) => prev.map((m) => (m.message_id === streamingId ? originalMessage : m)));
             setError(err.message);
           }
+          handleApiKeyError(err);
         },
       },
       controller.signal
     );
-  }, [asset, buildContext, isSending, messages, sessionId]);
+  }, [asset, buildContext, isSending, messages, sessionId, handleApiKeyError]);
 
   const sendFeedback = useCallback(
     async (messageId: string, rating: FeedbackRating) => {
