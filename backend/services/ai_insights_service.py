@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from datetime import datetime, timezone
+from typing import AsyncIterator
 
 from config import get_settings
 from models.schemas import (
@@ -196,6 +197,154 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
         disclaimer=DISCLAIMER,
         created_at=assistant_msg.created_at,
     )
+
+
+def _chunk_text(text: str, words_per_chunk: int = 4) -> list[str]:
+    """Splits an already-complete string into small, whitespace-preserving pieces so
+    the mock provider and cached-reply paths stream through the same progressive-reveal
+    UI a genuine Gemini stream uses, instead of arriving as one flat blob. Purely a
+    presentation concern - no delay is added between chunks.
+
+    Each piece (except the last) carries a trailing space, since callers concatenate
+    pieces directly with no separator (matching how a real token/word delta stream
+    works) - without it, the space consumed by `split(" ")` at each chunk boundary
+    would simply be lost, silently smashing words together every N words.
+    """
+    words = text.split(" ")
+    chunks = []
+    for i in range(0, len(words), words_per_chunk):
+        piece = " ".join(words[i : i + words_per_chunk])
+        if i + words_per_chunk < len(words):
+            piece += " "
+        chunks.append(piece)
+    return chunks
+
+
+async def handle_chat_stream(request: ChatRequest, device_id: str) -> AsyncIterator[dict]:
+    """Streaming counterpart to `handle_chat` - yields one dict per SSE event instead
+    of returning a single `ChatResponse`:
+
+    - `{"type": "chunk", "text": ...}` for each incremental piece of the reply.
+    - A single terminal `{"type": "done", ...}` (mirrors ChatResponse's fields) on
+      success, or `{"type": "error", "error_code": ..., "message": ...}` if nothing
+      could be generated at all.
+
+    Persistence happens in a `finally` block rather than only after a clean loop exit,
+    so a client disconnect (the frontend's "Stop generating" button aborts its fetch,
+    which FastAPI/Starlette surfaces here as the streaming task being cancelled) still
+    saves whatever partial reply was generated up to that point, instead of silently
+    losing it. See `handle_chat`'s docstring context above for the non-streaming
+    equivalent this stays behaviorally in sync with.
+    """
+    if not _get_chat_rate_limiter().check(request.session_id):
+        exc = ChatRateLimitedError()
+        yield {"type": "error", "error_code": exc.error_code.value, "message": exc.message}
+        return
+
+    settings = get_settings()
+    context = resolve_context(request.asset, request.client_context)
+    history = chat_store.get_history(request.session_id, limit=settings.ai_max_history_messages)
+    system_instruction = _build_system_instruction(context, request.message)
+
+    provider = "mock"
+    accumulated = ""
+    assistant_msg_id: str | None = None
+    created_at: str | None = None
+    api_key = _resolve_gemini_api_key(device_id, settings)
+
+    try:
+        if api_key:
+            # Same anti-double-submit cache as handle_chat - a cached reply is already
+            # fully generated, so it's chunked and streamed back at full speed (no
+            # delay) purely so the UI treatment stays consistent regardless of path.
+            cache_key = "gemini_reply:" + hashlib.sha256(
+                f"{system_instruction}\x1f{request.message}".encode()
+            ).hexdigest()
+            cached_reply = cache.get(cache_key)
+            if cached_reply is not None:
+                for chunk in _chunk_text(cached_reply):
+                    accumulated += chunk
+                    yield {"type": "chunk", "text": chunk}
+                provider = "gemini-cached"
+            else:
+                try:
+                    async for piece in gemini_service.stream_reply(
+                        system_instruction=system_instruction,
+                        history=history,
+                        user_message=request.message,
+                        model=settings.gemini_model,
+                        api_key=api_key,
+                        timeout_seconds=settings.gemini_timeout_seconds,
+                    ):
+                        accumulated += piece
+                        yield {"type": "chunk", "text": piece}
+                    provider = "gemini"
+                    cache.set(cache_key, accumulated, settings.ai_response_cache_ttl_seconds)
+                except gemini_service.GeminiRateLimitError as exc:
+                    if not accumulated:
+                        # Same as handle_chat: a hard, actionable limit hit before any
+                        # content generated - surface it rather than silently degrading.
+                        yield {"type": "error", "error_code": exc.error_code.value, "message": exc.message}
+                        return
+                    provider = "gemini-interrupted"
+                except AppError:
+                    if accumulated:
+                        provider = "gemini-interrupted"
+                    else:
+                        for chunk in _chunk_text(mock_ai_provider.generate_mock_reply(context, request.message, history)):
+                            accumulated += chunk
+                            yield {"type": "chunk", "text": chunk}
+                        provider = "mock-fallback"
+
+                if provider == "gemini-interrupted":
+                    note = "\n\n_(Connection to the AI assistant was interrupted - showing the partial response above.)_"
+                    accumulated += note
+                    yield {"type": "chunk", "text": note}
+                elif provider == "mock-fallback":
+                    note = "\n\n_(Live AI assistant temporarily unavailable - showing a local summary instead.)_"
+                    accumulated += note
+                    yield {"type": "chunk", "text": note}
+        else:
+            for chunk in _chunk_text(mock_ai_provider.generate_mock_reply(context, request.message, history)):
+                accumulated += chunk
+                yield {"type": "chunk", "text": chunk}
+            provider = "mock"
+    finally:
+        # Runs on natural completion *and* on cancellation (client disconnect/Stop
+        # generating) - a truncated reply is still worth saving rather than losing.
+        if accumulated:
+            now = _now_iso()
+            user_msg = ChatMessage(message_id=str(uuid.uuid4()), role=ChatRole.USER, content=request.message, created_at=now)
+            assistant_msg_id = str(uuid.uuid4())
+            created_at = _now_iso()
+            assistant_msg = ChatMessage(
+                message_id=assistant_msg_id, role=ChatRole.ASSISTANT, content=accumulated, created_at=created_at
+            )
+
+            chat_store.append(request.session_id, user_msg)
+            chat_store.append(request.session_id, assistant_msg)
+            chat_store.touch(
+                request.session_id,
+                asset=context.asset,
+                asset_name=context.asset_name,
+                preview=request.message,
+                signal=context.prediction.signal if context.prediction else None,
+                risk_level=context.risk.level if context.risk else None,
+                device_id=device_id,
+            )
+
+    # Unreachable on cancellation (the `finally` above still ran, but execution never
+    # returns here) - the frontend's stream simply ending without a "done" event is
+    # itself the signal that generation was stopped/interrupted before completing.
+    yield {
+        "type": "done",
+        "session_id": request.session_id,
+        "message_id": assistant_msg_id,
+        "provider": provider,
+        "context_used": context.model_dump(mode="json"),
+        "disclaimer": DISCLAIMER,
+        "created_at": created_at,
+    }
 
 
 async def handle_summarise(request: SummariseRequest, device_id: str) -> SummariseResponse:

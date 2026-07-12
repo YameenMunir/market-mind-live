@@ -51,10 +51,17 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, FeedbackRating>>({});
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 
   const resolvedForAssetRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const startNewChat = useCallback(async () => {
+    // Switching sessions mid-stream would otherwise leave an old stream's callbacks
+    // still writing into what's now a different conversation's message list.
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setStreamingMessageId(null);
     setError(null);
     setIsLoadingSession(true);
     try {
@@ -73,6 +80,9 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
   }, [asset, buildContext]);
 
   const loadSession = useCallback(async (id: string) => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setStreamingMessageId(null);
     setError(null);
     setIsLoadingSession(true);
     try {
@@ -130,6 +140,18 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
     [sessionId, startNewChat]
   );
 
+  const stopGenerating = useCallback(() => {
+    // A deliberate user action, not a failure - finalize whatever's on screen right
+    // now immediately rather than waiting for the abort to propagate through the fetch
+    // reader loop. The backend independently detects the dropped connection and
+    // persists whatever partial reply it had generated (see handle_chat_stream), so
+    // the truncated answer isn't lost even though no "done" event will arrive here.
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setStreamingMessageId(null);
+    setIsSending(false);
+  }, []);
+
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
@@ -139,38 +161,76 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
       setIsSending(true);
 
       const optimisticUserMessage: ChatMessage = {
-        message_id: `local-${Date.now()}`,
+        message_id: `local-user-${Date.now()}`,
         role: "user",
         content: trimmed,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, optimisticUserMessage]);
+      const streamingId = `local-assistant-${Date.now()}`;
+      // Pushed immediately (empty content) rather than only once the first chunk
+      // arrives, so the "thinking" state and the streaming-content state are the same
+      // message bubble growing in place - AIChatMessage switches its internal render
+      // based on content/streaming state, never swapping in a differently-shaped
+      // element, which is what avoids a layout jump at the moment content starts.
+      const placeholderAssistantMessage: ChatMessage = {
+        message_id: streamingId,
+        role: "assistant",
+        content: "",
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticUserMessage, placeholderAssistantMessage]);
+      setStreamingMessageId(streamingId);
 
-      try {
-        const context = buildContext();
-        const response = await api.aiChat({
-          session_id: sessionId,
-          message: trimmed,
-          asset,
-          client_context: context,
-        });
-        setMessages((prev) => [
-          ...prev,
-          {
-            message_id: response.message_id,
-            role: "assistant",
-            content: response.reply,
-            created_at: response.created_at,
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      let receivedAny = false;
+
+      const context = buildContext();
+      await api.streamAIChat(
+        { session_id: sessionId, message: trimmed, asset, client_context: context },
+        {
+          onChunk: (delta) => {
+            receivedAny = true;
+            setMessages((prev) =>
+              prev.map((m) => (m.message_id === streamingId ? { ...m, content: m.content + delta } : m))
+            );
           },
-        ]);
-      } catch (err) {
-        const message =
-          err instanceof ApiError ? err.message : "The AI assistant couldn't respond. Please try again.";
-        setError(message);
-        setMessages((prev) => prev.filter((m) => m.message_id !== optimisticUserMessage.message_id));
-      } finally {
-        setIsSending(false);
-      }
+          onDone: (final) => {
+            // Swaps in the real, server-persisted message id/timestamp so feedback
+            // (thumbs up/down) and any future session reload reference the same row
+            // chat_store actually wrote, instead of the local placeholder id.
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.message_id === streamingId ? { ...m, message_id: final.message_id, created_at: final.created_at } : m
+              )
+            );
+            setStreamingMessageId(null);
+            setIsSending(false);
+            abortControllerRef.current = null;
+          },
+          onError: (err) => {
+            setStreamingMessageId(null);
+            setIsSending(false);
+            abortControllerRef.current = null;
+            if (!receivedAny) {
+              // Nothing was ever shown for this turn - remove both placeholders and
+              // fall back to the same top-level error banner the non-streaming path
+              // used, rather than leaving an empty assistant bubble on screen.
+              setMessages((prev) =>
+                prev.filter((m) => m.message_id !== optimisticUserMessage.message_id && m.message_id !== streamingId)
+              );
+              setError(err.message);
+            }
+            // A mid-stream interruption with content already shown is handled
+            // server-side instead (an interruption note gets appended to the reply
+            // itself and the stream still ends with a normal "done" event) - onError
+            // firing after real content was already streamed shouldn't normally
+            // happen, but if it does, the partial content stays visible rather than
+            // being discarded.
+          },
+        },
+        controller.signal
+      );
     },
     [asset, buildContext, isSending, sessionId]
   );
@@ -193,6 +253,8 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
     sessionAsset,
     messages,
     isSending,
+    streamingMessageId,
+    stopGenerating,
     isLoadingSession,
     error,
     sendMessage,

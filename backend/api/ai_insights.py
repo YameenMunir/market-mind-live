@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+import logging
+
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 
 from api.deps import get_device_id
 from models.schemas import (
@@ -20,12 +24,46 @@ from models.schemas import (
 )
 from services import ai_insights_service, context_builder
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/ai/insights", tags=["ai-insights"])
 
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest, device_id: str = Depends(get_device_id)):
     return await ai_insights_service.handle_chat(request, device_id)
+
+
+@router.post("/chat/stream")
+async def chat_stream(request: ChatRequest, device_id: str = Depends(get_device_id)):
+    """Server-Sent Events counterpart to `/chat` - each event is a JSON-encoded
+    `{"type": "chunk" | "done" | "error", ...}` line (see
+    `ai_insights_service.handle_chat_stream`). A client disconnect (the frontend
+    aborting its fetch when the user clicks "Stop generating") is detected by
+    Starlette itself, which cancels this generator - `handle_chat_stream` persists
+    whatever partial reply had been generated via a `finally` block, so cancellation
+    doesn't need to be handled specially here.
+    """
+
+    async def event_stream():
+        try:
+            async for event in ai_insights_service.handle_chat_stream(request, device_id):
+                yield f"data: {json.dumps(event)}\n\n"
+        except Exception:
+            # Last-resort safety net for a genuinely unexpected failure - anything
+            # handle_chat_stream itself anticipates (rate limits, provider errors) is
+            # already translated into a normal {"type": "error", ...} event and never
+            # reaches here. Deliberately `except Exception`, not a bare `except`, so
+            # asyncio.CancelledError (raised on client disconnect - see docstring
+            # above) is left to propagate rather than being swallowed as a fake error.
+            logger.exception("Unhandled error while streaming an AI chat response")
+            yield f"data: {json.dumps({'type': 'error', 'error_code': 'internal_error', 'message': 'An unexpected error occurred.'})}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
+    )
 
 
 @router.get("/context/{asset}", response_model=AIAssetContext)

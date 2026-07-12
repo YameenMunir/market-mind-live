@@ -16,6 +16,7 @@ import type {
   ChatHistoryResponse,
   ChatRequest,
   ChatResponse,
+  ChatStreamEvent,
   DeleteSessionResponse,
   FeedbackRequest,
   FxRates,
@@ -81,6 +82,95 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface ChatStreamHandlers {
+  onChunk: (text: string) => void;
+  onDone: (event: Extract<ChatStreamEvent, { type: "done" }>) => void;
+  onError: (error: ApiError) => void;
+}
+
+/** Streams `/api/ai/insights/chat/stream` via `fetch` + a `ReadableStream` reader
+ * (not `EventSource`, which can't send a POST body) and hand-parses the Server-Sent
+ * Events framing - see backend/api/ai_insights.py::chat_stream for the event shapes.
+ * Deliberately has no overall timeout the way `request()` does: a stalled connection
+ * with no bytes at all still resolves eventually via the browser's own TCP-level
+ * timeout, and capping total stream *duration* would cut off a slow-but-real answer
+ * partway through, which a flat timeout on a single JSON response never risked.
+ * Cancellation is `signal`'s job (see useAIChat's `stopGenerating`), not a timer. */
+async function streamAIChat(body: ChatRequest, handlers: ChatStreamHandlers, signal: AbortSignal): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/ai/insights/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Device-Id": getDeviceId() },
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return;
+    handlers.onError(
+      new ApiError({
+        error_code: "network_error",
+        message: "Could not reach the AI assistant. Check your connection and try again.",
+      })
+    );
+    return;
+  }
+
+  if (!res.ok || !res.body) {
+    let payload: ApiErrorPayload;
+    try {
+      payload = await res.json();
+    } catch {
+      payload = { error_code: "internal_error", message: `Request failed with status ${res.status}.` };
+    }
+    handlers.onError(new ApiError(payload));
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE events are separated by a blank line; only the "data:" line of each
+      // event matters here (the backend never sends "event:"/"id:" lines).
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary !== -1) {
+        const rawEvent = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+
+        const dataLine = rawEvent.split("\n").find((line) => line.startsWith("data:"));
+        boundary = buffer.indexOf("\n\n");
+        if (!dataLine) continue;
+        const jsonStr = dataLine.slice(5).trim();
+        if (!jsonStr) continue;
+
+        let event: ChatStreamEvent;
+        try {
+          event = JSON.parse(jsonStr);
+        } catch {
+          continue;
+        }
+
+        if (event.type === "chunk") handlers.onChunk(event.text);
+        else if (event.type === "done") handlers.onDone(event);
+        else if (event.type === "error") handlers.onError(new ApiError({ error_code: event.error_code, message: event.message }));
+      }
+    }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return;
+    handlers.onError(
+      new ApiError({ error_code: "network_error", message: "The connection to the AI assistant was interrupted." })
+    );
+  }
+}
+
 export const api = {
   searchAssets: (query: string, assetType?: AssetType) => {
     const params = new URLSearchParams({ q: query });
@@ -109,6 +199,7 @@ export const api = {
     request<BacktestResult>(`/api/backtest`, { method: "POST", body: JSON.stringify(body) }),
   aiChat: (body: ChatRequest) =>
     request<ChatResponse>(`/api/ai/insights/chat`, { method: "POST", body: JSON.stringify(body) }),
+  streamAIChat,
   getAIContext: (asset: string) =>
     request<AIAssetContext>(`/api/ai/insights/context/${encodeURIComponent(asset)}`),
   sendAIFeedback: (body: FeedbackRequest) =>

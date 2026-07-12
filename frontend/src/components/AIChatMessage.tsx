@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -14,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { MarkdownContent } from "@/components/MarkdownContent";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, FeedbackRating } from "@/types";
 
@@ -23,6 +23,16 @@ interface AIChatMessageProps {
   feedbackGiven?: FeedbackRating;
   /** Slightly larger type/spacing in full-screen mode where there's room to breathe. */
   size?: "compact" | "fullscreen";
+  /** True while this specific message is the one actively streaming - drives the
+   * thinking-dots/blinking-cursor treatment. Also skips InsightCard detection, which
+   * otherwise would restructure the bubble mid-stream as more bullet lines complete
+   * (cards appearing/reordering), which is exactly the kind of layout jump streaming
+   * responses shouldn't cause - see the requirements this satisfies. */
+  isStreaming?: boolean;
+  /** Disables the pulsing/blinking motion for this message without affecting content
+   * delivery - a manual "I'd rather not see this" toggle alongside the automatic
+   * prefers-reduced-motion handling (both use the same motion-safe: variant). */
+  skipAnimation?: boolean;
 }
 
 interface InsightSection {
@@ -109,29 +119,6 @@ function getSectionMeta(label: string, body: string): SectionMeta {
   return { icon: Activity, iconClass: "text-ink-muted", badgeClass: "border border-border bg-surface-raised" };
 }
 
-/** Renders `**bold**` spans and line breaks from AI replies without a markdown
- * dependency or `dangerouslySetInnerHTML` - splits into React text nodes only. */
-function renderRichText(content: string) {
-  const lines = content.split("\n");
-  return lines.map((line, lineIndex) => {
-    const segments = line.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
-    return (
-      <Fragment key={lineIndex}>
-        {segments.map((segment, i) =>
-          segment.startsWith("**") && segment.endsWith("**") ? (
-            <strong key={i} className="font-semibold text-ink">
-              {segment.slice(2, -2)}
-            </strong>
-          ) : (
-            <Fragment key={i}>{segment}</Fragment>
-          )
-        )}
-        {lineIndex < lines.length - 1 && <br />}
-      </Fragment>
-    );
-  });
-}
-
 function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact" | "fullscreen" }) {
   const isFullscreen = size === "fullscreen";
 
@@ -147,11 +134,7 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
         <p className="font-mono text-2xs font-bold uppercase tracking-wider text-ink-muted">AI Insights</p>
       </div>
 
-      {insight.intro && (
-        <p className={cn("mb-4 leading-relaxed text-ink", isFullscreen ? "text-sm" : "text-xs")}>
-          {renderRichText(insight.intro)}
-        </p>
-      )}
+      {insight.intro && <MarkdownContent content={insight.intro} size={size} className="mb-4 text-ink" />}
 
       <div className="space-y-2.5">
         {insight.sections.map((section, i) => {
@@ -167,9 +150,7 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">{section.label}</p>
-                <p className={cn("mt-1 leading-relaxed text-ink-muted", isFullscreen ? "text-sm" : "text-xs")}>
-                  {renderRichText(section.body)}
-                </p>
+                <MarkdownContent content={section.body} size={size} className="mt-1 text-ink-muted" />
               </div>
             </div>
           );
@@ -179,17 +160,40 @@ function InsightCard({ insight, size }: { insight: ParsedInsight; size: "compact
       {insight.footer && (
         <div className="mt-4 flex items-start gap-2 border-t border-border/60 pt-3 font-mono text-2xs uppercase tracking-wide leading-relaxed text-ink-faint/80">
           <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-          <p>{renderRichText(insight.footer)}</p>
+          <MarkdownContent content={insight.footer} size={size} />
         </div>
       )}
     </div>
   );
 }
 
-export function AIChatMessage({ message, onFeedback, feedbackGiven, size = "compact" }: AIChatMessageProps) {
+function ThinkingDots() {
+  return (
+    <div className="flex items-center gap-1 py-0.5" role="status" aria-label="AI is thinking">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          aria-hidden
+          className="h-1.5 w-1.5 rounded-full bg-ink-faint motion-safe:animate-bounce"
+          style={{ animationDelay: `${i * 120}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function AIChatMessage({
+  message,
+  onFeedback,
+  feedbackGiven,
+  size = "compact",
+  isStreaming,
+  skipAnimation,
+}: AIChatMessageProps) {
   const isUser = message.role === "user";
   const isFullscreen = size === "fullscreen";
-  const insight = !isUser ? parseInsightSections(message.content) : null;
+  const insight = !isUser && !isStreaming ? parseInsightSections(message.content) : null;
+  const isThinking = Boolean(isStreaming) && message.content === "";
 
   return (
     <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
@@ -203,11 +207,30 @@ export function AIChatMessage({ message, onFeedback, feedbackGiven, size = "comp
             isUser ? "border-brand/35 bg-brand/5 text-ink font-mono font-medium tracking-wide" : "border-border bg-surface-raised text-ink-muted"
           )}
         >
-          {renderRichText(message.content)}
+          {isThinking ? (
+            <ThinkingDots />
+          ) : isUser ? (
+            // User messages are always literal, never markdown - a user who types a
+            // literal "*" shouldn't have it reinterpreted as formatting.
+            <span className="whitespace-pre-wrap">{message.content}</span>
+          ) : (
+            <>
+              <MarkdownContent content={message.content} size={size} />
+              {isStreaming && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 bg-ink-faint",
+                    !skipAnimation && "motion-safe:animate-pulse-soft"
+                  )}
+                />
+              )}
+            </>
+          )}
         </div>
       )}
 
-      {!isUser && onFeedback && (
+      {!isUser && onFeedback && !isStreaming && (
         <div className="flex items-center gap-1 px-1">
           <button
             type="button"

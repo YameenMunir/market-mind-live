@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Send, ShieldAlert } from "lucide-react";
+import { ArrowDown, FastForward, Loader2, Send, ShieldAlert, Square } from "lucide-react";
 
 import { AIChatMessage } from "@/components/AIChatMessage";
 import { Button } from "@/components/Button";
@@ -15,6 +15,11 @@ interface AIChatConversationProps {
   asset: string;
   messages: ChatMessage[];
   isSending: boolean;
+  /** message_id of the assistant message currently being streamed into, or null when
+   * nothing is in flight. Drives the thinking/streaming-cursor treatment on that one
+   * message and the "Stop generating" control below the message list. */
+  streamingMessageId: string | null;
+  onStopGenerating: () => void;
   isLoadingSession: boolean;
   error: string | null;
   onSend: (text: string) => void;
@@ -24,10 +29,17 @@ interface AIChatConversationProps {
   size?: "compact" | "fullscreen";
 }
 
+// How close to the bottom (px) counts as "still following along" - within this, new
+// content auto-scrolls into view; beyond it, the user has deliberately scrolled up to
+// read earlier messages and new content shouldn't yank them back down.
+const AUTO_SCROLL_THRESHOLD_PX = 80;
+
 export function AIChatConversation({
   asset,
   messages,
   isSending,
+  streamingMessageId,
+  onStopGenerating,
   isLoadingSession,
   error,
   onSend,
@@ -36,72 +48,129 @@ export function AIChatConversation({
   size = "compact",
 }: AIChatConversationProps) {
   const [input, setInput] = useState("");
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [skipAnimation, setSkipAnimation] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isFullscreen = size === "fullscreen";
 
   useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !autoScroll) return;
+    // Instant while a response is actively streaming in (content grows continuously,
+    // so it just stays glued to the bottom) - smooth for any other change (a new
+    // message being sent, history finishing loading), which is a single, deliberate
+    // jump rather than dozens of overlapping animations fighting each new chunk.
+    el.scrollTo({ top: el.scrollHeight, behavior: streamingMessageId ? "auto" : "smooth" });
+  }, [messages, isSending, autoScroll, streamingMessageId]);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setAutoScroll(distanceFromBottom < AUTO_SCROLL_THRESHOLD_PX);
+  };
+
+  const scrollToBottom = () => {
+    setAutoScroll(true);
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, isSending]);
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
     onSend(input);
     setInput("");
+    setSkipAnimation(false);
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div
-        ref={scrollRef}
-        className={cn("flex-1 space-y-4 overflow-y-auto", isFullscreen ? "mx-auto w-full max-w-3xl px-4 py-6 sm:px-0" : "px-4 py-4")}
-      >
-        {isLoadingSession && messages.length === 0 && (
-          <div className="flex items-center gap-2 text-xs text-ink-faint">
-            <Loader2 size={13} className="animate-spin" />
-            Loading conversation...
-          </div>
-        )}
-
-        {!isLoadingSession && messages.length <= 1 && (
-          <div className="space-y-4">
-            {messages.length === 0 && (
-              <p className={cn("leading-relaxed text-ink-muted", isFullscreen ? "text-sm" : "text-xs")}>
-                Ask me anything about {asset}'s live price, indicators, prediction, risk score, or backtest results.
-              </p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              {AI_SUGGESTED_QUESTIONS.map((q) => (
-                <button
-                  key={q}
-                  onClick={() => onSend(q)}
-                  className="rounded-full border border-border bg-surface-raised px-3 py-1.5 text-left text-xs text-ink-muted transition-colors hover:border-brand/40 hover:text-ink"
-                >
-                  {q}
-                </button>
-              ))}
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className={cn(
+            "h-full space-y-4 overflow-y-auto",
+            isFullscreen ? "mx-auto w-full max-w-3xl px-4 py-6 sm:px-0" : "px-4 py-4"
+          )}
+        >
+          {isLoadingSession && messages.length === 0 && (
+            <div className="flex items-center gap-2 text-xs text-ink-faint">
+              <Loader2 size={13} className="animate-spin" />
+              Loading conversation...
             </div>
-          </div>
+          )}
+
+          {!isLoadingSession && messages.length <= 1 && (
+            <div className="space-y-4">
+              {messages.length === 0 && (
+                <p className={cn("leading-relaxed text-ink-muted", isFullscreen ? "text-sm" : "text-xs")}>
+                  Ask me anything about {asset}'s live price, indicators, prediction, risk score, or backtest results.
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {AI_SUGGESTED_QUESTIONS.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => onSend(q)}
+                    className="rounded-full border border-border bg-surface-raised px-3 py-1.5 text-left text-xs text-ink-muted transition-colors hover:border-brand/40 hover:text-ink"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.map((message) => (
+            <AIChatMessage
+              key={message.message_id}
+              message={message}
+              onFeedback={message.role === "assistant" ? (rating) => onFeedback(message.message_id, rating) : undefined}
+              feedbackGiven={feedbackGiven[message.message_id]}
+              size={size}
+              isStreaming={message.message_id === streamingMessageId}
+              skipAnimation={skipAnimation}
+            />
+          ))}
+
+          {error && <StatusBanner message={error} tone="error" icon="warning" />}
+        </div>
+
+        {!autoScroll && (
+          <button
+            type="button"
+            onClick={scrollToBottom}
+            aria-label="Scroll to latest message"
+            className="absolute bottom-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-surface shadow-popover transition-colors hover:border-brand/40 hover:text-brand"
+          >
+            <ArrowDown size={14} />
+          </button>
         )}
-
-        {messages.map((message) => (
-          <AIChatMessage
-            key={message.message_id}
-            message={message}
-            onFeedback={message.role === "assistant" ? (rating) => onFeedback(message.message_id, rating) : undefined}
-            feedbackGiven={feedbackGiven[message.message_id]}
-            size={size}
-          />
-        ))}
-
-        {isSending && (
-          <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface-raised px-3.5 py-2.5 text-xs text-ink-faint">
-            <Loader2 size={13} className="animate-spin" />
-            Thinking through the current data...
-          </div>
-        )}
-
-        {error && <StatusBanner message={error} tone="error" icon="warning" />}
       </div>
+
+      {streamingMessageId && (
+        <div
+          className={cn(
+            "flex items-center justify-center gap-2 border-t border-border py-2",
+            isFullscreen && "mx-auto w-full max-w-3xl border-t-0"
+          )}
+        >
+          <Button variant="secondary" size="sm" onClick={onStopGenerating} className="gap-1.5">
+            <Square size={11} className="fill-current" />
+            Stop generating
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSkipAnimation(true)}
+            disabled={skipAnimation}
+            className="gap-1.5 text-ink-faint"
+          >
+            <FastForward size={12} />
+            Skip animation
+          </Button>
+        </div>
+      )}
 
       <div className={cn("border-t border-border p-3", isFullscreen && "mx-auto w-full max-w-3xl border-t-0 pt-0")}>
         <div className="flex items-center gap-2">

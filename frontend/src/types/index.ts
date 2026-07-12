@@ -354,15 +354,32 @@ export interface ChatRequest {
   client_context?: AIAssetContext | null;
 }
 
+export type ChatProvider = "gemini" | "gemini-cached" | "gemini-interrupted" | "mock" | "mock-fallback";
+
 export interface ChatResponse {
   session_id: string;
   message_id: string;
   reply: string;
-  provider: "gemini" | "gemini-cached" | "mock" | "mock-fallback";
+  provider: ChatProvider;
   context_used: AIAssetContext;
   disclaimer: string;
   created_at: string;
 }
+
+/** Events sent over the `/api/ai/insights/chat/stream` SSE endpoint - see
+ * backend/services/ai_insights_service.py::handle_chat_stream. */
+export type ChatStreamEvent =
+  | { type: "chunk"; text: string }
+  | {
+      type: "done";
+      session_id: string;
+      message_id: string;
+      provider: ChatProvider;
+      context_used: AIAssetContext;
+      disclaimer: string;
+      created_at: string;
+    }
+  | { type: "error"; error_code: ErrorCode; message: string };
 
 export type FeedbackRating = "up" | "down";
 

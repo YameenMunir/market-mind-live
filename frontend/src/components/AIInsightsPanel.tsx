@@ -148,6 +148,8 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                   asset={asset}
                   messages={chat.messages}
                   isSending={chat.isSending}
+                  streamingMessageId={chat.streamingMessageId}
+                  onStopGenerating={chat.stopGenerating}
                   isLoadingSession={chat.isLoadingSession}
                   error={chat.error}
                   onSend={chat.sendMessage}
