@@ -103,7 +103,7 @@ export function AIChatHistoryList({
                 ) : (
                   <>
                     <button onClick={() => onSelect(session.session_id)} className="w-full text-left">
-                      <div className="flex flex-wrap items-center gap-1.5 pr-6">
+                      <div className="flex flex-wrap items-center gap-1.5 pr-8">
                         <span className="text-xs font-semibold text-ink">{session.asset}</span>
                         {signalMeta && (
                           <Badge size="sm" tone={signalMeta.tone}>
@@ -124,7 +124,7 @@ export function AIChatHistoryList({
                       size="icon-sm"
                       onClick={() => setConfirmingId(session.session_id)}
                       aria-label="Delete conversation"
-                      className="absolute right-2 top-2.5 h-6 w-6 text-ink-faint hover:bg-transparent hover:text-bear sm:opacity-0 sm:group-hover:opacity-100"
+                      className="absolute right-0.5 top-0.5 h-9 w-9 text-ink-faint hover:bg-transparent hover:text-bear sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       <Trash2 size={12} />
                     </Button>

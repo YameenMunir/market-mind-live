@@ -205,7 +205,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
                             onClick={() => deleteAlert(alert.id)}
                             aria-label={`Delete alert: ${CONDITION_LABELS[alert.condition]}`}
                             title="Delete alert"
-                            className="h-7 w-7 text-ink-faint hover:bg-bear/10 hover:text-bear"
+                            className="h-9 w-9 text-ink-faint hover:bg-bear/10 hover:text-bear"
                           >
                             <Trash2 size={13} />
                           </Button>

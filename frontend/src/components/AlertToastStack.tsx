@@ -38,7 +38,7 @@ function Toast({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) => 
       <button
         onClick={() => onDismiss(alert.id)}
         aria-label="Dismiss notification"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
       >
         <X size={13} />
       </button>

@@ -215,7 +215,7 @@ export function AIChatMessage({ message, onFeedback, feedbackGiven, size = "comp
             onClick={() => onFeedback("up")}
             aria-pressed={feedbackGiven === "up"}
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+              "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
               feedbackGiven === "up" ? "bg-bull/15 text-bull" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
             )}
           >
@@ -227,7 +227,7 @@ export function AIChatMessage({ message, onFeedback, feedbackGiven, size = "comp
             onClick={() => onFeedback("down")}
             aria-pressed={feedbackGiven === "down"}
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+              "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
               feedbackGiven === "down" ? "bg-bear/15 text-bear" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
             )}
           >

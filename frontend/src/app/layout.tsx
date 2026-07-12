@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Inter } from "next/font/google";
 
 import "@/styles/globals.css";
@@ -19,6 +19,12 @@ export const metadata: Metadata = {
   title: "Market Mind Live | Market Intelligence Terminal",
   description:
     "Live market intelligence for stocks, ETFs, crypto, forex, commodities, and indices - predictions, risk, and backtesting in one terminal.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const THEME_INIT_SCRIPT = `
