@@ -272,7 +272,7 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
           {/* ================= TRANSACTION: BUY FLAG (B) ================= */}
           <g 
             transform={`translate(${buyPt.x}, ${buyPt.y - 14})`}
-            className="cursor-pointer transition-transform hover:scale-110"
+            className="cursor-pointer"
             onMouseEnter={() => setHoveredFlag("buy")}
             onMouseLeave={() => setHoveredFlag(null)}
             tabIndex={0}
@@ -287,7 +287,7 @@ export function BacktestingSimulation3D({ className }: { className?: string }) {
           {/* ================= TRANSACTION: SELL FLAG (S) ================= */}
           <g 
             transform={`translate(${sellPt.x}, ${sellPt.y - 14})`}
-            className="cursor-pointer transition-transform hover:scale-110"
+            className="cursor-pointer"
             onMouseEnter={() => setHoveredFlag("sell")}
             onMouseLeave={() => setHoveredFlag(null)}
             tabIndex={0}
