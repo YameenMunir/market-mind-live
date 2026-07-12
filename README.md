@@ -28,6 +28,9 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
 - **AI Insights assistant** - a Gemini-powered chat assistant grounded in the same live data shown
   on the dashboard (falls back to a deterministic mock provider if no Gemini API key is configured,
   so the feature works out of the box).
+- **News feed** - recent per-symbol headlines (publisher, timestamp, link) sourced from Yahoo via
+  yfinance, cached and served from `/api/news/{symbol}`. Also fed into the AI Insights context so
+  the assistant can answer questions grounded in real headlines, not just price/indicator data.
 - **Price alerts** - browser-notification alerts on price/RSI/signal/risk-level conditions,
   persisted per-browser so they survive a refresh without requiring a login.
 - **Multi-currency display** - convert prices/charts/backtests to your preferred display currency
@@ -40,6 +43,12 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
   Navbar (desktop nav + mobile hamburger menu, active-route highlighting) shared across them. Several
   "3D" visualizations (market globe, backtesting simulation, candlestick/network/product previews) are
   CSS/SVG-driven, not WebGL - no three.js or similar dependency is required.
+- **Installable PWA** - a web app manifest + service worker let the dashboard be installed to a
+  phone/desktop home screen ("Add to Home Screen"/"Install app"). The service worker deliberately
+  does not cache API responses or live data (a cached stock quote would be misleading) - it only
+  enables installability and shows a friendly offline page if navigation fails with no connection.
+- **Mobile-friendly** - a dedicated bottom tab bar + sidebar collapse on the dashboard, touch-sized
+  interactive elements, and safe-area-aware layout for notched phones.
 
 ## Tech stack
 
@@ -71,7 +80,7 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
 ```
 backend/
   api/            # thin FastAPI routers
-  services/       # business logic (price, indicators, prediction, risk, AI insights, live hub, ...)
+  services/       # business logic (price, indicators, prediction, risk, news, AI insights, live hub, ...)
   data/           # market data provider abstraction + yfinance implementation
   prediction/     # rule-based prediction engine
   backtesting/    # strategy backtest engine
