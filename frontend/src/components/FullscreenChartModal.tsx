@@ -106,54 +106,68 @@ export function FullscreenChartModal({
 
   return (
     <Dialog isOpen={isOpen} onClose={onClose} variant="cover" labelledBy="fullscreen-chart-title">
-          <div className="relative shrink-0 border-b border-border px-4 py-3.5 sm:px-6">
+          <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-6 bg-surface-raised/30">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="rounded border border-border bg-surface-raised px-2 py-0.5 font-mono text-xs font-bold text-ink">
+                  {symbol}
+                </span>
+                {assetName && (
+                  <span className="hidden sm:inline text-sm font-medium text-ink-muted truncate max-w-[180px]">
+                    {assetName}
+                  </span>
+                )}
+                <span className="rounded-full bg-surface-raised/60 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-ink-faint">
+                  {CHART_RANGES.find((r) => r.value === range)?.label}
+                </span>
+              </div>
+
+              {/* Vertical divider */}
+              <div className="hidden sm:block border-r border-border h-4" />
+
+              {quote && (
+                <div className="flex items-center gap-2.5">
+                  <span className="numeric font-mono text-base font-bold text-ink">
+                    {formatPrice(convert(quote.price, nativeCurrency), currency)}
+                  </span>
+                  <span
+                    className={cn(
+                      "numeric inline-flex items-center gap-1 font-mono text-xs font-bold px-1.5 py-0.5 rounded-sm border",
+                      isFlat 
+                        ? "border-border bg-surface-raised text-ink-muted" 
+                        : isPositive 
+                          ? "border-bull/20 bg-bull/5 text-bull" 
+                          : "border-bear/20 bg-bear/5 text-bear"
+                    )}
+                  >
+                    {isFlat ? <Minus size={11} /> : isPositive ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
+                    <span>{formatPrice(convert(quote.change, nativeCurrency), currency)}</span>
+                    <span>({formatPercent(quote.change_percent)})</span>
+                  </span>
+                </div>
+              )}
+
+              {/* Vertical divider */}
+              {sessionMeta && <div className="hidden sm:block border-r border-border h-4" />}
+
+              {sessionMeta && (
+                <div className="flex items-center gap-2">
+                  <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", sessionMeta.dot, sessionMeta.dot.includes("bg-bull") && "animate-pulse")} />
+                  <SessionIcon size={13} className="text-ink-faint shrink-0" />
+                  <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-ink-muted">{sessionMeta.label}</span>
+                </div>
+              )}
+            </div>
+
             <Button
               variant="secondary"
               size="icon"
               onClick={onClose}
               aria-label="Close full-screen chart"
-              className="absolute right-4 top-3.5 sm:right-6"
+              className="shrink-0 shadow-sm border-border hover:border-ink-faint/30"
             >
-              <X size={17} />
+              <X size={16} />
             </Button>
-
-            <div className="flex flex-wrap items-start gap-x-6 gap-y-2 pr-12">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Live Chart</p>
-                <h2 id="fullscreen-chart-title" className="mt-0.5 text-lg font-semibold text-ink">
-                  {assetName ? `${assetName} · ${symbol}` : symbol}
-                  <span className="ml-2 text-sm font-medium text-ink-faint">
-                    {CHART_RANGES.find((r) => r.value === range)?.label}
-                  </span>
-                </h2>
-              </div>
-
-              {quote && (
-                <div>
-                  <p className="numeric font-mono text-lg font-semibold text-ink">
-                    {formatPrice(convert(quote.price, nativeCurrency), currency)}
-                  </p>
-                  <div
-                    className={cn(
-                      "flex items-center gap-1 text-xs font-medium",
-                      isFlat ? "text-ink-muted" : isPositive ? "text-bull" : "text-bear"
-                    )}
-                  >
-                    {isFlat ? <Minus size={12} /> : isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                    <span className="numeric">{formatPrice(convert(quote.change, nativeCurrency), currency)}</span>
-                    <span className="numeric">({formatPercent(quote.change_percent)})</span>
-                  </div>
-                </div>
-              )}
-
-              {sessionMeta && (
-                <div className="flex items-center gap-2 self-center">
-                  <span className={cn("h-1.5 w-1.5 rounded-full", sessionMeta.dot)} />
-                  <SessionIcon size={13} className="text-ink-faint" />
-                  <span className="text-xs font-medium text-ink-muted">{sessionMeta.label}</span>
-                </div>
-              )}
-            </div>
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-4 border-b border-border px-4 py-3 sm:px-6">
