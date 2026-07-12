@@ -5,7 +5,7 @@ import random
 import socket
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Callable, TypeVar
 
 import pandas as pd
@@ -188,6 +188,64 @@ def _call_with_retry(fn: Callable[[], T], *, description: str) -> T:
                 # Not a recognized transient/rate-limit signature - leave it to the
                 # caller's own handling (e.g. "no analyst coverage for this symbol").
                 raise
+
+
+def _parse_news_article(raw: dict) -> dict | None:
+    """Normalizes one yfinance news item into a stable shape.
+
+    Yahoo's undocumented news payload has changed shape before (yfinance has shipped
+    both a flat dict and a newer dict nesting most fields under a "content" key), and
+    neither shape is documented or contractually stable - so every field is read
+    defensively via `.get()` rather than assumed present. An article missing a title
+    or link is simply skipped (returns None) rather than raising, consistent with the
+    rest of this module treating "no data for this field" as normal, not an error.
+    """
+    content = raw.get("content") if isinstance(raw.get("content"), dict) else raw
+
+    title = content.get("title")
+
+    link = None
+    canonical = content.get("canonicalUrl")
+    if isinstance(canonical, dict):
+        link = canonical.get("url")
+    if not link:
+        click_through = content.get("clickThroughUrl")
+        if isinstance(click_through, dict):
+            link = click_through.get("url")
+    if not link:
+        link = content.get("link")
+
+    if not title or not link:
+        return None
+
+    publisher = None
+    provider_info = content.get("provider")
+    if isinstance(provider_info, dict):
+        publisher = provider_info.get("displayName")
+    if not publisher:
+        publisher = content.get("publisher")
+
+    published_at = content.get("pubDate") or content.get("displayTime")
+    if not published_at:
+        epoch = content.get("providerPublishTime")
+        if isinstance(epoch, (int, float)):
+            published_at = datetime.fromtimestamp(epoch, tz=timezone.utc).isoformat()
+
+    thumbnail_url = None
+    thumbnail = content.get("thumbnail")
+    if isinstance(thumbnail, dict):
+        resolutions = thumbnail.get("resolutions") or []
+        if resolutions and isinstance(resolutions[0], dict):
+            thumbnail_url = resolutions[0].get("url")
+
+    return {
+        "title": title,
+        "summary": content.get("summary") or content.get("description"),
+        "url": link,
+        "publisher": publisher,
+        "published_at": published_at,
+        "thumbnail_url": thumbnail_url,
+    }
 
 
 class YFinanceProvider(MarketDataProvider):
@@ -384,6 +442,25 @@ class YFinanceProvider(MarketDataProvider):
                 results[symbol] = InvalidSymbolError(f"'{symbol}' is not a recognized asset symbol.", detail=str(exc))
 
         return results
+
+    def get_news(self, symbol: str, count: int = 10) -> list[dict]:
+        ticker = yf.Ticker(symbol)
+        try:
+            raw_items = _call_with_retry(
+                lambda: ticker.get_news(count=count) or [], description=f"get_news({symbol})"
+            )
+        except (NetworkError, RateLimitedError):
+            raise
+        except YFDataException:
+            # yfinance's own signal that there's no news feed for this symbol - a
+            # normal outcome (many forex/commodity/index symbols have none), not a
+            # real error. Mirrors get_analyst_consensus's identical handling above.
+            raw_items = []
+        except Exception as exc:
+            raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
+
+        articles = [_parse_news_article(raw) for raw in raw_items]
+        return [a for a in articles if a is not None][:count]
 
 
 provider = YFinanceProvider()

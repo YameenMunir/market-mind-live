@@ -20,6 +20,7 @@ import { GeminiKeySetupModal } from "@/components/GeminiKeySetupModal";
 import { IndicatorPanel } from "@/components/IndicatorPanel";
 import { LastUpdated } from "@/components/LastUpdated";
 import { MarketStatusCard } from "@/components/MarketStatusCard";
+import { NewsFeedCard } from "@/components/NewsFeedCard";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { Panel } from "@/components/Panel";
 import { PredictionCard } from "@/components/PredictionCard";
@@ -40,6 +41,7 @@ import { useGeminiKey } from "@/hooks/useGeminiKey";
 import { useGeminiKeyPrompt } from "@/hooks/useGeminiKeyPrompt";
 import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
+import { useNews } from "@/hooks/useNews";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { usePriceForecast } from "@/hooks/usePriceForecast";
 import { useTheme } from "@/hooks/useTheme";
@@ -104,6 +106,7 @@ export default function DashboardPage() {
   const forecast = usePriceForecast(symbol, horizonDays, showPricePredictor);
   const alertsState = useAlerts(symbol);
   const analyst = useAnalystConsensus(symbol);
+  const news = useNews(symbol);
   const isLive = snapshot.connectionState === "live" || snapshot.connectionState === "polling";
   const activeAlertCount = alertsState.alerts.filter((a) => a.status === "active" || a.status === "triggered").length;
 
@@ -294,6 +297,8 @@ export default function DashboardPage() {
           <BeginnerSummary prediction={snapshot.prediction} />
           {isAdvanced && <ExplanationPanel prediction={snapshot.prediction} />}
         </div>
+
+        <NewsFeedCard news={news.data} isLoading={news.isLoading} error={news.error} />
       </main>
 
       <FullscreenChartModal
@@ -343,6 +348,7 @@ export default function DashboardPage() {
             indicators: snapshot.indicators,
             prediction: snapshot.prediction,
             risk: snapshot.risk,
+            news: news.data,
           })
         }
       />

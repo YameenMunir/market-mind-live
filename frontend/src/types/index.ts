@@ -205,6 +205,22 @@ export interface AnalystConsensus {
   is_stale: boolean;
 }
 
+export interface NewsArticle {
+  title: string;
+  summary: string | null;
+  url: string;
+  publisher: string | null;
+  published_at: string | null;
+  thumbnail_url: string | null;
+}
+
+export interface NewsFeed {
+  symbol: string;
+  articles: NewsArticle[];
+  as_of: string;
+  is_stale: boolean;
+}
+
 export type ErrorCode =
   | "missing_api_key"
   | "invalid_symbol"
@@ -286,6 +302,13 @@ export interface AIBacktestContext {
   note: string | null;
 }
 
+export interface AINewsItem {
+  title: string;
+  publisher: string | null;
+  published_at: string | null;
+  summary: string | null;
+}
+
 export interface AIAssetContext {
   asset: string;
   asset_name: string | null;
@@ -301,6 +324,7 @@ export interface AIAssetContext {
   prediction: AIPredictionContext | null;
   risk: AIRiskContext | null;
   backtesting: AIBacktestContext | null;
+  news: AINewsItem[];
   prediction_history_count: number;
   missing_data: string[];
 }

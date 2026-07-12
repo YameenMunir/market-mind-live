@@ -207,6 +207,24 @@ class AnalystConsensus(BaseModel):
     is_stale: bool = False
 
 
+class NewsArticle(BaseModel):
+    title: str
+    summary: str | None = None
+    url: str
+    publisher: str | None = None
+    published_at: str | None = None
+    thumbnail_url: str | None = None
+
+
+class NewsFeed(BaseModel):
+    symbol: str
+    articles: list[NewsArticle] = Field(default_factory=list)
+    as_of: str
+    # See AnalystConsensus.is_stale - same meaning: a last-known-good value served
+    # during a provider outage/rate-limit window rather than a fresh fetch.
+    is_stale: bool = False
+
+
 class PredictionHistoryEntry(BaseModel):
     symbol: str
     direction: PredictionDirection
@@ -324,6 +342,16 @@ class AIBacktestContext(BaseModel):
     note: str | None = None
 
 
+class AINewsItem(BaseModel):
+    # Deliberately lean compared to NewsArticle (no url/thumbnail) - this gets dumped
+    # straight into the Gemini prompt, and the assistant's chat UI doesn't render
+    # markdown links, so a raw URL there is prompt bloat with no payoff.
+    title: str
+    publisher: str | None = None
+    published_at: str | None = None
+    summary: str | None = None
+
+
 class AIAssetContext(BaseModel):
     asset: str
     asset_name: str | None = None
@@ -339,6 +367,7 @@ class AIAssetContext(BaseModel):
     prediction: AIPredictionContext | None = None
     risk: AIRiskContext | None = None
     backtesting: AIBacktestContext | None = None
+    news: list[AINewsItem] = Field(default_factory=list)
     prediction_history_count: int = 0
     missing_data: list[str] = Field(default_factory=list)
 

@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 
 from models.schemas import (
     AIAssetContext,
+    AINewsItem,
     AIPredictionContext,
     AIRiskContext,
     AITechnicalContext,
@@ -20,7 +21,7 @@ from models.schemas import (
 )
 from prediction.engine import generate_prediction
 from prediction.history_store import history_store
-from services import price_service
+from services import news_service, price_service
 from services.asset_service import resolve_asset_metadata
 from services.indicator_service import compute_indicators
 from services.market_status_service import get_market_status
@@ -122,7 +123,7 @@ def build_asset_context(symbol: str) -> AIAssetContext:
         )
         history_store.record(prediction, price)
         prediction_ctx = AIPredictionContext(
-            signal=_signal_from_prediction(prediction.direction, prediction.confidence),
+            signal=signal_from_prediction(prediction.direction, prediction.confidence),
             forecast_direction=prediction.direction,
             confidence=prediction.confidence,
             horizon=prediction.horizon,
@@ -132,6 +133,23 @@ def build_asset_context(symbol: str) -> AIAssetContext:
         )
     except AppError as exc:
         missing.append(f"Technical indicators/prediction/risk unavailable: {exc.message}")
+
+    # An empty result is a normal outcome (many symbols simply have no recent news) and
+    # is not recorded in missing_data - only an actual fetch failure is.
+    news_items: list[AINewsItem] = []
+    try:
+        news_feed = news_service.get_news(symbol, count=5)
+        news_items = [
+            AINewsItem(
+                title=article.title,
+                publisher=article.publisher,
+                published_at=article.published_at,
+                summary=article.summary,
+            )
+            for article in news_feed.articles
+        ]
+    except AppError as exc:
+        missing.append(f"News headlines unavailable: {exc.message}")
 
     history_count = len(history_store.get_history(symbol))
 
@@ -150,6 +168,7 @@ def build_asset_context(symbol: str) -> AIAssetContext:
         prediction=prediction_ctx,
         risk=risk_ctx,
         backtesting=None,
+        news=news_items,
         prediction_history_count=history_count,
         missing_data=missing,
     )

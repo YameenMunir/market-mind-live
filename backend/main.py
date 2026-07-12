@@ -18,6 +18,7 @@ from api import (
     indicators,
     knowledge,
     market,
+    news,
     predictions,
     prices,
     risk,
@@ -102,6 +103,7 @@ app.include_router(gemini_key.router)
 app.include_router(alerts.router)
 app.include_router(fx.router)
 app.include_router(analysts.router)
+app.include_router(news.router)
 app.include_router(knowledge.router)
 app.include_router(settings_router.router)
 app.include_router(debug.router)

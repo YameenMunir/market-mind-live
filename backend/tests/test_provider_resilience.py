@@ -237,3 +237,111 @@ def test_get_analyst_consensus_raises_network_error_for_unrecognized_exception(m
 
     with pytest.raises(NetworkError):
         provider_module.provider.get_analyst_consensus("AAPL")
+
+
+def test_get_news_treats_genuine_yf_data_exception_as_empty_list(monkeypatch):
+    """Mirrors test_get_analyst_consensus_treats_genuine_yf_data_exception_as_no_coverage:
+    yfinance's own "no data for this field" signal must resolve to an empty news list,
+    not an error - most forex/commodity/index symbols simply have no news feed."""
+
+    class _FakeTicker:
+        def get_news(self, count=10, tab="news"):
+            raise YFDataException("no news data")
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    assert provider_module.provider.get_news("^GSPC") == []
+
+
+def test_get_news_raises_network_error_for_unrecognized_exception(monkeypatch):
+    """Same "never silently swallow real provider trouble" regression coverage as
+    test_get_analyst_consensus_raises_network_error_for_unrecognized_exception, for
+    get_news - this is the exact failure shape observed live in a sandboxed dev
+    environment lacking a CA bundle for outbound Yahoo requests."""
+
+    class _CertificateVerifyError(Exception):
+        pass
+
+    class _FakeTicker:
+        def get_news(self, count=10, tab="news"):
+            raise _CertificateVerifyError("SSL certificate problem")
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    with pytest.raises(NetworkError):
+        provider_module.provider.get_news("AAPL")
+
+
+def test_get_news_propagates_rate_limit_instead_of_fake_empty_result(monkeypatch):
+    class _FakeTicker:
+        def get_news(self, count=10, tab="news"):
+            raise _FakeHTTPError(429)
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    with pytest.raises(RateLimitedError):
+        provider_module.provider.get_news("AAPL")
+
+
+def test_get_news_parses_nested_content_shape(monkeypatch):
+    """Current Yahoo news payload shape (as of this yfinance version): most fields
+    nested under a "content" key."""
+    raw_item = {
+        "content": {
+            "title": "Apple unveils new product",
+            "summary": "A short summary.",
+            "canonicalUrl": {"url": "https://example.com/article"},
+            "provider": {"displayName": "Example Wire"},
+            "pubDate": "2026-07-10T12:00:00Z",
+            "thumbnail": {"resolutions": [{"url": "https://example.com/thumb.jpg"}]},
+        }
+    }
+
+    class _FakeTicker:
+        def get_news(self, count=10, tab="news"):
+            return [raw_item]
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    [article] = provider_module.provider.get_news("AAPL")
+    assert article == {
+        "title": "Apple unveils new product",
+        "summary": "A short summary.",
+        "url": "https://example.com/article",
+        "publisher": "Example Wire",
+        "published_at": "2026-07-10T12:00:00Z",
+        "thumbnail_url": "https://example.com/thumb.jpg",
+    }
+
+
+def test_get_news_parses_legacy_flat_shape(monkeypatch):
+    """Older yfinance versions returned a flat dict instead of one nested under
+    "content" - both must parse, since neither shape is a documented contract."""
+    raw_item = {
+        "title": "Apple unveils new product",
+        "link": "https://example.com/article",
+        "publisher": "Example Wire",
+        "providerPublishTime": 1752148800,
+    }
+
+    class _FakeTicker:
+        def get_news(self, count=10, tab="news"):
+            return [raw_item]
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    [article] = provider_module.provider.get_news("AAPL")
+    assert article["title"] == "Apple unveils new product"
+    assert article["url"] == "https://example.com/article"
+    assert article["publisher"] == "Example Wire"
+    assert article["published_at"] == "2025-07-10T12:00:00+00:00"
+
+
+def test_get_news_skips_articles_missing_title_or_link(monkeypatch):
+    class _FakeTicker:
+        def get_news(self, count=10, tab="news"):
+            return [{"content": {"summary": "No title or link here"}}, {"content": {"title": "Has a title, no link"}}]
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+
+    assert provider_module.provider.get_news("AAPL") == []

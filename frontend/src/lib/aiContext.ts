@@ -1,12 +1,14 @@
 import type {
   AIAssetContext,
   AIBacktestContext,
+  AINewsItem,
   AIPredictionContext,
   AIRiskContext,
   AITechnicalContext,
   BacktestResult,
   IndicatorSet,
   MarketStatus,
+  NewsFeed,
   PredictionHistoryEntry,
   PredictionResult,
   PriceQuote,
@@ -53,6 +55,7 @@ interface BuildContextInput {
   risk: RiskAssessment | null;
   backtest?: BacktestResult | null;
   predictionHistory?: PredictionHistoryEntry[] | null;
+  news?: NewsFeed | null;
 }
 
 /** Mirrors backend/services/context_builder.py so the assistant is grounded in
@@ -123,6 +126,16 @@ export function buildAssetContext(input: BuildContextInput): AIAssetContext {
         note: "No backtest has been run for this asset in the current session yet.",
       };
 
+  // Mirrors context_builder.py's AINewsItem shape (title/publisher/published_at/summary
+  // only, no url/thumbnail - the chat UI doesn't render links, so those fields would
+  // just be prompt bloat) and its count=5 cap.
+  const newsItems: AINewsItem[] = (input.news?.articles ?? []).slice(0, 5).map((article) => ({
+    title: article.title,
+    publisher: article.publisher,
+    published_at: article.published_at,
+    summary: article.summary,
+  }));
+
   return {
     asset: input.asset,
     asset_name: input.assetName ?? null,
@@ -138,6 +151,7 @@ export function buildAssetContext(input: BuildContextInput): AIAssetContext {
     prediction: predictionCtx,
     risk: riskCtx,
     backtesting: backtestCtx,
+    news: newsItems,
     prediction_history_count: input.predictionHistory?.length ?? 0,
     missing_data: missing,
   };

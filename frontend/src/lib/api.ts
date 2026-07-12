@@ -25,6 +25,7 @@ import type {
   MarketStatus,
   NewSessionRequest,
   NewSessionResponse,
+  NewsFeed,
   PredictionHistoryEntry,
   PredictionResult,
   PriceForecast,
@@ -131,6 +132,8 @@ export const api = {
     request<AlertActionResponse>(`/api/alerts/${encodeURIComponent(alertId)}/dismiss`, { method: "POST" }),
   getFxRates: () => request<FxRates>(`/api/fx/rates`),
   getAnalystConsensus: (symbol: string) => request<AnalystConsensus>(`/api/analysts/${encodeURIComponent(symbol)}`),
+  getNews: (symbol: string, count = 10) =>
+    request<NewsFeed>(`/api/news/${encodeURIComponent(symbol)}?count=${count}`),
   getKnowledgeArticles: () => request<KnowledgeArticle[]>(`/api/knowledge/articles`),
   getUserSettings: () => request<UserSettings>(`/api/settings`),
   updateUserSettings: (body: UserSettings) =>

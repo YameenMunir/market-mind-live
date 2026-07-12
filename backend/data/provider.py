@@ -45,6 +45,13 @@ class MarketDataProvider(ABC):
         one bad ticker doesn't fail the whole batch."""
         ...
 
+    @abstractmethod
+    def get_news(self, symbol: str, count: int = 10) -> list[dict]:
+        """Recent news headlines for a symbol, newest first. An empty list is a normal,
+        valid result (many forex/commodity/index symbols have no news feed at all) -
+        not an error."""
+        ...
+
 
 def infer_asset_type(symbol: str) -> AssetType:
     s = symbol.upper().strip()

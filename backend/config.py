@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Analyst ratings/price targets move at most a few times a month, not intraday -
     # a long TTL keeps this off the hot path without going stale in any practical sense.
     analyst_cache_ttl_seconds: int = 1800
+    # News headlines refresh more often than analyst ratings but still nowhere near
+    # quote/candle cadence - 15 minutes keeps the panel reasonably fresh without hitting
+    # Yahoo's news endpoint on every dashboard poll.
+    news_cache_ttl_seconds: int = 900
 
     # Cadence at which each connected client receives a push over the WebSocket. This is
     # independent of how often the server actually calls out to Yahoo (see hub settings

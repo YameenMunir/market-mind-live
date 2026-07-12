@@ -38,6 +38,8 @@ def _intent(message: str) -> str:
         return "signal"
     if any(k in m for k in ("indicator", "rsi", "macd", "bollinger", "moving average", "sma", "ema")):
         return "indicators"
+    if any(k in m for k in ("news", "headline", "article", "press")):
+        return "news"
     if any(k in m for k in ("chart", "trend", "suggest")):
         return "chart"
     return "general"
@@ -148,6 +150,19 @@ def generate_mock_reply(context: AIAssetContext, message: str, history: list[Cha
         if ti.bollinger_position:
             parts.append(f"price is {ti.bollinger_position}")
         lines.append(f"For {asset}: " + "; ".join(parts) + "." if parts else "Indicator data is limited right now.")
+
+    elif intent == "news":
+        if context.news:
+            lines.append(f"Recent headlines for {asset}:")
+            for item in context.news[:3]:
+                publisher = f" ({item.publisher})" if item.publisher else ""
+                lines.append(f"- {item.title}{publisher}")
+            lines.append(
+                "Headlines are qualitative context, not a trading signal by themselves - "
+                "pair them with the technical/risk picture before drawing a conclusion."
+            )
+        else:
+            lines.append(f"I don't have any recent news headlines available for {asset} right now.")
 
     elif intent == "chart":
         if context.prediction and context.technical_indicators:
