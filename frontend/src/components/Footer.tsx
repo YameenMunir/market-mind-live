@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { Github } from "lucide-react";
 
 import { BrandMark } from "@/components/BrandMark";
+
+const REPO_URL = "https://github.com/YameenMunir/market-mind-live";
 
 const PRODUCT_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -58,12 +61,26 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-9 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-9 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-2xl text-xs leading-relaxed text-ink-faint">
             Market data may be delayed. AI insights are for informational purposes only and are not financial
             advice.
           </p>
-          <p className="whitespace-nowrap text-xs text-ink-faint">© {year} Market Mind Live. All rights reserved.</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View source on GitHub"
+              className="flex items-center gap-1.5 whitespace-nowrap text-xs text-ink-faint transition-colors hover:text-ink"
+            >
+              <Github size={14} aria-hidden />
+              GitHub
+            </a>
+            <p className="whitespace-nowrap text-xs text-ink-faint">
+              © {year} Yameen Munir. All rights reserved.
+            </p>
+          </div>
         </div>
       </div>
     </footer>
