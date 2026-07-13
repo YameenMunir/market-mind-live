@@ -69,11 +69,33 @@ const TIMEFRAME_DATA: Record<Timeframe, DataPoint[]> = {
   ]
 };
 
-export function StockGraph3D({ className, minimal = false }: { className?: string; minimal?: boolean }) {
+export function StockGraph3D({
+  className,
+  minimal = false,
+  timeframe: propTimeframe,
+  onTimeframeChange
+}: {
+  className?: string;
+  minimal?: boolean;
+  timeframe?: string;
+  onTimeframeChange?: (t: string) => void;
+}) {
   const [containerRef, isVisible] = useIntersectionObserver({ threshold: 0.1 });
   
   // Interactive States
-  const [timeframe, setTimeframe] = useState<Timeframe>("1M");
+  const [localTimeframe, setLocalTimeframe] = useState<Timeframe>("1M");
+  
+  const currentRawTimeframe = (propTimeframe || localTimeframe).toUpperCase() as Timeframe;
+  const timeframe = (["1D", "1W", "1M", "1Y"].includes(currentRawTimeframe) ? currentRawTimeframe : "1M") as Timeframe;
+  
+  const setTimeframe = (t: Timeframe) => {
+    if (onTimeframeChange) {
+      onTimeframeChange(t.toLowerCase());
+    } else {
+      setLocalTimeframe(t);
+    }
+  };
+
   const [viewType, setViewType] = useState<ViewType>("line");
   const [marketState, setMarketState] = useState<MarketState>("bull");
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -123,28 +145,26 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
   };
   const { min: priceMin } = getMinMaxPrices();
 
-  // Volume normalized per-dataset (raw volume figures range from ~1 to ~840
-  // across timeframes, so a fixed multiplier either flattens 1D or sends 1Y
-  // pillars far off the top of the viewBox - scale each dataset to its own max).
+  // Volume normalized per-dataset
   const maxVolume = Math.max(...activeData.map((d) => d.volume));
-  const VOLUME_MAX_HEIGHT = 90;
+  const VOLUME_MAX_HEIGHT = 45;
 
   // Projection constants
-  const origin = { x: 45, y: 165 };
+  const origin = { x: 45, y: 125 };
   const cos30 = 0.866;
-  const sin30 = 0.22;
+  const sin30 = 0.16;
   const cos150 = -0.866;
-  const sin150 = 0.22;
+  const sin150 = 0.16;
 
   const points = activeData.map((d, i) => {
     const t = i * 26; // X spacing (time)
     
     // Dynamic height mapping based on price
-    const h = (d.price - priceMin) * 1.5; 
-    const oHeight = (d.open - priceMin) * 1.5;
-    const cHeight = (d.close - priceMin) * 1.5;
-    const hHeight = (d.high - priceMin) * 1.5;
-    const lHeight = (d.low - priceMin) * 1.5;
+    const h = (d.price - priceMin) * 0.9; 
+    const oHeight = (d.open - priceMin) * 0.9;
+    const cHeight = (d.close - priceMin) * 0.9;
+    const hHeight = (d.high - priceMin) * 0.9;
+    const lHeight = (d.low - priceMin) * 0.9;
 
     // Line View endpoints
     const fx = origin.x + t * cos30;
@@ -175,6 +195,14 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
       data: d 
     };
   });
+
+  const getPointActiveY = (p: typeof points[0]) => {
+    if (viewType === "volume") {
+      const pillarH = (p.data.volume / maxVolume) * VOLUME_MAX_HEIGHT;
+      return p.gfy - pillarH;
+    }
+    return p.fy;
+  };
 
   // SVG Render utilities
   const frontPath = points.map(p => `${p.fx},${p.fy}`).join(" L ");
@@ -235,7 +263,11 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={cn("w-full transition-transform duration-200 select-none", className)}
+      className={cn(
+        "w-full transition-transform duration-200 select-none",
+        minimal && "flex-1 min-h-0 flex flex-col",
+        className
+      )}
       style={{
         transform: prefersReducedMotion 
           ? "none" 
@@ -245,22 +277,24 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
       {/* ================= INTERACTIVE HEADERS / CONTROLS ================= */}
       <div className="mb-3 flex overflow-x-auto scrollbar-none -mx-3 px-3 flex-nowrap items-center gap-2 font-mono text-2xs font-bold uppercase tracking-wider sm:mx-0 sm:px-0 sm:mb-4 sm:justify-between sm:gap-3 sm:flex-wrap">
         {/* Timeframe selector */}
-        <div className="flex rounded-sm border border-border bg-surface/50 p-0.5">
-          {(["1D", "1W", "1M", "1Y"] as Timeframe[]).map(tf => (
-            <button
-              key={tf}
-              onClick={() => setTimeframe(tf)}
-              className={cn(
-                "px-2.5 py-1 transition-all rounded-sm",
-                timeframe === tf 
-                  ? "bg-surface-raised text-ink border border-border/80" 
-                  : "text-ink-muted hover:text-ink"
-              )}
-            >
-              {tf}
-            </button>
-          ))}
-        </div>
+        {!minimal && (
+          <div className="flex rounded-sm border border-border bg-surface/50 p-0.5">
+            {(["1D", "1W", "1M", "1Y"] as Timeframe[]).map(tf => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={cn(
+                  "px-2.5 py-1 transition-all rounded-sm",
+                  timeframe === tf 
+                    ? "bg-surface-raised text-ink border border-border/80" 
+                    : "text-ink-muted hover:text-ink"
+                )}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* View toggles */}
         <div className="flex rounded-sm border border-border bg-surface/50 p-0.5">
@@ -303,16 +337,19 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
       </div>
 
       {/* ================= GRAPH CONTAINER ================= */}
-      <div className={cn("relative overflow-visible", !minimal && "rounded-sm border border-border bg-surface p-3 shadow-xl sm:p-4")}>
+      <div className={cn(
+        "relative overflow-visible",
+        minimal ? "flex-1 min-h-0 flex flex-col justify-center" : "rounded-sm border border-border bg-surface p-3 shadow-xl sm:p-4"
+      )}>
         
-        <div className="relative w-full">
+        <div className={cn("relative", minimal ? "w-full flex-1 min-h-0 flex items-center justify-center" : "w-full")}>
           {/* Floating Dynamic HTML Tooltip */}
           {hoveredIdx !== null && (
             <div 
               className="absolute z-20 pointer-events-none rounded-sm border border-border bg-surface-raised/95 px-2.5 py-1.5 text-2xs font-mono shadow-xl transition-all duration-100 flex flex-col gap-1 min-w-[100px] backdrop-blur-[2px] transform -translate-x-1/2 -translate-y-[calc(100%+8px)]"
               style={{
                 left: `${((points[hoveredIdx].fx - 18) / 260) * 100}%`,
-                top: `${((points[hoveredIdx].fy - 50) / 175) * 100}%`
+                top: `${((getPointActiveY(points[hoveredIdx]) - 50) / 135) * 100}%`
               }}
             >
               <div className="text-ink font-bold">NODE #{hoveredIdx + 1}</div>
@@ -332,10 +369,13 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
           )}
 
           <svg
-            viewBox="18 50 260 175"
+            viewBox="18 50 260 135"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-auto overflow-visible filter drop-shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
+            className={cn(
+              "overflow-visible filter drop-shadow-[0_4px_16px_rgba(0,0,0,0.12)]",
+              minimal ? "h-full w-auto max-w-full mx-auto block" : "w-full h-auto"
+            )}
           >
           <defs>
             {/* Bull color stop */}
@@ -384,7 +424,7 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
           <path d={gridLineXBack} stroke="currentColor" strokeOpacity="0.08" strokeWidth="0.8" />
 
           {/* Vertical Grid Ticks */}
-          {[30, 60, 90].map((h, idx) => {
+          {[15, 30, 45].map((h, idx) => {
             const yStart = origin.y - h;
             const yEnd = origin.y + (points.length - 1) * 26 * sin30 - h;
             const xEnd = origin.x + (points.length - 1) * 26 * cos30;
@@ -539,7 +579,7 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
             x1={origin.x}
             y1={origin.y}
             x2={origin.x}
-            y2={origin.y - 120}
+            y2={origin.y - 65}
             stroke="currentColor"
             strokeOpacity="0.08"
             strokeWidth="0.8"
@@ -548,6 +588,7 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
           {/* Data point circle overlays */}
           {points.map((p, idx) => {
             const isHovered = hoveredIdx === idx;
+            const cyVal = getPointActiveY(p);
             return (
               <g 
                 key={idx}
@@ -560,14 +601,14 @@ export function StockGraph3D({ className, minimal = false }: { className?: strin
                 {/* Larger transparent hotspot circle for easy mouse hover */}
                 <circle
                   cx={p.fx}
-                  cy={p.fy}
+                  cy={cyVal}
                   r="12"
                   fill="transparent"
                 />
 
                 <circle
                   cx={p.fx}
-                  cy={p.fy}
+                  cy={cyVal}
                   r={isHovered ? 4.5 : 2.5}
                   fill={isHovered ? currentTheme.brand : "rgb(var(--color-surface))"}
                   stroke={currentTheme.brand}

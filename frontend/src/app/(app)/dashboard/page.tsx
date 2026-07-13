@@ -218,7 +218,7 @@ export default function DashboardPage() {
             title={`${symbol} · ${CHART_RANGES.find((r) => r.value === range)?.label}`}
             action={
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                {!is3D && <TimeframeSelector value={range} onChange={setRange} className="flex-1 min-w-0" />}
+                <TimeframeSelector value={range} onChange={setRange} className="flex-1 min-w-0" />
                 <Button
                   variant="secondary"
                   size="icon"
@@ -292,10 +292,10 @@ export default function DashboardPage() {
             {!is3D && showPricePredictor && forecast.error && (
               <StatusBanner message={forecast.error.message} tone="warning" icon="warning" className="mb-3" />
             )}
-            <div className={cn("flex flex-col justify-center", is3D ? "min-h-[320px] sm:min-h-[400px] xl:min-h-[440px]" : "h-[320px] sm:h-[400px] xl:h-[440px]")}>
+            <div className="h-[320px] sm:h-[400px] xl:h-[440px] flex flex-col">
               {is3D ? (
-                <div className="w-full">
-                  <StockGraph3D minimal />
+                <div className="w-full flex-1 min-h-0 flex flex-col">
+                  <StockGraph3D minimal timeframe={range} onTimeframeChange={setRange} className="flex-1 min-h-0" />
                 </div>
               ) : convertedCandles && convertedCandles.candles.length > 0 ? (
                 <LiveCandlestickChart
