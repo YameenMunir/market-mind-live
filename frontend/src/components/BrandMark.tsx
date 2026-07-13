@@ -14,7 +14,10 @@ export function BrandMark({ className }: { className?: string }) {
         />
         <circle cx="20" cy="8" r="1.8" className="fill-canvas" />
       </svg>
-      <span className="font-sans text-[15px] font-semibold tracking-tight text-ink">
+      {/* Icon-only below 400px so the navbar row (logo + theme toggle + Launch +
+       * hamburger) fits without compressing touch targets; full wordmark from
+       * 400px up, where there's room for it. */}
+      <span className="hidden font-sans text-[15px] font-semibold tracking-tight text-ink min-[400px]:inline">
         Market Mind <span className="text-brand">Live</span>
       </span>
     </div>

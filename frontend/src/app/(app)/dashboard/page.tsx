@@ -32,6 +32,7 @@ import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { Topbar } from "@/components/Topbar";
 import { LiveCandlestickChart } from "@/charts/LiveCandlestickChart";
+import { StockGraph3D } from "@/components/StockGraph3D";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAnalystConsensus } from "@/hooks/useAnalystConsensus";
@@ -81,6 +82,7 @@ export default function DashboardPage() {
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isChartFullscreen, setIsChartFullscreen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  const [is3D, setIs3D] = useState(false);
 
   const dashboardRef = useRef<HTMLDivElement>(null);
   const { isFullscreen, enter: enterFullscreen, exit: exitFullscreen } = useFullscreenToggle(dashboardRef);
@@ -216,7 +218,7 @@ export default function DashboardPage() {
             title={`${symbol} · ${CHART_RANGES.find((r) => r.value === range)?.label}`}
             action={
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <TimeframeSelector value={range} onChange={setRange} className="flex-1 min-w-0" />
+                {!is3D && <TimeframeSelector value={range} onChange={setRange} className="flex-1 min-w-0" />}
                 <Button
                   variant="secondary"
                   size="icon"
@@ -231,31 +233,71 @@ export default function DashboardPage() {
             }
           >
             <div className="mb-3 flex flex-wrap items-center gap-5">
-              <ChartOverlayToggles showMA={showMA} onToggleMA={setShowMA} showBB={showBB} onToggleBB={setShowBB} />
-              <PricePredictorControls
-                enabled={showPricePredictor}
-                onToggle={handleTogglePricePredictor}
-                horizonDays={horizonDays}
-                onHorizonChange={handleHorizonChange}
-              />
+              {!is3D ? (
+                <>
+                  <ChartOverlayToggles showMA={showMA} onToggleMA={setShowMA} showBB={showBB} onToggleBB={setShowBB} />
+                  <PricePredictorControls
+                    enabled={showPricePredictor}
+                    onToggle={handleTogglePricePredictor}
+                    horizonDays={horizonDays}
+                    onHorizonChange={handleHorizonChange}
+                  />
+                </>
+              ) : (
+                <div className="font-mono text-2xs uppercase tracking-wider text-ink-faint">
+                  Interactive 3D Isometric View
+                </div>
+              )}
               <div className="ml-auto flex items-center gap-3">
-                {candles.isLoading && !candles.data && (
-                  <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" />
+                <div className="flex rounded-sm border border-border bg-surface/50 p-0.5 font-mono text-2xs font-bold uppercase tracking-wider shrink-0">
+                  <button
+                    onClick={() => setIs3D(false)}
+                    className={cn(
+                      "px-2.5 py-1 transition-all rounded-sm",
+                      !is3D
+                        ? "bg-surface-raised text-ink border border-border/80"
+                        : "text-ink-muted hover:text-ink"
+                    )}
+                  >
+                    2D
+                  </button>
+                  <button
+                    onClick={() => setIs3D(true)}
+                    className={cn(
+                      "px-2.5 py-1 transition-all rounded-sm",
+                      is3D
+                        ? "bg-surface-raised text-ink border border-border/80"
+                        : "text-ink-muted hover:text-ink"
+                    )}
+                  >
+                    3D
+                  </button>
+                </div>
+                {!is3D && (
+                  <>
+                    {candles.isLoading && !candles.data && (
+                      <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" className="shrink-0" />
+                    )}
+                    {!candles.isLoading && candles.data && <LastUpdated updatedAt={candles.data.last_updated} />}
+                  </>
                 )}
-                {!candles.isLoading && candles.data && <LastUpdated updatedAt={candles.data.last_updated} />}
               </div>
             </div>
-            {candles.error && (
+            {!is3D && candles.error && (
               <StatusBanner message={candles.error.message} tone="warning" icon="warning" className="mb-3" />
             )}
-            {showPricePredictor && forecast.isLoading && !forecast.data && (
+            {!is3D && showPricePredictor && forecast.isLoading && !forecast.data && (
               <StatusBanner message="Generating price forecast..." tone="muted" icon="loading" className="mb-3" />
             )}
-            {showPricePredictor && forecast.error && (
+            {!is3D && showPricePredictor && forecast.error && (
               <StatusBanner message={forecast.error.message} tone="warning" icon="warning" className="mb-3" />
             )}
-            <div className="h-[320px] sm:h-[400px] xl:h-[440px]">
-              {convertedCandles && convertedCandles.candles.length > 0 ? (
+            <div className={cn("flex flex-col justify-center", is3D ? "min-h-[320px] sm:min-h-[400px] xl:min-h-[440px]" : "h-[320px] sm:h-[400px] xl:h-[440px]")}>
+              {is3D ? (
+                <div className="w-full">
+                  <StockGraph3D minimal />
+                </div>
+              ) : convertedCandles && convertedCandles.candles.length > 0 ? (
                 <LiveCandlestickChart
                   candles={convertedCandles.candles}
                   range={range}

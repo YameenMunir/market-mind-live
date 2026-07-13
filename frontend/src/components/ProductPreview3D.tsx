@@ -86,8 +86,8 @@ export function ProductPreview3D({ className }: { className?: string }) {
           <defs>
             {/* Glassmorphism gradient for cards */}
             <linearGradient id="glass-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="var(--color-surface-raised, #1e293b)" stopOpacity="0.85" />
-              <stop offset="100%" stopColor="var(--color-surface, #0f172a)" stopOpacity="0.95" />
+              <stop offset="0%" stopColor="rgb(var(--color-surface-raised))" stopOpacity="0.85" />
+              <stop offset="100%" stopColor="rgb(var(--color-surface))" stopOpacity="0.95" />
             </linearGradient>
 
             {/* Soft shadow filter */}
@@ -97,7 +97,7 @@ export function ProductPreview3D({ className }: { className?: string }) {
             
             {/* Glowing borders */}
             <filter id="glow-border" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="var(--color-brand, #3b82f6)" floodOpacity="0.5" />
+              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="rgb(var(--color-brand))" floodOpacity="0.5" />
             </filter>
           </defs>
 
@@ -111,21 +111,21 @@ export function ProductPreview3D({ className }: { className?: string }) {
             <polygon points="50,110 230,50 300,150 120,210" fill="#020617" opacity="0.25" />
             
             {/* Base Window Panel */}
-            <polygon points="50,100 230,40 300,140 120,200" fill="var(--color-surface, #0f172a)" stroke="var(--color-border, #1e293b)" strokeWidth="1.5" />
+            <polygon points="50,100 230,40 300,140 120,200" fill="rgb(var(--color-surface))" stroke="rgb(var(--color-border))" strokeWidth="1.5" />
             
             {/* Terminal Header */}
-            <polygon points="50,100 230,40 248,66 68,126" fill="var(--color-surface-raised, #1e293b)" stroke="var(--color-border, #1e293b)" strokeWidth="1" />
+            <polygon points="50,100 230,40 248,66 68,126" fill="rgb(var(--color-surface-raised))" stroke="rgb(var(--color-border))" strokeWidth="1" />
             
             {/* Window control dots */}
             <circle cx="70" cy="113" r="2.5" fill="#ef4444" opacity="0.8" />
             <circle cx="78" cy="110" r="2.5" fill="#f59e0b" opacity="0.8" />
             <circle cx="86" cy="107" r="2.5" fill="#10b981" opacity="0.8" />
-
+ 
             {/* Grid references */}
-            <path d="M 90 119 L 248 66" stroke="var(--color-border, #1e293b)" strokeWidth="1" strokeDasharray="2 2" />
-            <path d="M 125 150 L 265 103" stroke="var(--color-border, #1e293b)" strokeWidth="1" strokeOpacity="0.4" />
-            <path d="M 160 173 L 282 132" stroke="var(--color-border, #1e293b)" strokeWidth="1" strokeOpacity="0.4" />
-            <path d="M 160 89 L 210 160" stroke="var(--color-border, #1e293b)" strokeWidth="1.5" strokeOpacity="0.6" />
+            <path d="M 90 119 L 248 66" stroke="rgb(var(--color-border))" strokeWidth="1" strokeDasharray="2 2" />
+            <path d="M 125 150 L 265 103" stroke="rgb(var(--color-border))" strokeWidth="1" strokeOpacity="0.4" />
+            <path d="M 160 173 L 282 132" stroke="rgb(var(--color-border))" strokeWidth="1" strokeOpacity="0.4" />
+            <path d="M 160 89 L 210 160" stroke="rgb(var(--color-border))" strokeWidth="1.5" strokeOpacity="0.6" />
           </g>
 
           {/* ================= LAYER 2: CHART LAYER (Dynamic projection Offset) ================= */}
@@ -142,7 +142,7 @@ export function ProductPreview3D({ className }: { className?: string }) {
             {/* Dynamic trend line */}
             <path
               d="M 90 155 L 120 140 L 150 150 L 180 130 L 210 138 L 240 110 L 270 120"
-              stroke={activeLayer === "chart" ? "var(--color-brand, #3b82f6)" : "var(--color-ink-muted, #94a3b8)"}
+              stroke={activeLayer === "chart" ? "rgb(var(--color-brand))" : "rgb(var(--color-ink-muted))"}
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -176,13 +176,13 @@ export function ProductPreview3D({ className }: { className?: string }) {
             <polygon points="160,110 260,77 290,122 190,155" fill="#020617" opacity="0.3" filter="url(#preview-shadow)" />
             
             {/* Card base */}
-            <polygon points="160,95 260,62 290,107 190,140" fill="url(#glass-grad)" stroke={activeLayer === "gauge" ? "var(--color-brand, #3b82f6)" : "var(--color-border, #1e293b)"} strokeWidth="1.2" />
+            <polygon points="160,95 260,62 290,107 190,140" fill="url(#glass-grad)" stroke={activeLayer === "gauge" ? "rgb(var(--color-brand))" : "rgb(var(--color-border))"} strokeWidth="1.2" />
             
             {/* Arc parameters */}
-            <path d="M 195 105 A 20 20 0 0 1 235 92" stroke="var(--color-border, #1e293b)" strokeWidth="2.5" strokeLinecap="round" fill="none" strokeOpacity="0.4" />
+            <path d="M 195 105 A 20 20 0 0 1 235 92" stroke="rgb(var(--color-border))" strokeWidth="2.5" strokeLinecap="round" fill="none" strokeOpacity="0.4" />
             <path d="M 195 105 A 20 20 0 0 1 220 94" stroke="#10b981" strokeWidth="3" strokeLinecap="round" fill="none" />
             
-            <text x="195" y="125" fill="var(--color-ink, #f8fafc)" fontSize="9" fontWeight="bold" fontFamily="monospace">78% CONF</text>
+            <text x="195" y="125" fill="rgb(var(--color-ink))" fontSize="9" fontWeight="bold" fontFamily="monospace">78% CONF</text>
           </g>
 
           {/* ================= LAYER 4: AI INSIGHTS DIALOG LAYER ================= */}
@@ -201,17 +201,17 @@ export function ProductPreview3D({ className }: { className?: string }) {
             <polygon points="65,160 175,123 205,178 95,215" fill="#020617" opacity="0.35" filter="url(#preview-shadow)" />
             
             {/* Card Body */}
-            <polygon points="65,145 175,108 205,163 95,200" fill="url(#glass-grad)" stroke={activeLayer === "ai" ? "var(--color-brand, #3b82f6)" : "var(--color-border, #1e293b)"} strokeWidth="1.5" />
+            <polygon points="65,145 175,108 205,163 95,200" fill="url(#glass-grad)" stroke={activeLayer === "ai" ? "rgb(var(--color-brand))" : "rgb(var(--color-border))"} strokeWidth="1.5" />
             
             {/* Card header */}
-            <polygon points="65,145 175,108 178,118 68,155" fill="var(--color-brand-opacity, rgba(59, 130, 246, 0.08))" />
-            <circle cx="78" cy="154" r="2.5" fill="var(--color-brand, #3b82f6)" />
-            <text x="86" y="156" fill="var(--color-brand, #3b82f6)" fontSize="7" fontWeight="bold" fontFamily="monospace">AI SIGNAL</text>
-
+            <polygon points="65,145 175,108 178,118 68,155" fill="rgba(var(--color-brand), 0.08)" />
+            <circle cx="78" cy="154" r="2.5" fill="rgb(var(--color-brand))" />
+            <text x="86" y="156" fill="rgb(var(--color-brand))" fontSize="7" fontWeight="bold" fontFamily="monospace">AI SIGNAL</text>
+ 
             {/* Layout lines */}
-            <line x1="80" y1="172" x2="160" y2="145" stroke="var(--color-ink, #f8fafc)" strokeOpacity="0.8" strokeWidth="1.5" />
-            <line x1="80" y1="181" x2="140" y2="161" stroke="var(--color-ink-muted, #94a3b8)" strokeOpacity="0.6" strokeWidth="1.2" />
-            <line x1="80" y1="190" x2="120" y2="177" stroke="var(--color-ink-muted, #94a3b8)" strokeOpacity="0.4" strokeWidth="1.2" />
+            <line x1="80" y1="172" x2="160" y2="145" stroke="rgb(var(--color-ink))" strokeOpacity="0.8" strokeWidth="1.5" />
+            <line x1="80" y1="181" x2="140" y2="161" stroke="rgb(var(--color-ink-muted))" strokeOpacity="0.6" strokeWidth="1.2" />
+            <line x1="80" y1="190" x2="120" y2="177" stroke="rgb(var(--color-ink-muted))" strokeOpacity="0.4" strokeWidth="1.2" />
           </g>
         </svg>
       </div>

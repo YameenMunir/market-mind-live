@@ -18,7 +18,7 @@ const NODES: NodeData[] = [
     label: "SMA CROSS", 
     x: 60, 
     y: 50, 
-    color: "var(--color-brand, #3b82f6)", 
+    color: "rgb(var(--color-brand))", 
     tone: "blue",
     detail: "Golden Cross: 20-day SMA crossed 50-day SMA upwards, suggesting positive momentum."
   },
@@ -97,7 +97,7 @@ export function EvidenceNetwork3D({ className }: { className?: string }) {
             cx={center.x}
             cy={center.y}
             r="16"
-            stroke="var(--color-brand, #3b82f6)"
+            stroke="rgb(var(--color-brand))"
             strokeOpacity="0.25"
             strokeWidth="1.5"
             strokeDasharray="4 2"

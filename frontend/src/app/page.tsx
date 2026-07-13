@@ -29,37 +29,35 @@ export default function LandingPage() {
       <Navbar />
 
       {/* ================= HERO SECTION ================= */}
-      <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-12 sm:pt-16 lg:py-24">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+      <section className="relative mx-auto max-w-7xl px-4 pb-8 pt-4 sm:px-6 sm:pb-16 sm:pt-12 lg:py-24">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-center lg:gap-12">
           {/* Left Column: Heading, Supporting Text, CTAs */}
           <div className="relative mx-auto max-w-3xl text-center lg:col-span-7 lg:text-left lg:max-w-none">
-            <Reveal delay={0} className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-xs uppercase font-bold tracking-wider text-brand lg:mx-0">
+            <Reveal delay={0} className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-xs uppercase font-bold tracking-wider text-brand sm:mb-6 lg:mx-0">
               <Sparkles size={11} className="text-brand" />
               Live asset intelligence &middot; Multi-asset stream
             </Reveal>
 
             <Reveal delay={0.06}>
-              <h1 className="text-4xl font-bold uppercase tracking-tight text-ink sm:text-6xl lg:text-7xl font-mono leading-none">
-                Market intelligence,
-                <br />
-                <span className="text-brand">read in plain English.</span>
+              <h1 className="text-[clamp(1.75rem,1.1rem+3.5vw,4.5rem)] font-bold uppercase tracking-tight text-ink font-mono leading-[1.1] max-w-2xl mx-auto lg:mx-0">
+                Market intelligence, <span className="text-brand block sm:inline">read in plain English.</span>
               </h1>
             </Reveal>
 
             <Reveal delay={0.12}>
-              <p className="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-ink-muted lg:mx-0">
+              <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-ink-muted sm:mt-6 sm:text-base sm:max-w-xl lg:mx-0">
                 Live prices, technical indicators, transparent predictions, and risk scoring - in one terminal built for
                 traders who want the signal, not the noise.
               </p>
             </Reveal>
 
-            <Reveal delay={0.18} className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
+            <Reveal delay={0.18} className="mt-6 flex flex-col items-center justify-center gap-3 w-full sm:mt-8 sm:flex-row lg:justify-start">
               <Link
                 href="/dashboard"
                 className={cn(
                   BUTTON_VARIANT_STYLES.primary,
                   BUTTON_SIZE_STYLES.lg,
-                  "group flex w-full items-center justify-center gap-2 sm:w-auto"
+                  "group flex h-11 w-full items-center justify-center gap-2 sm:w-auto px-6"
                 )}
               >
                 Open the terminal
@@ -70,7 +68,7 @@ export default function LandingPage() {
                 className={cn(
                   BUTTON_VARIANT_STYLES.secondary,
                   BUTTON_SIZE_STYLES.lg,
-                  "inline-flex items-center justify-center whitespace-nowrap w-full sm:w-auto"
+                  "flex h-11 w-full items-center justify-center whitespace-nowrap sm:w-auto px-6"
                 )}
               >
                 Explore backtesting
@@ -81,22 +79,22 @@ export default function LandingPage() {
           {/* Right Column: Dynamic 3D Stock Graph + Floating AAPL card overlay */}
           <div className="relative mx-auto w-full max-w-xl lg:col-span-5 flex flex-col items-center justify-center">
             {/* StockGraph3D - visual background element with isometric layout */}
-            <Reveal delay={0.24} className="w-full max-w-[340px] lg:max-w-none mb-6 lg:mb-0 lg:absolute lg:-top-24 lg:left-[-60px] lg:-z-10 lg:opacity-85 lg:w-[480px]">
+            <Reveal delay={0.24} className="mb-4 w-full lg:mb-0 lg:absolute lg:-top-24 lg:left-[-60px] lg:-z-10 lg:max-w-none lg:w-[480px] lg:opacity-85 sm:mb-6">
               <StockGraph3D className="mx-auto" />
             </Reveal>
 
             {/* Signature reasoning trail card with glassmorphism style */}
             <Reveal delay={0.3} className="w-full relative lg:mt-24 shadow-2xl shadow-brand/5 backdrop-blur-[2px]">
               <div className="overflow-hidden rounded-sm border border-border bg-surface/90">
-                <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3 bg-surface-raised/40">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-3 bg-surface-raised/40 sm:px-5">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-sm bg-bull" />
-                    <span className="font-mono text-xs uppercase font-bold tracking-wider text-ink-faint">AAPL &middot; reasoning trail</span>
+                    <span className="truncate font-mono text-xs uppercase font-bold tracking-wider text-ink-faint">AAPL &middot; reasoning trail</span>
                   </div>
-                  <span className="numeric font-mono text-xs font-bold text-ink">$212.48</span>
+                  <span className="numeric shrink-0 font-mono text-xs font-bold text-ink">$212.48</span>
                 </div>
 
-                <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+                <div className="flex items-center gap-3 border-b border-border px-4 py-3 sm:px-5">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-bull/30 bg-bull/5">
                     <Activity size={14} className="text-bull" />
                   </span>
@@ -106,7 +104,7 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="px-5 py-4">
+                <div className="px-4 py-4 sm:px-5">
                   <p className="text-sm leading-relaxed text-ink-muted">
                     &ldquo;Price action confirms an established uptrend with room before overbought conditions - momentum
                     aligns but isn&rsquo;t extreme. This reads as trend continuation, not a speculative spike.&rdquo;
@@ -129,7 +127,7 @@ export default function LandingPage() {
 
       {/* ================= ASSET CLASSES RIBBON ================= */}
       <section className="border-y border-border bg-surface/40 py-3.5">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-10 gap-y-2 px-6 font-mono text-xs uppercase font-semibold tracking-wider text-ink-faint">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 font-mono text-xs uppercase font-semibold tracking-wider text-ink-faint sm:gap-x-10 sm:px-6">
           {ASSET_CLASSES.map((label) => (
             <span key={label}>{label}</span>
           ))}
@@ -137,8 +135,8 @@ export default function LandingPage() {
       </section>
 
       {/* ================= PRODUCT PREVIEW SECTION ================= */}
-      <section className="relative mx-auto max-w-7xl px-6 py-20 border-b border-border">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+      <section className="relative mx-auto max-w-7xl px-4 py-10 border-b border-border sm:px-6 sm:py-16 lg:py-20">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center lg:gap-12">
           {/* Left: 3D Product Mockup */}
           <div className="lg:col-span-5 w-full">
             <Reveal delay={0.1}>
@@ -180,10 +178,10 @@ export default function LandingPage() {
       </section>
 
       {/* ================= INTERACTIVE FEATURES SHOWCASE ================= */}
-      <section className="mx-auto max-w-7xl px-6 py-20 space-y-28">
-        
+      <section className="mx-auto max-w-7xl px-4 py-10 space-y-10 sm:px-6 sm:py-16 sm:space-y-20 lg:py-20 lg:space-y-28">
+
         {/* Feature 1: Charting */}
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center lg:gap-12">
           <div className="lg:col-span-7 space-y-4">
             <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand">Workspace primitive</span>
             <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Institutional Charting</h3>
@@ -201,7 +199,7 @@ export default function LandingPage() {
         </div>
 
         {/* Feature 2: Backtesting */}
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center lg:gap-12">
           <div className="lg:col-span-5 w-full order-last lg:order-first">
             <Reveal delay={0.1} trigger="scroll">
               <BacktestingSimulation3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
@@ -219,7 +217,7 @@ export default function LandingPage() {
         </div>
 
         {/* Feature 3: AI Insights */}
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center lg:gap-12">
           <div className="lg:col-span-7 space-y-4">
             <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand">Explainable AI</span>
             <h3 className="text-lg font-bold uppercase tracking-wider font-mono text-ink">Evidence-Based Insights</h3>
@@ -237,7 +235,7 @@ export default function LandingPage() {
         </div>
 
         {/* Feature 4: Global Market Coverage */}
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center lg:gap-12">
           <div className="lg:col-span-5 w-full order-last lg:order-first">
             <Reveal delay={0.1} trigger="scroll">
               <MarketGlobe3D className="mx-auto max-w-[340px] w-full md:max-w-[400px] lg:max-w-none" />
@@ -257,9 +255,9 @@ export default function LandingPage() {
       </section>
 
       {/* ================= SEQUENCE / HOW IT WORKS SECTION ================= */}
-      <section className="border-t border-border bg-surface/20 py-20">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-2xl text-center mb-16">
+      <section className="border-t border-border bg-surface/20 py-10 sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-2xl text-center mb-10 sm:mb-16">
             <h2 className="text-xl font-bold uppercase tracking-wider font-mono text-ink">
               Structured Terminal Operations
             </h2>
@@ -291,13 +289,13 @@ export default function LandingPage() {
       </section>
 
       {/* ================= FINAL CTA ================= */}
-      <section className="relative overflow-hidden border-t border-border py-24 bg-surface-raised/10">
+      <section className="relative overflow-hidden border-t border-border py-10 bg-surface-raised/10 sm:py-16 lg:py-24">
         {/* Subtle background visual curve */}
         <div className="absolute inset-0 -z-10 opacity-30 flex items-center justify-center translate-y-16">
           <StockGraph3D className="w-[600px] h-auto opacity-10" />
         </div>
 
-        <div className="mx-auto max-w-3xl px-6 text-center space-y-6">
+        <div className="mx-auto max-w-3xl px-4 text-center space-y-6 sm:px-6">
           <Reveal delay={0.05} className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wider text-brand uppercase">
             Terminal Active
           </Reveal>
@@ -317,7 +315,7 @@ export default function LandingPage() {
               className={cn(
                 BUTTON_VARIANT_STYLES.primary,
                 BUTTON_SIZE_STYLES.lg,
-                "group inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+                "group inline-flex h-11 items-center justify-center gap-2 w-full sm:w-auto"
               )}
             >
               Open Live Terminal

@@ -69,7 +69,7 @@ const TIMEFRAME_DATA: Record<Timeframe, DataPoint[]> = {
   ]
 };
 
-export function StockGraph3D({ className }: { className?: string }) {
+export function StockGraph3D({ className, minimal = false }: { className?: string; minimal?: boolean }) {
   const [containerRef, isVisible] = useIntersectionObserver({ threshold: 0.1 });
   
   // Interactive States
@@ -113,7 +113,7 @@ export function StockGraph3D({ className }: { className?: string }) {
 
   // Get active dataset
   const activeData = TIMEFRAME_DATA[timeframe];
-  
+
   // Base scale calculation to map to bounds
   const getMinMaxPrices = () => {
     const prices = activeData.map(d => d.price);
@@ -123,12 +123,18 @@ export function StockGraph3D({ className }: { className?: string }) {
   };
   const { min: priceMin } = getMinMaxPrices();
 
+  // Volume normalized per-dataset (raw volume figures range from ~1 to ~840
+  // across timeframes, so a fixed multiplier either flattens 1D or sends 1Y
+  // pillars far off the top of the viewBox - scale each dataset to its own max).
+  const maxVolume = Math.max(...activeData.map((d) => d.volume));
+  const VOLUME_MAX_HEIGHT = 90;
+
   // Projection constants
-  const origin = { x: 45, y: 195 };
+  const origin = { x: 45, y: 165 };
   const cos30 = 0.866;
-  const sin30 = 0.5;
+  const sin30 = 0.22;
   const cos150 = -0.866;
-  const sin150 = 0.5;
+  const sin150 = 0.22;
 
   const points = activeData.map((d, i) => {
     const t = i * 26; // X spacing (time)
@@ -197,7 +203,7 @@ export function StockGraph3D({ className }: { className?: string }) {
   // Color mappings based on market state
   const stateColorMap = {
     bull: {
-      brand: "var(--color-bull, #10b981)",
+      brand: "rgb(var(--color-bull))",
       strong: "#059669",
       gradient: "bull-grad",
       curtain: "bull-curtain",
@@ -205,7 +211,7 @@ export function StockGraph3D({ className }: { className?: string }) {
       badgeText: "text-bull",
     },
     bear: {
-      brand: "var(--color-bear, #ef4444)",
+      brand: "rgb(var(--color-bear))",
       strong: "#dc2626",
       gradient: "bear-grad",
       curtain: "bear-curtain",
@@ -213,7 +219,7 @@ export function StockGraph3D({ className }: { className?: string }) {
       badgeText: "text-bear",
     },
     neutral: {
-      brand: "var(--color-brand, #f59e0b)",
+      brand: "rgb(var(--color-brand))",
       strong: "#d97706",
       gradient: "neutral-grad",
       curtain: "neutral-curtain",
@@ -237,7 +243,7 @@ export function StockGraph3D({ className }: { className?: string }) {
       }}
     >
       {/* ================= INTERACTIVE HEADERS / CONTROLS ================= */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 font-mono text-2xs font-bold uppercase tracking-wider">
+      <div className="mb-3 flex overflow-x-auto scrollbar-none -mx-3 px-3 flex-nowrap items-center gap-2 font-mono text-2xs font-bold uppercase tracking-wider sm:mx-0 sm:px-0 sm:mb-4 sm:justify-between sm:gap-3 sm:flex-wrap">
         {/* Timeframe selector */}
         <div className="flex rounded-sm border border-border bg-surface/50 p-0.5">
           {(["1D", "1W", "1M", "1Y"] as Timeframe[]).map(tf => (
@@ -297,39 +303,40 @@ export function StockGraph3D({ className }: { className?: string }) {
       </div>
 
       {/* ================= GRAPH CONTAINER ================= */}
-      <div className="relative overflow-visible rounded-sm border border-border bg-surface p-4 shadow-xl">
+      <div className={cn("relative overflow-visible", !minimal && "rounded-sm border border-border bg-surface p-3 shadow-xl sm:p-4")}>
         
-        {/* Floating Dynamic HTML Tooltip */}
-        {hoveredIdx !== null && (
-          <div 
-            className="absolute z-20 pointer-events-none rounded-sm border border-border bg-surface-raised/95 px-3 py-2 text-2xs font-mono shadow-xl transition-all duration-100 flex flex-col gap-1 min-w-[100px] backdrop-blur-[2px]"
-            style={{
-              left: `${Math.min(points[hoveredIdx].fx + 10, 200)}px`,
-              top: `${Math.max(points[hoveredIdx].fy - 50, 10)}px`
-            }}
-          >
-            <div className="text-ink font-bold">NODE #{hoveredIdx + 1}</div>
-            <div className="flex justify-between gap-4">
-              <span className="text-ink-muted">PRICE:</span>
-              <span className="text-ink font-bold">${points[hoveredIdx].data.price.toFixed(1)}</span>
+        <div className="relative w-full">
+          {/* Floating Dynamic HTML Tooltip */}
+          {hoveredIdx !== null && (
+            <div 
+              className="absolute z-20 pointer-events-none rounded-sm border border-border bg-surface-raised/95 px-2.5 py-1.5 text-2xs font-mono shadow-xl transition-all duration-100 flex flex-col gap-1 min-w-[100px] backdrop-blur-[2px] transform -translate-x-1/2 -translate-y-[calc(100%+8px)]"
+              style={{
+                left: `${((points[hoveredIdx].fx - 18) / 260) * 100}%`,
+                top: `${((points[hoveredIdx].fy - 50) / 175) * 100}%`
+              }}
+            >
+              <div className="text-ink font-bold">NODE #{hoveredIdx + 1}</div>
+              <div className="flex justify-between gap-4">
+                <span className="text-ink-muted">PRICE:</span>
+                <span className="text-ink font-bold">${points[hoveredIdx].data.price.toFixed(1)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-ink-muted">VOL:</span>
+                <span className="text-ink-muted">{points[hoveredIdx].data.volume}M</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-ink-muted">CONF:</span>
+                <span className={cn("font-bold", currentTheme.badgeText)}>{points[hoveredIdx].data.confidence}%</span>
+              </div>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-ink-muted">VOL:</span>
-              <span className="text-ink-muted">{points[hoveredIdx].data.volume}M</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-ink-muted">CONF:</span>
-              <span className={cn("font-bold", currentTheme.badgeText)}>{points[hoveredIdx].data.confidence}%</span>
-            </div>
-          </div>
-        )}
+          )}
 
-        <svg
-          viewBox="0 0 320 230"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-auto overflow-visible filter drop-shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
-        >
+          <svg
+            viewBox="18 50 260 175"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-auto overflow-visible filter drop-shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
+          >
           <defs>
             {/* Bull color stop */}
             <linearGradient id="bull-grad" x1="0%" y1="100%" x2="100%" y2="0%">
@@ -442,7 +449,7 @@ export function StockGraph3D({ className }: { className?: string }) {
             <g className="transition-all duration-300">
               {points.map((p, idx) => {
                 const isGreen = p.data.close >= p.data.open;
-                const candleColor = isGreen ? "var(--color-bull, #10b981)" : "var(--color-bear, #ef4444)";
+                const candleColor = isGreen ? "rgb(var(--color-bull))" : "rgb(var(--color-bear))";
                 const candleStroke = isGreen ? "#059669" : "#dc2626";
 
                 // Wick lines
@@ -480,7 +487,7 @@ export function StockGraph3D({ className }: { className?: string }) {
           {viewType === "volume" && (
             <g className="transition-all duration-300">
               {points.map((p, idx) => {
-                const pillarH = p.data.volume * 3; // scaled height
+                const pillarH = (p.data.volume / maxVolume) * VOLUME_MAX_HEIGHT;
                 const topY = p.gfy - pillarH;
                 const topBackY = p.gby - pillarH;
                 
@@ -562,7 +569,7 @@ export function StockGraph3D({ className }: { className?: string }) {
                   cx={p.fx}
                   cy={p.fy}
                   r={isHovered ? 4.5 : 2.5}
-                  fill={isHovered ? currentTheme.brand : "var(--color-surface, #0f172a)"}
+                  fill={isHovered ? currentTheme.brand : "rgb(var(--color-surface))"}
                   stroke={currentTheme.brand}
                   strokeWidth={isHovered ? 2 : 1}
                   className="transition-all duration-150"
@@ -571,6 +578,7 @@ export function StockGraph3D({ className }: { className?: string }) {
             );
           })}
         </svg>
+      </div>
 
         <p className="mt-2 text-center text-2xs uppercase tracking-wider text-ink-faint">
           Illustrative {timeframe} metrics &middot; Pointer tilts view

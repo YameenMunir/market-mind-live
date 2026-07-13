@@ -82,9 +82,9 @@ export function MarketGlobe3D({ className }: { className?: string }) {
         >
           <defs>
             <radialGradient id="globe-bg" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="var(--color-brand, #3b82f6)" stopOpacity="0.22" />
-              <stop offset="60%" stopColor="var(--color-brand, #3b82f6)" stopOpacity="0.08" />
-              <stop offset="100%" stopColor="var(--color-surface, #0f172a)" stopOpacity="0.4" />
+              <stop offset="0%" stopColor="rgb(var(--color-brand))" stopOpacity="0.22" />
+              <stop offset="60%" stopColor="rgb(var(--color-brand))" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="rgb(var(--color-surface))" stopOpacity="0.4" />
             </radialGradient>
             
             <filter id="globe-glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -100,27 +100,27 @@ export function MarketGlobe3D({ className }: { className?: string }) {
           <ellipse cx={center.x} cy={center.y + r + 10} rx={r - 10} ry="6" fill="#020617" opacity="0.4" />
 
           {/* Globe Base Sphere */}
-          <circle cx={center.x} cy={center.y} r={r} fill="url(#globe-bg)" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.45" strokeWidth="1" />
+          <circle cx={center.x} cy={center.y} r={r} fill="url(#globe-bg)" stroke="rgb(var(--color-brand))" strokeOpacity="0.45" strokeWidth="1" />
 
           {/* Latitude Bands */}
-          <ellipse cx={center.x} cy={center.y} rx={r} ry="16" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.4" strokeWidth="0.8" />
-          <ellipse cx={center.x} cy={center.y - 25} rx={r - 12} ry="8" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.3" strokeWidth="0.8" />
-          <ellipse cx={center.x} cy={center.y + 25} rx={r - 12} ry="8" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.3" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y} rx={r} ry="16" stroke="rgb(var(--color-brand))" strokeOpacity="0.4" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y - 25} rx={r - 12} ry="8" stroke="rgb(var(--color-brand))" strokeOpacity="0.3" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y + 25} rx={r - 12} ry="8" stroke="rgb(var(--color-brand))" strokeOpacity="0.3" strokeWidth="0.8" />
           
           {/* Extra Latitude Bands (Wireframe detailing) */}
-          <ellipse cx={center.x} cy={center.y - 12} rx={r - 4} ry="12" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.2" strokeWidth="0.6" strokeDasharray="1 3" />
-          <ellipse cx={center.x} cy={center.y + 12} rx={r - 4} ry="12" stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.2" strokeWidth="0.6" strokeDasharray="1 3" />
+          <ellipse cx={center.x} cy={center.y - 12} rx={r - 4} ry="12" stroke="rgb(var(--color-brand))" strokeOpacity="0.2" strokeWidth="0.6" strokeDasharray="1 3" />
+          <ellipse cx={center.x} cy={center.y + 12} rx={r - 4} ry="12" stroke="rgb(var(--color-brand))" strokeOpacity="0.2" strokeWidth="0.6" strokeDasharray="1 3" />
 
           {/* Longitude Bands */}
-          <ellipse cx={center.x} cy={center.y} rx="16" ry={r} stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.4" strokeWidth="0.8" />
-          <ellipse cx={center.x} cy={center.y} rx="36" ry={r} stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.3" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y} rx="16" ry={r} stroke="rgb(var(--color-brand))" strokeOpacity="0.4" strokeWidth="0.8" />
+          <ellipse cx={center.x} cy={center.y} rx="36" ry={r} stroke="rgb(var(--color-brand))" strokeOpacity="0.3" strokeWidth="0.8" />
           
           {/* Extra Longitude Bands (Wireframe detailing) */}
-          <ellipse cx={center.x} cy={center.y} rx="26" ry={r} stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.22" strokeWidth="0.6" strokeDasharray="2 3" />
-          <ellipse cx={center.x} cy={center.y} rx="44" ry={r} stroke="var(--color-brand, #3b82f6)" strokeOpacity="0.18" strokeWidth="0.6" strokeDasharray="2 3" />
+          <ellipse cx={center.x} cy={center.y} rx="26" ry={r} stroke="rgb(var(--color-brand))" strokeOpacity="0.22" strokeWidth="0.6" strokeDasharray="2 3" />
+          <ellipse cx={center.x} cy={center.y} rx="44" ry={r} stroke="rgb(var(--color-brand))" strokeOpacity="0.18" strokeWidth="0.6" strokeDasharray="2 3" />
 
           {/* ================= SECONDARY DECORATIVE NODES ================= */}
-          <circle cx={center.x + 42} cy={center.y - 12} r="1.8" fill="var(--color-brand, #3b82f6)" opacity="0.3" />
+          <circle cx={center.x + 42} cy={center.y - 12} r="1.8" fill="rgb(var(--color-brand))" opacity="0.3" />
           <circle cx={center.x - 22} cy={center.y + 28} r="1.8" fill="#10b981" opacity="0.3" />
           <circle cx={center.x - 42} cy={center.y + 10} r="1.8" fill="#a855f7" opacity="0.2" />
 
@@ -141,7 +141,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
               cx="0" 
               cy="0" 
               r={activeRegion === "nyc" ? 5.5 : 4} 
-              fill="var(--color-brand, #3b82f6)" 
+              fill="rgb(var(--color-brand))" 
               className="transition-all"
             />
             {!prefersReducedMotion && isVisible && (
@@ -149,7 +149,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
                 cx="0" 
                 cy="0" 
                 r={activeRegion === "nyc" ? 10 : 7} 
-                stroke="var(--color-brand, #3b82f6)" 
+                stroke="rgb(var(--color-brand))" 
                 strokeOpacity="0.65" 
                 strokeWidth="1.2" 
                 className="animate-pulse" 
@@ -227,7 +227,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
           {/* NYC -> London */}
           <path
             d={`M ${center.x - 32} ${center.y - 12} Q ${center.x - 12} ${center.y - 38} ${center.x + 8} ${center.y - 30}`}
-            stroke="var(--color-brand, #3b82f6)"
+            stroke="rgb(var(--color-brand))"
             strokeWidth={activeRegion === "nyc" || activeRegion === "london" ? 2.2 : 1.5}
             strokeLinecap="round"
             strokeOpacity={activeRegion === "nyc" || activeRegion === "london" ? 0.9 : 0.55}
@@ -253,7 +253,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
             <text 
               x="0" 
               y="0" 
-              fill={activeRegion === "nyc" ? "var(--color-ink, #f8fafc)" : "var(--color-ink-muted, #94a3b8)"} 
+              fill={activeRegion === "nyc" ? "rgb(var(--color-ink))" : "rgb(var(--color-ink-muted))"} 
               fontSize="6.5" 
               fontWeight="bold" 
               fontFamily="monospace" 
@@ -268,7 +268,7 @@ export function MarketGlobe3D({ className }: { className?: string }) {
             <text 
               x="0" 
               y="0" 
-              fill={activeRegion === "london" ? "var(--color-bull, #10b981)" : "#10b981"} 
+              fill={activeRegion === "london" ? "rgb(var(--color-bull))" : "#10b981"} 
               fontSize="6.5" 
               fontWeight="bold" 
               fontFamily="monospace"
@@ -278,12 +278,12 @@ export function MarketGlobe3D({ className }: { className?: string }) {
               LSE CONNECTED
             </text>
           </g>
-
+ 
           <g transform={`translate(${center.x + 48}, ${center.y + 36})`}>
             <text 
               x="0" 
               y="0" 
-              fill={activeRegion === "tokyo" ? "var(--color-ink, #f8fafc)" : "var(--color-ink-muted, #94a3b8)"} 
+              fill={activeRegion === "tokyo" ? "rgb(var(--color-ink))" : "rgb(var(--color-ink-muted))"} 
               fontSize="6.5" 
               fontWeight="bold" 
               fontFamily="monospace" 
