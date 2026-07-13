@@ -33,7 +33,7 @@ function SettingsSection({ eyebrow, title, children }: SettingsSectionProps) {
 }
 
 export function SettingsPanel() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, isReady } = useTheme();
   const { prefs, updatePrefs } = useChartPreferences();
   const { currency, setCurrency } = useCurrencyContext();
   const { experienceMode, setExperienceMode } = useUserSettings();
@@ -120,12 +120,16 @@ export function SettingsPanel() {
 
       <SettingsSection eyebrow="Appearance" title="Theme">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Theme">
+          {/* Neither button shows as active until isReady - every useTheme() caller
+           * starts from a "dark" placeholder (see the hook's isReady doc), so
+           * highlighting "Dark mode" immediately would misrepresent a stored "light"
+           * preference for a split second before the correction lands. */}
           <button
             onClick={() => setTheme("dark")}
-            aria-pressed={theme === "dark"}
+            aria-pressed={isReady && theme === "dark"}
             className={cn(
               "flex items-center gap-2 rounded-sm border px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider transition-colors",
-              theme === "dark"
+              isReady && theme === "dark"
                 ? "border-brand/40 bg-brand/5 text-ink"
                 : "border-border text-ink-muted hover:border-ink-faint/40 hover:bg-surface"
             )}
@@ -134,10 +138,10 @@ export function SettingsPanel() {
           </button>
           <button
             onClick={() => setTheme("light")}
-            aria-pressed={theme === "light"}
+            aria-pressed={isReady && theme === "light"}
             className={cn(
               "flex items-center gap-2 rounded-sm border px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider transition-colors",
-              theme === "light"
+              isReady && theme === "light"
                 ? "border-brand/40 bg-brand/5 text-ink"
                 : "border-border text-ink-muted hover:border-ink-faint/40 hover:bg-surface"
             )}
