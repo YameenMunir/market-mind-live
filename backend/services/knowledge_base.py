@@ -87,8 +87,9 @@ ARTICLES: tuple[KnowledgeArticle, ...] = (
         body=(
             "The prediction engine is a transparent, rule-based scoring model (not a black-box "
             "neural network): it scores trend (SMA-20 vs SMA-50, price vs SMA-200), momentum "
-            "(RSI, MACD histogram), and volatility positioning (Bollinger Band location), then "
-            "combines them into a single score. Positive scores lean bullish, negative lean "
+            "(RSI, MACD histogram), volatility positioning (Bollinger Band location), and "
+            "proximity to recent support/resistance levels (relative to ATR), then combines them "
+            "into a single score. Positive scores lean bullish, negative lean "
             "bearish, and scores near zero are neutral. Confidence reflects how strongly the "
             "underlying indicators agree with each other, not a statistical probability of a "
             "specific price outcome - it should be read as 'how aligned are the signals', not "

@@ -104,6 +104,50 @@ def _score_volatility_position(price: float, indicators: IndicatorSet) -> tuple[
     return score, reasons, data_notes
 
 
+def _score_support_resistance(price: float, indicators: IndicatorSet) -> tuple[float, list[str], list[str]]:
+    """Scores proximity to the nearest recent swing-high/low pivots (compute_support_resistance),
+    a factor distinct from _score_volatility_position's Bollinger read - one is a statistical
+    volatility band, the other is actual historical price levels where reversals occurred.
+    "Near" is defined relative to ATR (half a day's typical range) rather than a fixed percentage,
+    consistent with how target_price already sizes moves off ATR."""
+    reasons: list[str] = []
+    data_notes: list[str] = []
+    score = 0.0
+    sr = indicators.support_resistance
+
+    if not sr.support and not sr.resistance:
+        data_notes.append("Not enough recent price history to identify support/resistance levels.")
+        return score, reasons, data_notes
+
+    if not indicators.atr_14:
+        data_notes.append("ATR unavailable, so proximity to support/resistance levels could not be judged.")
+        return score, reasons, data_notes
+
+    threshold = indicators.atr_14 * 0.5
+
+    resistance_above = [r for r in sr.resistance if r > price]
+    if resistance_above:
+        nearest_resistance = min(resistance_above)
+        if nearest_resistance - price <= threshold:
+            score -= 0.15
+            reasons.append(
+                f"Price is close to a recent resistance level near {nearest_resistance:.2f}, "
+                "which may cap near-term upside."
+            )
+
+    support_below = [s for s in sr.support if s < price]
+    if support_below:
+        nearest_support = max(support_below)
+        if price - nearest_support <= threshold:
+            score += 0.15
+            reasons.append(
+                f"Price is close to a recent support level near {nearest_support:.2f}, "
+                "which may limit near-term downside."
+            )
+
+    return score, reasons, data_notes
+
+
 def generate_prediction(
     symbol: str,
     price: float,
@@ -118,10 +162,11 @@ def generate_prediction(
     trend_score, trend_reasons, trend_notes = _score_trend(price, indicators)
     momentum_score, momentum_reasons, momentum_notes = _score_momentum(indicators)
     volatility_score, volatility_reasons, volatility_notes = _score_volatility_position(price, indicators)
+    sr_score, sr_reasons, sr_notes = _score_support_resistance(price, indicators)
 
-    total_score = trend_score + momentum_score + volatility_score
-    reasoning = trend_reasons + momentum_reasons + volatility_reasons
-    data_notes = trend_notes + momentum_notes + volatility_notes
+    total_score = trend_score + momentum_score + volatility_score + sr_score
+    reasoning = trend_reasons + momentum_reasons + volatility_reasons + sr_reasons
+    data_notes = trend_notes + momentum_notes + volatility_notes + sr_notes
 
     if total_score > 0.15:
         direction = PredictionDirection.BULLISH
@@ -137,7 +182,7 @@ def generate_prediction(
         move = indicators.atr_14 * 1.5
         target_price = round(price + move if direction == PredictionDirection.BULLISH else price - move, 4)
 
-    agreement = _signal_agreement(trend_score, momentum_score, volatility_score)
+    agreement = _signal_agreement([trend_score, momentum_score, volatility_score, sr_score])
 
     label = symbol.upper()
     display_name = f"{asset_name} ({label})" if asset_name and asset_name.upper() != label else label
@@ -174,11 +219,11 @@ def generate_prediction(
     )
 
 
-def _signal_agreement(trend_score: float, momentum_score: float, volatility_score: float) -> str:
-    """Classifies how strongly the three signal groups agree with each other, so the
+def _signal_agreement(scores: list[float]) -> str:
+    """Classifies how strongly the signal groups agree with each other, so the
     explanation can call out mixed/contradictory readings explicitly instead of
     silently averaging them into one confidence number."""
-    signs = [s for s in (trend_score, momentum_score, volatility_score) if abs(s) > 1e-9]
+    signs = [s for s in scores if abs(s) > 1e-9]
     if len(signs) <= 1:
         return "weak" if not signs else "strong"
     positive = sum(1 for s in signs if s > 0)
@@ -252,8 +297,9 @@ def _build_plain_english_explanation(
 
     if agreement == "mixed":
         parts.append(
-            "Signals disagree with each other here - trend, momentum, and volatility positioning aren't all "
-            "pointing the same way, which is why confidence is limited despite a directional call being made."
+            "Signals disagree with each other here - trend, momentum, volatility positioning, and "
+            "support/resistance proximity aren't all pointing the same way, which is why confidence is "
+            "limited despite a directional call being made."
         )
 
     if risk is not None and risk.factors:
