@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { api } from "@/lib/api";
 import { INDICATOR_POLL_MS, QUOTE_POLL_FALLBACK_MS, WS_BASE_URL } from "@/lib/constants";
-import type { IndicatorSet, MarketStatus, PredictionResult, PriceQuote, RiskAssessment } from "@/types";
+import type { ErrorCode, IndicatorSet, MarketStatus, PredictionResult, PriceQuote, RiskAssessment } from "@/types";
 import { ApiError } from "@/types";
 
 export type ConnectionState = "connecting" | "live" | "polling" | "reconnecting" | "error";
@@ -22,6 +22,10 @@ interface LiveSnapshotState {
   riskUpdatedAt: string | null;
   connectionState: ConnectionState;
   errorMessage: string | null;
+  /** Lets callers distinguish "provider is rate-limited" (transient, the app is already
+   * retrying/backing off on its own - not worth alarming the user with a banner) from a
+   * genuinely actionable error (e.g. invalid symbol) that should still be shown. */
+  errorCode: ErrorCode | null;
   /** True when the backend's poller is serving a known-stale value because its last
    * fetch attempt failed (e.g. provider outage) - distinct from `errorMessage`, which
    * can be cleared on the next successful poll while `isStale` reflects the same signal
@@ -45,6 +49,7 @@ const INITIAL_STATE: LiveSnapshotState = {
   riskUpdatedAt: null,
   connectionState: "connecting",
   errorMessage: null,
+  errorCode: null,
   isStale: false,
 };
 
@@ -82,7 +87,7 @@ export function useLiveSnapshot(symbol: string) {
 
     const startPolling = () => {
       stopPolling();
-      setState((prev) => ({ ...prev, connectionState: "polling", errorMessage: null }));
+      setState((prev) => ({ ...prev, connectionState: "polling", errorMessage: null, errorCode: null }));
 
       const pollFast = async () => {
         try {
@@ -97,12 +102,14 @@ export function useLiveSnapshot(symbol: string) {
             marketStatusUpdatedAt: now,
             connectionState: "polling",
             errorMessage: null,
+            errorCode: null,
             isStale: false,
           }));
         } catch (err) {
           if (cancelled) return;
           const message = err instanceof ApiError ? err.message : "Unable to fetch live data.";
-          setState((prev) => ({ ...prev, connectionState: "error", errorMessage: message, isStale: true }));
+          const code = err instanceof ApiError ? err.errorCode : null;
+          setState((prev) => ({ ...prev, connectionState: "error", errorMessage: message, errorCode: code, isStale: true }));
         }
       };
 
@@ -153,7 +160,8 @@ export function useLiveSnapshot(symbol: string) {
 
       socket.onopen = () => {
         retriesRef.current = 0;
-        if (!cancelled) setState((prev) => ({ ...prev, connectionState: "live", errorMessage: null, isStale: false }));
+        if (!cancelled)
+          setState((prev) => ({ ...prev, connectionState: "live", errorMessage: null, errorCode: null, isStale: false }));
       };
 
       socket.onmessage = (event) => {
@@ -183,6 +191,7 @@ export function useLiveSnapshot(symbol: string) {
             riskUpdatedAt: payload.risk_updated_at ?? prev.riskUpdatedAt,
             connectionState: "live",
             errorMessage: payload.error_message ?? null,
+            errorCode: payload.error_code ?? null,
             isStale: Boolean(payload.is_stale),
           }));
         } catch {

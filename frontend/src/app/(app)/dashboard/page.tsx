@@ -166,7 +166,9 @@ export default function DashboardPage() {
       />
 
       <main className="flex-1 space-y-4 overflow-y-auto p-4 pb-20 sm:space-y-5 sm:p-6 lg:pb-6">
-        {snapshot.errorMessage && <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />}
+        {snapshot.errorMessage && snapshot.errorCode !== "rate_limited" && (
+          <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />
+        )}
 
         <div
           data-tour="stat-cards"
@@ -283,13 +285,13 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
-            {!is3D && candles.error && (
+            {!is3D && candles.error && candles.error.errorCode !== "rate_limited" && (
               <StatusBanner message={candles.error.message} tone="warning" icon="warning" className="mb-3" />
             )}
             {!is3D && showPricePredictor && forecast.isLoading && !forecast.data && (
               <StatusBanner message="Generating price forecast..." tone="muted" icon="loading" className="mb-3" />
             )}
-            {!is3D && showPricePredictor && forecast.error && (
+            {!is3D && showPricePredictor && forecast.error && forecast.error.errorCode !== "rate_limited" && (
               <StatusBanner message={forecast.error.message} tone="warning" icon="warning" className="mb-3" />
             )}
             <div className="h-[320px] sm:h-[400px] xl:h-[440px] flex flex-col">
