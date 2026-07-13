@@ -2,8 +2,8 @@
 
 Market Mind Live is a fintech market intelligence dashboard for stocks, ETFs, crypto, forex,
 commodities, and indices. It brings together live quotes and charts, technical indicators, a
-transparent rule-based prediction engine, risk scoring, strategy backtesting, and a Gemini-backed
-AI Insights chat assistant in a single enterprise-grade dashboard UI.
+transparent rule-based prediction engine, risk scoring, strategy backtesting, and a Gemini-backed,
+streaming AI Insights chat assistant in a single enterprise-grade dashboard UI.
 
 > Live quotes are delayed and provided for informational purposes only. Nothing in this app is
 > financial advice.
@@ -13,7 +13,8 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
 - **Live dashboard** - real-time-style price, market status (open/closed/pre-market/after-hours),
   and candlestick charts across 12 timeframes (1D, 5D, 1W, 2W, 1M, 3M, 6M, YTD, 1Y, 2Y, 5Y, MAX -
   each mapped server-side to the right bar resolution and cache freshness for that range), streamed
-  over WebSocket with automatic REST-polling fallback.
+  over WebSocket with automatic REST-polling fallback. Resumes on whichever symbol you were last
+  viewing (persisted locally) rather than always reopening on a fixed default.
 - **Technical indicators** - SMA/EMA, RSI, MACD, Bollinger Bands, ATR, and support/resistance,
   computed server-side and explained in plain English.
 - **Prediction engine** - a transparent, rule-based model (trend + momentum + volatility position)
@@ -30,7 +31,12 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
   static snapshot alone, and also fed into the AI Insights context.
 - **AI Insights assistant** - a Gemini-powered chat assistant grounded in the same live data shown
   on the dashboard (falls back to a deterministic mock provider if no Gemini API key is configured,
-  so the feature works out of the box).
+  so the feature works out of the box). Replies stream in token-by-token over Server-Sent Events as
+  they're actually generated (not a simulated typewriter effect over an already-complete response),
+  rendered as full markdown - headings, bullet/numbered lists, tables, links, bold/italic, code
+  blocks - with a **Stop generating** control, one-click **Regenerate response** on the latest reply,
+  and contextual follow-up question chips tailored to whatever hasn't come up yet in the
+  conversation (all heuristic, no extra model call).
 - **News feed** - recent per-symbol headlines (publisher, timestamp, link) sourced from Yahoo via
   yfinance, cached and served from `/api/news/{symbol}`. Also fed into the AI Insights context so
   the assistant can answer questions grounded in real headlines, not just price/indicator data.
@@ -69,12 +75,19 @@ AI Insights chat assistant in a single enterprise-grade dashboard UI.
 - WebSockets for the live data feed, with one shared background poller per actively-watched symbol
   (N viewers of the same symbol cost exactly one upstream poll)
 - Google Gemini (via `httpx`, no SDK dependency) for the AI Insights assistant, with a
-  deterministic mock fallback
+  deterministic mock fallback and genuine token-by-token streaming (Server-Sent Events) for both -
+  a cancelled/interrupted stream still persists whatever partial reply was generated
 
 **Frontend** (`frontend/`)
 - [Next.js 16](https://nextjs.org/) (App Router, Turbopack), React 18, TypeScript
-- Tailwind CSS with a semantic design-token system (dark/light mode)
+- Sora (display/UI text) + JetBrains Mono (data values, uppercase/tracked labels) via
+  `next/font/google` - a deliberately geometric, technical pairing over a generic humanist sans,
+  see `frontend/DESIGN_SYSTEM.md`
+- Tailwind CSS with a semantic design-token system (dark/light mode, persisted choice shared live
+  across every mounted component via `useSyncExternalStore`, with the OS-level preference as the
+  first-visit default before any explicit choice is made)
 - `lightweight-charts` for candlestick charts, `recharts` for the backtest equity curve
+- `react-markdown` + `remark-gfm` for AI chat responses (no raw HTML, no `dangerouslySetInnerHTML`)
 - Framer Motion for transitions, `lucide-react` for icons
 - Vitest + React Testing Library for component/hook/unit tests
 
@@ -145,9 +158,12 @@ npm run test                    # run the Vitest suite
 
 ## Contributing
 
-Have an idea for a new feature? Open a pull request:
+Have an idea for a new feature? This repo is not open-source (see [License](#license) below),
+but contributions back to it are still welcome via pull request:
 
-1. Fork the repo and create a branch off `main` (e.g. `feat/short-description`).
+1. Fork the repo and create a branch off `main` (e.g. `feat/short-description`) - forking for the
+   purpose of submitting a PR back to this repository is fine; the license restrictions below are
+   about independent reuse/redistribution, not about contributing here.
 2. Make your changes, following the conventions in `CLAUDE.md` (project structure, where new
    backend errors/schemas/API calls belong, semantic Tailwind tokens, etc.).
 3. Verify before pushing:
@@ -158,6 +174,13 @@ Have an idea for a new feature? Open a pull request:
 
 Not ready to write code? Open a [GitHub issue](https://github.com/YameenMunir/market-mind-live/issues)
 describing the feature suggestion instead.
+
+## License
+
+Copyright (c) 2026 Yameen Munir. All rights reserved - see [LICENSE](LICENSE). This repository is
+publicly visible for portfolio/demonstration purposes; it is **not** open-source. Browsing or
+cloning the code does not grant any license to use, copy, modify, distribute, or build on it -
+see the Contributing section above for the one carve-out (submitting a PR back to this repo).
 
 ## Deployment
 
