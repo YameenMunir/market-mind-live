@@ -34,7 +34,7 @@ function SettingsSection({ eyebrow, title, children }: SettingsSectionProps) {
 
 export function SettingsPanel() {
   const { theme, setTheme, isReady } = useTheme();
-  const { prefs, updatePrefs } = useChartPreferences();
+  const { prefs, updatePrefs, isReady: isChartPrefsReady } = useChartPreferences();
   const { currency, setCurrency } = useCurrencyContext();
   const { experienceMode, setExperienceMode } = useUserSettings();
   const geminiKey = useGeminiKey();
@@ -158,12 +158,14 @@ export function SettingsPanel() {
             onChange={(v) => updatePrefs({ showMovingAverages: v })}
             label="Moving averages"
             description="Show SMA 20 / SMA 50 overlays on the live chart by default."
+            loading={!isChartPrefsReady}
           />
           <Toggle
             checked={prefs.showBollinger}
             onChange={(v) => updatePrefs({ showBollinger: v })}
             label="Bollinger Bands"
             description="Show volatility bands overlay on the live chart by default."
+            loading={!isChartPrefsReady}
           />
         </div>
       </SettingsSection>
@@ -201,8 +203,13 @@ export function SettingsPanel() {
         </label>
         <Input
           id="settings-default-symbol"
-          value={prefs.defaultSymbol}
+          // Left blank (falling through to the placeholder) rather than showing
+          // DEFAULTS' "AAPL" until isChartPrefsReady - that value is only a guess
+          // until localStorage has actually been read, and this field is what
+          // sets the very value being guessed at.
+          value={isChartPrefsReady ? prefs.defaultSymbol : ""}
           onChange={(e) => updatePrefs({ defaultSymbol: e.target.value.toUpperCase() })}
+          disabled={!isChartPrefsReady}
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
