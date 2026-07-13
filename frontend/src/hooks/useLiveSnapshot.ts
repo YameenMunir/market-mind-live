@@ -138,7 +138,17 @@ export function useLiveSnapshot(symbol: string) {
 
     const connectSocket = () => {
       if (cancelled) return;
-      const socket = new WebSocket(`${WS_BASE_URL}/ws/live/${encodeURIComponent(symbol)}`);
+      // Browsers silently kill a ws:// connection opened from an https:// page (mixed
+      // content) - no error event, straight to onclose - which looks identical to a
+      // real connection failure and burns all MAX_WS_RETRIES before falling back to
+      // REST polling. Force wss:// whenever the page itself is https:// so a
+      // NEXT_PUBLIC_WS_BASE_URL misconfigured with the wrong scheme doesn't silently
+      // disable live updates for every visitor on that deployment.
+      const wsBase =
+        typeof window !== "undefined" && window.location.protocol === "https:"
+          ? WS_BASE_URL.replace(/^ws:\/\//, "wss://")
+          : WS_BASE_URL;
+      const socket = new WebSocket(`${wsBase}/ws/live/${encodeURIComponent(symbol)}`);
       socketRef.current = socket;
 
       socket.onopen = () => {

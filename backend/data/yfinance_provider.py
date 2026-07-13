@@ -89,11 +89,28 @@ _cooldown_lock = threading.Lock()
 _cooldown_until = 0.0
 _consecutive_rate_limit_hits = 0
 
+# Every caller across every symbol shares one `_cooldown_until` deadline, so without
+# this, all of them become "unblocked" in the exact same instant it passes - a backlog
+# built up during the block (retries, poll fallbacks, multiple symbols/users) then
+# piles back onto Yahoo simultaneously, which risks immediately re-tripping the same
+# limit right at the boundary. Spreading the resume over a few seconds - each caller
+# independently rolling against a shrinking window rather than all releasing at once -
+# ramps traffic back up gradually instead of as a step function.
+_COOLDOWN_RELEASE_JITTER_SECONDS = 3.0
+
 
 def _in_cooldown() -> float | None:
     with _cooldown_lock:
-        remaining = _cooldown_until - time.monotonic()
-    return remaining if remaining > 0 else None
+        deadline = _cooldown_until
+    remaining = deadline - time.monotonic()
+    if remaining > 0:
+        return remaining
+
+    since_expiry = -remaining
+    if since_expiry < _COOLDOWN_RELEASE_JITTER_SECONDS:
+        if random.uniform(0, _COOLDOWN_RELEASE_JITTER_SECONDS) > since_expiry:
+            return _COOLDOWN_RELEASE_JITTER_SECONDS - since_expiry
+    return None
 
 
 def _start_cooldown(base_seconds: float, max_seconds: float) -> float:
