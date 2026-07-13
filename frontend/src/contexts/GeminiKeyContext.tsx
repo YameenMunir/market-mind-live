@@ -108,8 +108,14 @@ export function GeminiKeyProvider({ children }: { children: ReactNode }) {
           setStatus(backendStatus);
           setIsLoading(false);
         }
-      } catch (err) {
-        console.error("Error during key status initialization:", err);
+      } catch {
+        // Best-effort, same as useAIChat.ts's refreshSessions - this runs
+        // automatically on every app-section page load (mounted once, in
+        // AppLayout), so a transient network hiccup or a backend that's still
+        // starting up shouldn't surface a console error every time. The UI already
+        // degrades correctly either way: `status` just stays INITIAL_STATUS
+        // ("no key configured"), which is the same state a genuinely keyless
+        // device would show.
         if (!cancelled) {
           setIsLoading(false);
         }
