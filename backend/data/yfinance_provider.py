@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+import platform
 import random
 import socket
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Callable, TypeVar
 
@@ -29,19 +31,21 @@ _session = None
 def _get_session():
     """Shared curl_cffi session for every yf.Ticker/yf.Tickers call.
 
-    verify=False because curl_cffi's bundled libcurl fails to validate Yahoo's cert
-    chain on some Windows setups even when explicitly pointed at certifi's CA bundle
-    (a known curl_cffi/Windows gap - plain `requests` against the same host is
-    unaffected). Market data is public and read-only, so disabling verification here
-    only risks a MITM feeding bad quotes, not credential/data exposure. Session is
-    thread-safe to share (curl_cffi.Session defaults to a thread-local curl handle).
+    Certificate verification is skipped only on Windows, where curl_cffi's bundled
+    libcurl fails to validate Yahoo's cert chain even when explicitly pointed at
+    certifi's CA bundle (a known curl_cffi/Windows gap - plain `requests` against the
+    same host is unaffected). Every other platform (including production, which isn't
+    Windows) keeps real verification, so this workaround stays scoped to local dev
+    rather than applying process-wide. Session is thread-safe to share (curl_cffi.
+    Session defaults to a thread-local curl handle).
     """
     global _session
     if _session is None:
         with _session_lock:
             if _session is None:
                 from curl_cffi import requests as curl_requests
-                _session = curl_requests.Session(impersonate="chrome", verify=False)
+                verify = platform.system() != "Windows"
+                _session = curl_requests.Session(impersonate="chrome", verify=verify)
     return _session
 
 # Exceptions that represent a transient, retryable network failure rather than a bad
@@ -478,35 +482,48 @@ class YFinanceProvider(MarketDataProvider):
 
         yfinance has no single-request multi-symbol quote endpoint like a paid vendor's
         batch API - `yf.Tickers` is the closest equivalent: it shares one HTTP session
-        across all symbols instead of each `yf.Ticker()` opening its own, which is the
-        real efficiency gain available here. A per-symbol value is either the quote dict
-        (same shape as `get_quote`) or the Exception raised for that symbol, so one bad
-        ticker in a batch doesn't fail the whole request.
+        across all symbols instead of each `yf.Ticker()` opening its own. But `fast_info`
+        still issues its own HTTP round-trip per symbol even under that shared session -
+        fetched from a thread pool rather than in a sequential loop, so a watchlist of n
+        symbols costs roughly one round-trip's worth of wall-clock time instead of n
+        chained ones. `_call_with_retry`'s shared cooldown/backoff state is guarded by a
+        `threading.Lock` specifically so it's safe to call from multiple threads at once.
+        A per-symbol value is either the quote dict (same shape as `get_quote`) or the
+        Exception raised for that symbol, so one bad ticker in a batch doesn't fail the
+        whole request.
         """
         unique_symbols = list(dict.fromkeys(s.upper() for s in symbols))
         tickers = yf.Tickers(" ".join(unique_symbols), session=_get_session())
-        results: dict[str, dict | Exception] = {}
 
-        for symbol in unique_symbols:
-            try:
-                ticker = tickers.tickers[symbol]
-                fast_info = _call_with_retry(lambda t=ticker: t.fast_info, description=f"get_quotes_batch({symbol})")
-                last_price = fast_info.get("lastPrice") or fast_info.get("last_price")
-                previous_close = fast_info.get("previousClose") or fast_info.get("previous_close")
-                if last_price is None or previous_close in (None, 0):
-                    raise InvalidSymbolError(f"No market data available for '{symbol}'.")
-                results[symbol] = {
-                    "price": float(last_price),
-                    "previous_close": float(previous_close),
-                    "day_high": float(fast_info.get("dayHigh") or fast_info.get("day_high") or 0) or None,
-                    "day_low": float(fast_info.get("dayLow") or fast_info.get("day_low") or 0) or None,
-                    "volume": float(fast_info.get("lastVolume") or fast_info.get("last_volume") or 0) or None,
-                    "currency": fast_info.get("currency") or "USD",
-                }
-            except (NetworkError, RateLimitedError) as exc:
-                results[symbol] = exc
-            except Exception as exc:
-                results[symbol] = InvalidSymbolError(f"'{symbol}' is not a recognized asset symbol.", detail=str(exc))
+        def _fetch_one(symbol: str) -> dict:
+            ticker = tickers.tickers[symbol]
+            fast_info = _call_with_retry(lambda t=ticker: t.fast_info, description=f"get_quotes_batch({symbol})")
+            last_price = fast_info.get("lastPrice") or fast_info.get("last_price")
+            previous_close = fast_info.get("previousClose") or fast_info.get("previous_close")
+            if last_price is None or previous_close in (None, 0):
+                raise InvalidSymbolError(f"No market data available for '{symbol}'.")
+            return {
+                "price": float(last_price),
+                "previous_close": float(previous_close),
+                "day_high": float(fast_info.get("dayHigh") or fast_info.get("day_high") or 0) or None,
+                "day_low": float(fast_info.get("dayLow") or fast_info.get("day_low") or 0) or None,
+                "volume": float(fast_info.get("lastVolume") or fast_info.get("last_volume") or 0) or None,
+                "currency": fast_info.get("currency") or "USD",
+            }
+
+        results: dict[str, dict | Exception] = {}
+        with ThreadPoolExecutor(max_workers=min(len(unique_symbols), 10) or 1) as executor:
+            future_to_symbol = {executor.submit(_fetch_one, symbol): symbol for symbol in unique_symbols}
+            for future in future_to_symbol:
+                symbol = future_to_symbol[future]
+                try:
+                    results[symbol] = future.result()
+                except (NetworkError, RateLimitedError) as exc:
+                    results[symbol] = exc
+                except Exception as exc:
+                    results[symbol] = InvalidSymbolError(
+                        f"'{symbol}' is not a recognized asset symbol.", detail=str(exc)
+                    )
 
         return results
 
