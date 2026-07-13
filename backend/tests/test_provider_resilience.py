@@ -176,7 +176,7 @@ def test_get_analyst_consensus_propagates_rate_limit_instead_of_fake_empty_resul
         def recommendations(self):
             raise _FakeHTTPError(429)
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     with pytest.raises(RateLimitedError):
         provider_module.provider.get_analyst_consensus("AAPL")
@@ -198,7 +198,7 @@ def test_get_analyst_consensus_treats_genuine_yf_data_exception_as_no_coverage(m
         def recommendations(self):
             raise YFDataException("no analyst data")
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     result = provider_module.provider.get_analyst_consensus("SOMEETF")
     assert result == {
@@ -234,7 +234,7 @@ def test_get_analyst_consensus_raises_network_error_for_unrecognized_exception(m
         def recommendations(self):
             raise _CertificateVerifyError("SSL certificate problem")
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     with pytest.raises(NetworkError):
         provider_module.provider.get_analyst_consensus("AAPL")
@@ -249,7 +249,7 @@ def test_get_news_treats_genuine_yf_data_exception_as_empty_list(monkeypatch):
         def get_news(self, count=10, tab="news"):
             raise YFDataException("no news data")
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     assert provider_module.provider.get_news("^GSPC") == []
 
@@ -267,7 +267,7 @@ def test_get_news_raises_network_error_for_unrecognized_exception(monkeypatch):
         def get_news(self, count=10, tab="news"):
             raise _CertificateVerifyError("SSL certificate problem")
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     with pytest.raises(NetworkError):
         provider_module.provider.get_news("AAPL")
@@ -278,7 +278,7 @@ def test_get_news_propagates_rate_limit_instead_of_fake_empty_result(monkeypatch
         def get_news(self, count=10, tab="news"):
             raise _FakeHTTPError(429)
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     with pytest.raises(RateLimitedError):
         provider_module.provider.get_news("AAPL")
@@ -302,7 +302,7 @@ def test_get_news_parses_nested_content_shape(monkeypatch):
         def get_news(self, count=10, tab="news"):
             return [raw_item]
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     [article] = provider_module.provider.get_news("AAPL")
     assert article == {
@@ -329,7 +329,7 @@ def test_get_news_parses_legacy_flat_shape(monkeypatch):
         def get_news(self, count=10, tab="news"):
             return [raw_item]
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     [article] = provider_module.provider.get_news("AAPL")
     assert article["title"] == "Apple unveils new product"
@@ -343,7 +343,7 @@ def test_get_news_skips_articles_missing_title_or_link(monkeypatch):
         def get_news(self, count=10, tab="news"):
             return [{"content": {"summary": "No title or link here"}}, {"content": {"title": "Has a title, no link"}}]
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     assert provider_module.provider.get_news("AAPL") == []
 
@@ -364,7 +364,7 @@ def test_get_rating_changes_treats_genuine_yf_data_exception_as_empty_list(monke
         def upgrades_downgrades(self):
             raise YFDataException("no rating history")
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     assert provider_module.provider.get_rating_changes("BTC-USD") == []
 
@@ -378,7 +378,7 @@ def test_get_rating_changes_raises_network_error_for_unrecognized_exception(monk
         def upgrades_downgrades(self):
             raise _CertificateVerifyError("SSL certificate problem")
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     with pytest.raises(NetworkError):
         provider_module.provider.get_rating_changes("AAPL")
@@ -390,7 +390,7 @@ def test_get_rating_changes_propagates_rate_limit_instead_of_fake_empty_result(m
         def upgrades_downgrades(self):
             raise _FakeHTTPError(429)
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     with pytest.raises(RateLimitedError):
         provider_module.provider.get_rating_changes("AAPL")
@@ -411,7 +411,7 @@ def test_get_rating_changes_parses_and_maps_known_action_codes(monkeypatch):
         def upgrades_downgrades(self):
             return df
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     changes = provider_module.provider.get_rating_changes("AAPL")
 
@@ -441,7 +441,7 @@ def test_get_rating_changes_skips_rows_missing_firm(monkeypatch):
         def upgrades_downgrades(self):
             return df
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     assert provider_module.provider.get_rating_changes("AAPL") == []
 
@@ -457,6 +457,6 @@ def test_get_rating_changes_respects_count_limit(monkeypatch):
         def upgrades_downgrades(self):
             return df
 
-    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol: _FakeTicker())
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     assert len(provider_module.provider.get_rating_changes("AAPL", count=2)) == 2

@@ -110,6 +110,16 @@ _ASSET_TYPE_MAP = {
 
 
 def _fetch_yahoo_suggestions(query: str, limit: int = 15) -> list[dict]:
+    """Hits Yahoo's (unofficial) search endpoint through the same retry/cooldown
+    machinery as every other Yahoo call in data/yfinance_provider.py. Previously this
+    called `requests.get` directly - a plain 429/403 here never fed the shared
+    IP-wide cooldown that ticker/quote calls trigger and respect, even though Yahoo's
+    throttling isn't endpoint-specific, so unthrottled search traffic could both
+    contribute to a block and keep hammering Yahoo during one instead of backing off
+    with everything else."""
+    from data.yfinance_provider import _call_with_retry
+    from utils.errors import AppError
+
     url = "https://query2.finance.yahoo.com/v1/finance/search"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -120,25 +130,37 @@ def _fetch_yahoo_suggestions(query: str, limit: int = 15) -> list[dict]:
         "newsCount": 0,
         "enableFuzzyQuery": "true"
     }
-    try:
+
+    def _fetch() -> list[dict]:
         response = requests.get(url, params=params, headers=headers, timeout=5)
-        if response.status_code == 200:
-            return response.json().get("quotes", [])
-    except Exception:
-        pass
-    return []
+        response.raise_for_status()
+        return response.json().get("quotes", [])
+
+    try:
+        return _call_with_retry(_fetch, description=f"search_suggestions({query})")
+    except AppError:
+        # Rate-limited, in an active cooldown, or unreachable after retries - degrade
+        # to the local curated directory fallback (see _search_symbols_uncached)
+        # rather than surfacing an error for a type-ahead suggestion list.
+        return []
 
 
 def _hydrate_results_with_quotes(results: list[dict]) -> None:
+    """Fetches display quotes for search results through price_service (not the
+    provider directly) so this shares the same quote cache, self-throttle, and
+    cache-hit-skip batching that every other quote lookup goes through - a search
+    result and a subsequent dashboard open for the same symbol now hit the network
+    at most once between them instead of twice, and search traffic is finally
+    counted against the rate limiter meant to protect the whole process."""
     if not results:
         return
 
-    from data.yfinance_provider import provider
+    from services import price_service
     from services.market_status_service import get_market_status
 
     symbols = [r["symbol"] for r in results]
     try:
-        quotes = provider.get_quotes_batch(symbols)
+        quotes = price_service.get_quotes_batch(symbols)
     except Exception:
         quotes = {}
 
@@ -150,12 +172,10 @@ def _hydrate_results_with_quotes(results: list[dict]) -> None:
         change_percent = None
         currency = "USD"
 
-        if quote and not isinstance(quote, Exception):
-            price = quote.get("price")
-            prev_close = quote.get("previous_close")
-            if price is not None and prev_close:
-                change_percent = ((price - prev_close) / prev_close) * 100
-            currency = quote.get("currency") or "USD"
+        if quote is not None and not isinstance(quote, Exception):
+            price = quote.price
+            change_percent = quote.change_percent
+            currency = quote.currency or "USD"
 
         r["price"] = price
         r["change_percent"] = change_percent

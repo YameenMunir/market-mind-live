@@ -164,7 +164,13 @@ def get_candles(symbol: str, range_key: str = DEFAULT_RANGE) -> CandleSeries:
             start = datetime(end.year, 1, 1, tzinfo=timezone.utc)
             df = provider.get_history(symbol, interval=bar_interval, start=start, end=end)
         else:
-            df = provider.get_history(symbol, period=config["period"], interval=bar_interval)
+            # Routed through get_history_df (not provider.get_history directly) so this
+            # shares its raw-dataframe cache: a period/interval combo requested here
+            # (e.g. the "1y" chart range) is often identical to what the live hub's
+            # analytics refresh already fetches for the same symbol, and previously
+            # these lived under separate cache namespaces (candles: vs history:),
+            # doubling an otherwise-identical upstream call for the same data.
+            df = get_history_df(symbol, period=config["period"], interval=bar_interval)
 
         market_status = get_market_status(symbol)
         # Reuse the quote cache's currency if a quote for this symbol is already warm,
