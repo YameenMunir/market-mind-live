@@ -33,8 +33,8 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-center lg:gap-12">
           {/* Left Column: Heading, Supporting Text, CTAs */}
           <div className="relative mx-auto max-w-3xl text-center lg:col-span-7 lg:text-left lg:max-w-none">
-            <Reveal delay={0} className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-xs uppercase font-bold tracking-wider text-brand sm:mb-6 lg:mx-0">
-              <Sparkles size={11} className="text-brand" />
+            <Reveal delay={0} className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-xs uppercase font-bold tracking-wider text-brand-strong sm:mb-6 lg:mx-0">
+              <Sparkles size={11} className="text-brand-strong" />
               Live asset intelligence &middot; Multi-asset stream
             </Reveal>
 
@@ -296,7 +296,7 @@ export default function LandingPage() {
         </div>
 
         <div className="mx-auto max-w-3xl px-4 text-center space-y-6 sm:px-6">
-          <Reveal delay={0.05} className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wider text-brand uppercase">
+          <Reveal delay={0.05} className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wider text-brand-strong uppercase">
             Terminal Active
           </Reveal>
           <Reveal delay={0.1}>

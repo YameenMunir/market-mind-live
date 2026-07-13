@@ -34,9 +34,20 @@ npx tsc --noEmit # typecheck only, faster than a full build
 ```
 `npm run lint` (`next lint`) is currently broken in this repo (ESLint flat-config/eslintrc circular
 reference in `next lint`'s internal config loading) - it errors out even with no code changes. Don't rely on
-it; `npx tsc --noEmit` and `npm run build` are the real correctness checks. No test suite is configured
-(only stray `playwright`/`playwright-core` packages exist in a root-level `node_modules/` with no
-associated config or spec files - not a working test setup, ignore it).
+it; `npx tsc --noEmit` and `npm run build` are the real correctness checks.
+
+`npm run test:mobile` runs a Playwright suite (`frontend/e2e/mobile-layout.spec.ts`) against the homepage
+(`/`) at the six breakpoints from the mobile UI/UX pass (320/360/375/390/430/768px): no horizontal
+overflow, 44x44px minimum touch targets on primary nav/CTA controls, no overlapping header elements, and
+an `@axe-core/playwright` scan for serious/critical accessibility violations (reduced-motion emulated via
+`page.emulateMedia` so Framer Motion's Reveal entrance animation doesn't cause flaky mid-fade contrast
+reads). It also saves a full-page screenshot per viewport to `frontend/e2e/.artifacts/screenshots/` as a
+human-reviewable artifact - useful since there's normally no way to actually see the rendered page in this
+environment. The script builds first (`next build && playwright test`) and runs against `next start`, not
+`next dev` - launching all 6 projects' browsers against the dev server's on-demand per-route compilation
+reliably stalled 5 of 6 past their timeout. `frontend/playwright.config.ts` and `frontend/e2e/` are
+excluded from the app's own `tsconfig.json` (they have their own `frontend/e2e/tsconfig.json`) so a
+Playwright-only type issue can't break `npm run build`.
 
 ### Environment
 Copy `backend/.env.example` to `backend/.env` before running the backend. Key settings (see

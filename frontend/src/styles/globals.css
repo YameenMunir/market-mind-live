@@ -31,9 +31,16 @@
   --color-ink: 15 23 42;
   --color-ink-muted: 71 85 105;
   --color-ink-faint: 100 116 139;
-  --color-brand: 217 119 6;
-  --color-brand-strong: 180 83 9;
-  --color-bull: 5 150 105;
+  /* amber-600 (217 119 6) measured 3.04:1 against --color-canvas via axe-core -
+     below the 4.5:1 AA minimum for normal text, caught by frontend/e2e's
+     automated accessibility check. amber-700/800 restore compliance
+     (4.8:1 / 6.8:1) without changing the brand hue. */
+  --color-brand: 180 83 9;
+  --color-brand-strong: 146 64 14;
+  /* emerald-600 (5 150 105) measured 3.76:1 against near-white card
+     backgrounds via axe-core - below 4.5:1 AA for normal text. emerald-700
+     restores compliance (5.5:1) without changing the hue. */
+  --color-bull: 4 120 87;
   --color-bear: 220 38 38;
   --color-warn: 202 138 4;
 }
