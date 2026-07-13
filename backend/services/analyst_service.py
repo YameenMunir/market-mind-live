@@ -9,6 +9,7 @@ from models.schemas import AnalystConsensus, AnalystRating
 from services.price_service import check_rate_limit
 from utils import metrics
 from utils.cache import cache
+from utils.durable_fallback_cache import durable_get, durable_set
 from utils.errors import AppError
 
 logger = logging.getLogger(__name__)
@@ -70,6 +71,7 @@ def get_analyst_consensus(symbol: str, currency: str = "USD") -> AnalystConsensu
         # Refresh the long-lived fallback slot on every real success, so it's always
         # ready to serve if a later refetch gets rate-limited or the provider errors.
         cache.set(fallback_key, result, _FALLBACK_TTL_SECONDS)
+        durable_set(fallback_key, result)
         return result
 
     # Keyed only by symbol (not currency) - currency is just a label on the cached
@@ -79,7 +81,10 @@ def get_analyst_consensus(symbol: str, currency: str = "USD") -> AnalystConsensu
     try:
         result = cache.get_or_set(key, settings.analyst_cache_ttl_seconds, _fetch)
     except AppError as exc:
-        stale = cache.get(fallback_key)
+        # The in-memory fallback is wiped on every process restart (e.g. a cold start
+        # on a host that sleeps when idle) - the durable copy survives that, so it's
+        # checked second whenever the fast in-memory one is empty.
+        stale = cache.get(fallback_key) or durable_get(fallback_key, AnalystConsensus)
         if stale is None:
             raise
         metrics.increment("analyst.served_stale")

@@ -99,6 +99,25 @@ class GeminiKeyRecord(SQLModel, table=True):
     updated_at: str = Field(default_factory=_now_iso)
 
 
+class FallbackCacheRecord(SQLModel, table=True):
+    """Durable backing store for the "stale beats absent" fallback caches in
+    services/news_service.py, services/rating_change_service.py, and
+    services/analyst_service.py. Those caches normally live only in the in-process
+    TTLCache (utils/cache.py), which is wiped on every process restart - on a host that
+    cold-starts after idle (e.g. Render's free tier), the *first* request after every
+    cold start has nothing to fall back to if the provider happens to be rate-limited
+    right then, so users see a hard error instead of the slightly-stale data the
+    fallback mechanism is meant to provide. This table survives process restarts so
+    that fallback still has something to serve.
+    """
+
+    __tablename__ = "fallbackcacherecord"
+
+    key: str = Field(primary_key=True)
+    payload_json: str
+    updated_at: str = Field(default_factory=_now_iso)
+
+
 class PredictionHistoryRecord(SQLModel, table=True):
     """Global engine-performance data, not per-device - a prediction's accuracy
     doesn't depend on who was looking at the dashboard when it was made."""
