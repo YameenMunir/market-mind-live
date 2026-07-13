@@ -128,6 +128,13 @@ export default function DashboardPage() {
     setSymbol(asset.symbol);
     setAssetType(asset.asset_type);
     setAssetName(asset.name);
+    // Persists the last-viewed symbol as the new default, so reopening the dashboard
+    // (a fresh tab, or after closing the browser) resumes here instead of always
+    // landing back on whatever was last configured via Settings. Settings' own
+    // "default symbol" field still works exactly the same way it always has - it's
+    // just now also the thing this keeps up to date automatically, rather than only
+    // ever being set manually.
+    updatePrefs({ defaultSymbol: asset.symbol });
   };
 
   return (
