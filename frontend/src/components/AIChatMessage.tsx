@@ -67,12 +67,22 @@ function parseInsightSections(content: string): ParsedInsight | null {
   const footer: string[] = [];
   let seenBullet = false;
 
+  const OLD_KEYS = ["market status", "ai prediction", "technical trends", "technical indicators", "risk level", "methodology notes"];
+
   for (const line of lines) {
     if (!line) continue;
     const match = line.match(SECTION_LINE);
     if (match) {
+      const label = match[1].trim();
+      const body = match[2].trim();
+      
+      const isOldKey = OLD_KEYS.some((k) => label.toLowerCase().includes(k));
+      if (!isOldKey || body === "") {
+        return null;
+      }
+      
       seenBullet = true;
-      sections.push({ label: match[1].trim(), body: match[2].trim() });
+      sections.push({ label, body });
     } else if (!seenBullet) {
       intro.push(line);
     } else {

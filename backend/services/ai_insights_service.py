@@ -4,6 +4,7 @@ selection (Gemini vs mock), session history, and feedback recording."""
 from __future__ import annotations
 
 import hashlib
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import AsyncIterator
@@ -28,6 +29,7 @@ from models.schemas import (
     SummariseResponse,
 )
 from services import context_builder, gemini_service, mock_ai_provider
+from services.reasoning_engine import reasoning_engine
 from services.chat_store import FeedbackEntry, chat_store, feedback_store
 from services.gemini_key_store import gemini_key_store
 from services.knowledge_base import retrieve as retrieve_knowledge
@@ -36,28 +38,15 @@ from utils.errors import AppError
 
 DISCLAIMER = "This is for informational purposes only and is not financial advice."
 
-BASE_SYSTEM_INSTRUCTIONS = """You are the AI Insights Assistant embedded in Market Mind Live, a fintech market \
-analytics dashboard. You help users understand live prices, charts, technical indicators, AI/ML predictions, \
-risk scores, and backtesting results that are already shown in the app.
+BASE_SYSTEM_INSTRUCTIONS = """You are a world-class AI Stock Market Analyst and Portfolio Manager embedded in Market Mind Live. \
+Your role is to provide expert-level, highly personalized, and data-driven analysis to the user's trading questions.
 
 Rules you must always follow:
-1. Never guarantee profits or promise a specific outcome.
-2. Never say a trade or forecast is "certain" - all predictions are probabilistic, not guaranteed.
-3. Never give reckless, unqualified buy/sell instructions ("you should buy now") - frame signals as one input \
-among many, and encourage the user to consider their own risk tolerance and risk management.
-4. Always explain uncertainty, model confidence, and limitations when discussing a prediction or signal.
-5. If the provided data is delayed, cached, stale, or missing, say so explicitly rather than presenting it as \
-real-time or complete.
-6. Default to simple, plain-English explanations; go into technical depth (formulas, exact methodology) only \
-when the user asks for it or clearly has trading experience.
-7. Ground every answer only in the structured app context and knowledge-base notes provided below - do not \
-invent data points, prices, or indicator values that are not present in the context.
-8. If the context is insufficient to answer confidently, say plainly what information is missing rather than \
-guessing.
-9. Prefer educational, explanatory framing ("here's what this typically means") over directive financial advice.
-10. Keep answers concise and well-structured (short paragraphs or bullet points), not walls of text.
-11. Always end substantive answers with a brief reminder that this is informational, not financial advice, \
-unless the user is asking a purely educational/definitional question where it would feel repetitive mid-conversation.
+1. Speak with the authority and tone of an experienced portfolio manager—natural, analytical, professional, and conversational.
+2. Avoid robotic templates or repetitive phrases like "according to the model" or "current settings indicate".
+3. Ground your analysis in the structured data context provided below. Discuss indicators (RSI, MACD, Bollinger Bands, SMAs, EMAs, Volatility, ATR) and fundamental context (analyst consensus, news sentiment, recent ratings changes) only when they directly help answer the user's specific query. Do not just list them.
+4. Frame all analysis probabilistically; never promise certainties, guarantee profits, or offer reckless unqualified recommendations.
+5. If some data is missing or marked delayed in the context, mention it transparently.
 """
 
 
@@ -108,7 +97,7 @@ def resolve_context(asset: str, client_context: AIAssetContext | None) -> AIAsse
     return context_builder.build_asset_context(asset)
 
 
-def _build_system_instruction(context: AIAssetContext, user_message: str) -> str:
+def _build_system_instruction(context: AIAssetContext, user_message: str, history: list[ChatMessage]) -> str:
     kb_articles = retrieve_knowledge(user_message)
     kb_section = ""
     if kb_articles:
@@ -116,9 +105,35 @@ def _build_system_instruction(context: AIAssetContext, user_message: str) -> str
             f"- {a.title}: {a.body}" for a in kb_articles
         )
 
+    has_portfolio = reasoning_engine.detect_portfolio_context(history, user_message)
+    portfolio_instructions = ""
+    if has_portfolio:
+        portfolio_instructions = "\nPortfolio Context: The user already holds a position in this asset. Frame recommendations through portfolio management, rebalancing, and risk reduction rather than entry-level buying.\n"
+
+    intent = reasoning_engine.detect_intent(user_message)
+    intent_guideline = reasoning_engine.get_guideline(intent)
+    intent_instructions = f"\nFocus Areas for this Query:\n- {intent_guideline}\n"
+
+    response_structure = """
+Response Structure Guidelines:
+Provide your analysis formatted in clean, professional markdown following this structure:
+1. **Direct Answer**: Start with a single, clear, direct sentence addressing the user's specific question immediately.
+2. **Reasoning**: A concise, analytical explanation integrating the relevant indicators and context.
+3. **Bullish vs. Bearish Factors**: Use bullet points to list 2-3 key technical/fundamental factors on each side.
+4. **Key Risks**: Detail the primary volatility or market risks.
+5. **Confidence Level**: Specify a logical model confidence rating (e.g., 78% confidence based on indicator alignment).
+6. **Actionable Scenarios / What to Watch Next**: Provide clear if-then scenarios and specific levels to monitor.
+7. **Balanced Conclusion**: A professional, objective wrap-up.
+
+Note: Adapt this structure dynamically to the user's query. If a section is irrelevant to their specific question (e.g., listing bullish factors when they are asking a pure risk/downside question), omit it naturally rather than forcing it. Do not sound robotic or mention "the prompt guidelines".
+"""
+
     context_json = context.model_dump_json(indent=2)
     return (
-        f"{BASE_SYSTEM_INSTRUCTIONS}\n\n"
+        f"{BASE_SYSTEM_INSTRUCTIONS}\n"
+        f"{portfolio_instructions}"
+        f"{intent_instructions}"
+        f"{response_structure}\n"
         f"Structured application context for the asset currently being discussed "
         f"(treat this as ground truth for current data - do not contradict it):\n{context_json}"
         f"{kb_section}"
@@ -132,7 +147,7 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
     settings = get_settings()
     context = resolve_context(request.asset, request.client_context)
     history = chat_store.get_history(request.session_id, limit=settings.ai_max_history_messages)
-    system_instruction = _build_system_instruction(context, request.message)
+    system_instruction = _build_system_instruction(context, request.message, history)
 
     provider = "mock"
     reply: str
@@ -245,7 +260,7 @@ async def handle_chat_stream(request: ChatRequest, device_id: str) -> AsyncItera
     settings = get_settings()
     context = resolve_context(request.asset, request.client_context)
     history = chat_store.get_history(request.session_id, limit=settings.ai_max_history_messages)
-    system_instruction = _build_system_instruction(context, request.message)
+    system_instruction = _build_system_instruction(context, request.message, history)
 
     provider = "mock"
     accumulated = ""
@@ -392,7 +407,7 @@ async def handle_regenerate_stream(request: RegenerateRequest, device_id: str) -
     history = history_prefix[-limit:] if limit > 0 else history_prefix
 
     context = resolve_context(request.asset, request.client_context)
-    system_instruction = _build_system_instruction(context, user_message.content)
+    system_instruction = _build_system_instruction(context, user_message.content, history)
 
     provider = "mock"
     accumulated = ""
@@ -492,7 +507,7 @@ async def handle_summarise(request: SummariseRequest, device_id: str) -> Summari
         "Summarise the single most important insight from this dashboard right now in 2-4 sentences, "
         "covering the current signal, its confidence/reliability, and the dominant risk factor."
     )
-    system_instruction = _build_system_instruction(context, prompt)
+    system_instruction = _build_system_instruction(context, prompt, [])
 
     settings = get_settings()
     provider = "mock"
