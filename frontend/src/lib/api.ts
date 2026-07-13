@@ -9,6 +9,7 @@ import type {
   AnalystConsensus,
   ApiErrorPayload,
   AssetSearchResult,
+  AssetFundamentals,
   AssetType,
   BacktestRequest,
   BacktestResult,
@@ -190,6 +191,8 @@ export const api = {
     if (assetType) params.set("asset_type", assetType);
     return request<AssetSearchResult[]>(`/api/assets/search?${params.toString()}`);
   },
+  getFundamentals: (symbol: string) =>
+    request<AssetFundamentals>(`/api/assets/fundamentals?symbol=${encodeURIComponent(symbol)}`),
   getQuote: (symbol: string) => request<PriceQuote>(`/api/prices/${encodeURIComponent(symbol)}/quote`),
   // Fetches quotes for multiple symbols in one round trip (e.g. a watchlist) instead of
   // one request per symbol - a failed/unknown symbol resolves to `null` rather than

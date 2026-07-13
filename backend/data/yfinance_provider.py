@@ -22,6 +22,28 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
+_session_lock = threading.Lock()
+_session = None
+
+
+def _get_session():
+    """Shared curl_cffi session for every yf.Ticker/yf.Tickers call.
+
+    verify=False because curl_cffi's bundled libcurl fails to validate Yahoo's cert
+    chain on some Windows setups even when explicitly pointed at certifi's CA bundle
+    (a known curl_cffi/Windows gap - plain `requests` against the same host is
+    unaffected). Market data is public and read-only, so disabling verification here
+    only risks a MITM feeding bad quotes, not credential/data exposure. Session is
+    thread-safe to share (curl_cffi.Session defaults to a thread-local curl handle).
+    """
+    global _session
+    if _session is None:
+        with _session_lock:
+            if _session is None:
+                from curl_cffi import requests as curl_requests
+                _session = curl_requests.Session(impersonate="chrome", verify=False)
+    return _session
+
 # Exceptions that represent a transient, retryable network failure rather than a bad
 # symbol or a permanent provider error.
 _TRANSIENT_EXCEPTIONS = (socket.gaierror, ConnectionError, TimeoutError)
@@ -286,7 +308,7 @@ class YFinanceProvider(MarketDataProvider):
     """
 
     def get_quote(self, symbol: str) -> dict:
-        ticker = yf.Ticker(symbol)
+        ticker = yf.Ticker(symbol, session=_get_session())
         try:
             fast_info = _call_with_retry(lambda: ticker.fast_info, description=f"get_quote({symbol})")
             last_price = fast_info.get("lastPrice") or fast_info.get("last_price")
@@ -337,7 +359,7 @@ class YFinanceProvider(MarketDataProvider):
         return self._safe_history(symbol, period=period, interval=interval, start=start, end=end)
 
     def get_analyst_consensus(self, symbol: str) -> dict:
-        ticker = yf.Ticker(symbol)
+        ticker = yf.Ticker(symbol, session=_get_session())
 
         try:
             targets = _call_with_retry(
@@ -414,7 +436,7 @@ class YFinanceProvider(MarketDataProvider):
         start: datetime | None = None,
         end: datetime | None = None,
     ) -> pd.DataFrame:
-        ticker = yf.Ticker(symbol)
+        ticker = yf.Ticker(symbol, session=_get_session())
 
         def _fetch() -> pd.DataFrame:
             if start is not None or end is not None:
@@ -445,7 +467,7 @@ class YFinanceProvider(MarketDataProvider):
         ticker in a batch doesn't fail the whole request.
         """
         unique_symbols = list(dict.fromkeys(s.upper() for s in symbols))
-        tickers = yf.Tickers(" ".join(unique_symbols))
+        tickers = yf.Tickers(" ".join(unique_symbols), session=_get_session())
         results: dict[str, dict | Exception] = {}
 
         for symbol in unique_symbols:
@@ -472,7 +494,7 @@ class YFinanceProvider(MarketDataProvider):
         return results
 
     def get_news(self, symbol: str, count: int = 10) -> list[dict]:
-        ticker = yf.Ticker(symbol)
+        ticker = yf.Ticker(symbol, session=_get_session())
         try:
             raw_items = _call_with_retry(
                 lambda: ticker.get_news(count=count) or [], description=f"get_news({symbol})"
@@ -491,7 +513,7 @@ class YFinanceProvider(MarketDataProvider):
         return [a for a in articles if a is not None][:count]
 
     def get_rating_changes(self, symbol: str, count: int = 20) -> list[dict]:
-        ticker = yf.Ticker(symbol)
+        ticker = yf.Ticker(symbol, session=_get_session())
         try:
             df = _call_with_retry(
                 lambda: ticker.upgrades_downgrades, description=f"get_rating_changes({symbol})"
@@ -530,6 +552,105 @@ class YFinanceProvider(MarketDataProvider):
                 "graded_at": ts.isoformat(),
             })
         return changes
+
+    def get_fundamentals(self, symbol: str) -> dict:
+        """Retrieves and exposes every useful fundamental field available through yfinance."""
+        key = f"fundamentals:{symbol.upper()}"
+        return cache.get_or_set(
+            key,
+            3600,
+            lambda: self._fetch_fundamentals_uncached(symbol)
+        )
+
+    def _fetch_fundamentals_uncached(self, symbol: str) -> dict:
+        ticker = yf.Ticker(symbol, session=_get_session())
+        
+        # 1. Fetch info dictionary
+        try:
+            info = _call_with_retry(lambda: ticker.info or {}, description=f"get_fundamentals.info({symbol})")
+        except (NetworkError, RateLimitedError):
+            raise
+        except Exception:
+            info = {}
+            
+        # 2. Fetch calendar dictionary
+        try:
+            calendar = _call_with_retry(lambda: ticker.calendar or {}, description=f"get_fundamentals.calendar({symbol})")
+        except (NetworkError, RateLimitedError):
+            raise
+        except Exception:
+            calendar = {}
+
+        # 3. Headquarters construction
+        hq_parts = [info.get("city"), info.get("state"), info.get("country")]
+        headquarters = ", ".join(str(p) for p in hq_parts if p) or None
+
+        # 4. Next earnings date and estimates from calendar
+        next_earnings_date = None
+        earnings_dates = calendar.get("Earnings Date")
+        if earnings_dates and isinstance(earnings_dates, list) and len(earnings_dates) > 0:
+            next_earnings_date = str(earnings_dates[0])
+
+        return {
+            "symbol": symbol.upper(),
+            
+            # Company info
+            "sector": info.get("sector"),
+            "industry": info.get("industry"),
+            "employees": info.get("fullTimeEmployees"),
+            "headquarters": headquarters,
+            "website": info.get("website"),
+            "description": info.get("longBusinessSummary"),
+            
+            # Valuation/Financial Metrics
+            "trailing_pe": info.get("trailingPE"),
+            "forward_pe": info.get("forwardPE"),
+            "peg_ratio": info.get("pegRatio"),
+            "trailing_eps": info.get("trailingEps"),
+            "forward_eps": info.get("forwardEps"),
+            "total_revenue": info.get("totalRevenue"),
+            "revenue_growth": info.get("revenueGrowth"),
+            "gross_margins": info.get("grossMargins"),
+            "operating_margins": info.get("operatingMargins"),
+            "profit_margins": info.get("profitMargins"),
+            "ebitda": info.get("ebitda"),
+            "free_cashflow": info.get("freeCashflow"),
+            "return_on_equity": info.get("returnOnEquity"),
+            "return_on_assets": info.get("returnOnAssets"),
+            "debt_to_equity": info.get("debtToEquity"),
+            "current_ratio": info.get("currentRatio"),
+            "quick_ratio": info.get("quickRatio"),
+            "beta": info.get("beta"),
+            "dividend_yield": info.get("dividendYield"),
+            "dividend_rate": info.get("dividendRate"),
+            "payout_ratio": info.get("payoutRatio"),
+            
+            # Trading Stats
+            "fifty_two_week_high": info.get("fiftyTwoWeekHigh"),
+            "fifty_two_week_low": info.get("fiftyTwoWeekLow"),
+            "fifty_day_average": info.get("fiftyDayAverage"),
+            "two_hundred_day_average": info.get("twoHundredDayAverage"),
+            "shares_outstanding": info.get("sharesOutstanding"),
+            "float_shares": info.get("floatShares"),
+            "enterprise_value": info.get("enterpriseValue"),
+            "market_cap": info.get("marketCap"),
+            "short_percent_of_float": info.get("shortPercentOfFloat"),
+            
+            # Analyst Targets
+            "price_target_low": info.get("targetLowPrice"),
+            "price_target_high": info.get("targetHighPrice"),
+            "price_target_mean": info.get("targetMeanPrice"),
+            "price_target_median": info.get("targetMedianPrice"),
+            
+            # Earnings estimate metrics from calendar
+            "next_earnings_date": next_earnings_date,
+            "earnings_average": calendar.get("Earnings Average"),
+            "earnings_low": calendar.get("Earnings Low"),
+            "earnings_high": calendar.get("Earnings High"),
+            "revenue_average": calendar.get("Revenue Average"),
+            "revenue_low": calendar.get("Revenue Low"),
+            "revenue_high": calendar.get("Revenue High"),
+        }
 
 
 provider = YFinanceProvider()

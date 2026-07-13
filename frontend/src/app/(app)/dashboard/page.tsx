@@ -17,6 +17,7 @@ import { ConnectionStatusPill } from "@/components/ConnectionStatusPill";
 import { DashboardViewMenu } from "@/components/DashboardViewMenu";
 import { ExplanationPanel } from "@/components/ExplanationPanel";
 import { GeminiKeySetupModal } from "@/components/GeminiKeySetupModal";
+import { FundamentalsPanel } from "@/components/FundamentalsPanel";
 import { IndicatorPanel } from "@/components/IndicatorPanel";
 import { LastUpdated } from "@/components/LastUpdated";
 import { MarketStatusCard } from "@/components/MarketStatusCard";
@@ -344,6 +345,10 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {isAdvanced && (
+          <FundamentalsPanel symbol={symbol} />
+        )}
 
         <div data-tour="beginner-explanation" className={cn("grid grid-cols-1 gap-4", isAdvanced && "lg:grid-cols-2")}>
           <BeginnerSummary prediction={snapshot.prediction} />

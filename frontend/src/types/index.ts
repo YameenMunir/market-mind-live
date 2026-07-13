@@ -5,6 +5,72 @@ export interface AssetSearchResult {
   name: string;
   asset_type: AssetType;
   exchange: string;
+  logo_url?: string | null;
+  currency?: string | null;
+  price?: number | null;
+  change_percent?: number | null;
+  market_status?: MarketSession | null;
+}
+
+export interface AssetFundamentals {
+  symbol: string;
+  
+  // Company info
+  sector?: string | null;
+  industry?: string | null;
+  employees?: number | null;
+  headquarters?: string | null;
+  website?: string | null;
+  description?: string | null;
+  
+  // Valuation/Financial Metrics
+  trailing_pe?: number | null;
+  forward_pe?: number | null;
+  peg_ratio?: number | null;
+  trailing_eps?: number | null;
+  forward_eps?: number | null;
+  total_revenue?: number | null;
+  revenue_growth?: number | null;
+  gross_margins?: number | null;
+  operating_margins?: number | null;
+  profit_margins?: number | null;
+  ebitda?: number | null;
+  free_cashflow?: number | null;
+  return_on_equity?: number | null;
+  return_on_assets?: number | null;
+  debt_to_equity?: number | null;
+  current_ratio?: number | null;
+  quick_ratio?: number | null;
+  beta?: number | null;
+  dividend_yield?: number | null;
+  dividend_rate?: number | null;
+  payout_ratio?: number | null;
+  
+  // Trading Stats
+  fifty_two_week_high?: number | null;
+  fifty_two_week_low?: number | null;
+  fifty_day_average?: number | null;
+  two_hundred_day_average?: number | null;
+  shares_outstanding?: number | null;
+  float_shares?: number | null;
+  enterprise_value?: number | null;
+  market_cap?: number | null;
+  short_percent_of_float?: number | null;
+  
+  // Analyst Price Targets
+  price_target_low?: number | null;
+  price_target_high?: number | null;
+  price_target_mean?: number | null;
+  price_target_median?: number | null;
+  
+  // Earnings Dates/Estimates
+  next_earnings_date?: string | null;
+  earnings_average?: number | null;
+  earnings_low?: number | null;
+  earnings_high?: number | null;
+  revenue_average?: number | null;
+  revenue_low?: number | null;
+  revenue_high?: number | null;
 }
 
 export interface PriceQuote {

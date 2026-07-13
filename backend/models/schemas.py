@@ -20,6 +20,72 @@ class AssetSearchResult(BaseModel):
     name: str
     asset_type: AssetType
     exchange: str
+    logo_url: str | None = None
+    currency: str | None = None
+    price: float | None = None
+    change_percent: float | None = None
+    market_status: MarketSession | None = None
+
+
+class AssetFundamentals(BaseModel):
+    symbol: str
+    
+    # Company info
+    sector: str | None = None
+    industry: str | None = None
+    employees: int | None = None
+    headquarters: str | None = None
+    website: str | None = None
+    description: str | None = None
+    
+    # Valuation/Financial Metrics
+    trailing_pe: float | None = None
+    forward_pe: float | None = None
+    peg_ratio: float | None = None
+    trailing_eps: float | None = None
+    forward_eps: float | None = None
+    total_revenue: float | None = None
+    revenue_growth: float | None = None
+    gross_margins: float | None = None
+    operating_margins: float | None = None
+    profit_margins: float | None = None
+    ebitda: float | None = None
+    free_cashflow: float | None = None
+    return_on_equity: float | None = None
+    return_on_assets: float | None = None
+    debt_to_equity: float | None = None
+    current_ratio: float | None = None
+    quick_ratio: float | None = None
+    beta: float | None = None
+    dividend_yield: float | None = None
+    dividend_rate: float | None = None
+    payout_ratio: float | None = None
+    
+    # Trading Stats
+    fifty_two_week_high: float | None = None
+    fifty_two_week_low: float | None = None
+    fifty_day_average: float | None = None
+    two_hundred_day_average: float | None = None
+    shares_outstanding: float | None = None
+    float_shares: float | None = None
+    enterprise_value: float | None = None
+    market_cap: float | None = None
+    short_percent_of_float: float | None = None
+    
+    # Analyst Price Targets
+    price_target_low: float | None = None
+    price_target_high: float | None = None
+    price_target_mean: float | None = None
+    price_target_median: float | None = None
+    
+    # Earnings Dates/Estimates
+    next_earnings_date: str | None = None
+    earnings_average: float | None = None
+    earnings_low: float | None = None
+    earnings_high: float | None = None
+    revenue_average: float | None = None
+    revenue_low: float | None = None
+    revenue_high: float | None = None
 
 
 class MarketSession(str, Enum):

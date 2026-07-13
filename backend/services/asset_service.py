@@ -11,3 +11,8 @@ def search_assets(query: str, asset_type: AssetType | None = None, limit: int = 
 
 def resolve_asset_metadata(symbol: str) -> dict | None:
     return lookup_symbol(symbol)
+
+
+def get_asset_fundamentals(symbol: str) -> dict:
+    from data.yfinance_provider import provider
+    return provider.get_fundamentals(symbol)

@@ -60,6 +60,12 @@ class MarketDataProvider(ABC):
         all) - not an error."""
         ...
 
+    @abstractmethod
+    def get_fundamentals(self, symbol: str) -> dict:
+        """Expose all company profile information, financial metrics, valuation statistics,
+        and earnings dates available from the market data source."""
+        ...
+
 
 def infer_asset_type(symbol: str) -> AssetType:
     s = symbol.upper().strip()

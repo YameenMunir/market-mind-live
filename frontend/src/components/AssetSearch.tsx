@@ -15,6 +15,59 @@ interface AssetSearchProps {
   onSelect: (asset: AssetSearchResult) => void;
 }
 
+function AssetLogo({ symbol, asset_type }: { symbol: string; asset_type: string }) {
+  const isCrypto = asset_type === "crypto";
+  const letter = symbol.replace(/-USD$|=X$|^\^/, "").slice(0, 2).toUpperCase();
+  
+  let bgClass = "bg-gradient-to-br from-zinc-700 to-zinc-900 border-zinc-700/50";
+  if (isCrypto) {
+    if (symbol.startsWith("BTC")) bgClass = "bg-gradient-to-br from-amber-500 to-amber-700 border-amber-500/30";
+    else if (symbol.startsWith("ETH")) bgClass = "bg-gradient-to-br from-indigo-500 to-indigo-700 border-indigo-500/30";
+    else if (symbol.startsWith("SOL")) bgClass = "bg-gradient-to-br from-teal-400 to-indigo-600 border-teal-500/30";
+    else bgClass = "bg-gradient-to-br from-yellow-600 to-orange-800 border-orange-700/30";
+  } else if (asset_type === "forex") {
+    bgClass = "bg-gradient-to-br from-blue-600 to-indigo-800 border-indigo-700/30";
+  } else if (asset_type === "commodity") {
+    bgClass = "bg-gradient-to-br from-yellow-500 to-yellow-800 border-yellow-700/30";
+  } else if (asset_type === "index") {
+    bgClass = "bg-gradient-to-br from-purple-600 to-pink-800 border-purple-700/30";
+  } else {
+    // Generate background color based on symbol letter code
+    const charCodeSum = symbol.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const colorOptions = [
+      "from-blue-600 to-cyan-800 border-blue-700/30",
+      "from-emerald-600 to-teal-800 border-emerald-700/30",
+      "from-red-600 to-rose-800 border-red-700/30",
+      "from-purple-600 to-violet-800 border-purple-700/30",
+      "from-orange-500 to-amber-700 border-orange-600/30",
+    ];
+    bgClass = "bg-gradient-to-br " + colorOptions[charCodeSum % colorOptions.length];
+  }
+  
+  return (
+    <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold font-mono text-white shadow-inner", bgClass)}>
+      {letter}
+    </div>
+  );
+}
+
+const formatPrice = (price: number | null | undefined, assetType: string, currency: string) => {
+  if (price === null || price === undefined) return "";
+  const symbol = currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
+  const decimals = assetType === "forex" ? 4 : 2;
+  return `${symbol}${price.toFixed(decimals)}`;
+};
+
+const formatChange = (changePercent: number | null | undefined) => {
+  if (changePercent === null || changePercent === undefined) return null;
+  const prefix = changePercent > 0 ? "+" : "";
+  const colorClass = changePercent >= 0 ? "text-emerald-500" : "text-rose-500";
+  return {
+    text: `${prefix}${changePercent.toFixed(2)}%`,
+    className: colorClass
+  };
+};
+
 export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -91,27 +144,68 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
               </div>
             )}
             {!isLoading &&
-              results.map((asset) => (
-                <button
-                  key={asset.symbol}
-                  role="option"
-                  aria-selected={false}
-                  onClick={() => {
-                    onSelect(asset);
-                    setQuery("");
-                    setIsOpen(false);
-                  }}
-                  className="flex min-h-[44px] w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-surface focus-visible:bg-surface"
-                >
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <span className="shrink-0 font-mono text-sm font-medium text-ink">{asset.symbol}</span>
-                    <span className="truncate text-xs text-ink-muted">{asset.name}</span>
-                  </span>
-                  <Badge size="sm" uppercase className="bg-surface text-ink-faint">
-                    {ASSET_TYPE_LABELS[asset.asset_type]}
-                  </Badge>
-                </button>
-              ))}
+              results.map((asset) => {
+                const change = formatChange(asset.change_percent);
+                const isMarketOpen = asset.market_status === "open";
+                const isPreOrPost = asset.market_status === "pre_market" || asset.market_status === "after_hours";
+                
+                return (
+                  <button
+                    key={asset.symbol}
+                    role="option"
+                    aria-selected={false}
+                    onClick={() => {
+                      onSelect(asset);
+                      setQuery("");
+                      setIsOpen(false);
+                    }}
+                    className="flex min-h-[52px] w-full items-center justify-between gap-3 px-3 py-2.5 text-left border-b border-border/30 last:border-b-0 transition-all hover:bg-surface focus-visible:bg-surface"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <AssetLogo symbol={asset.symbol} asset_type={asset.asset_type} />
+                      <span className="flex flex-col min-w-0 gap-0.5">
+                        <span className="flex items-center gap-1.5">
+                          <span className="font-mono text-sm font-semibold text-ink leading-none">{asset.symbol}</span>
+                          {asset.market_status && (
+                            <span 
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full inline-block shrink-0",
+                                isMarketOpen ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" : 
+                                isPreOrPost ? "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]" : 
+                                "bg-zinc-600"
+                              )}
+                              title={`Market: ${asset.market_status.replace("_", " ")}`}
+                            />
+                          )}
+                        </span>
+                        <span className="truncate text-2xs font-medium text-ink-muted flex items-center gap-1 leading-none">
+                          <span className="truncate max-w-[150px]">{asset.name}</span>
+                          <span className="text-ink-faint shrink-0">•</span>
+                          <span className="text-ink-faint shrink-0">{asset.exchange}</span>
+                        </span>
+                      </span>
+                    </span>
+
+                    <span className="flex items-center gap-3 font-mono shrink-0">
+                      {asset.price !== null && asset.price !== undefined ? (
+                        <div className="flex flex-col items-end gap-0.5 leading-none">
+                          <span className="text-xs font-semibold text-ink">
+                            {formatPrice(asset.price, asset.asset_type, asset.currency || "USD")}
+                          </span>
+                          {change && (
+                            <span className={cn("text-2xs font-bold", change.className)}>
+                              {change.text}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
+                      <Badge size="sm" uppercase className="bg-surface/80 border border-border/60 text-ink-faint px-1.5 py-0.5 shrink-0 leading-none">
+                        {ASSET_TYPE_LABELS[asset.asset_type]}
+                      </Badge>
+                    </span>
+                  </button>
+                );
+              })}
           </div>
         </>
       )}
