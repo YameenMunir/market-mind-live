@@ -260,6 +260,19 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _reply_cache_key(context: AIAssetContext, message: str) -> str:
+    """Cache key for the anti-double-send Gemini reply cache (see `handle_chat`,
+    `handle_chat_stream`, `handle_regenerate_stream`). Built from the context's actual
+    data plus the question - deliberately excludes `last_updated`, a millisecond-
+    precision timestamp restamped on every `resolve_context()` call (both
+    `context_builder.py` server-side and `frontend/src/lib/aiContext.ts` client-side),
+    which would otherwise make the key differ on every single request - including a
+    literal duplicate send - and defeat the cache entirely.
+    """
+    stable_context = context.model_dump_json(exclude={"last_updated"})
+    return "gemini_reply:" + hashlib.sha256(f"{stable_context}\x1f{message}".encode()).hexdigest()
+
+
 def _resolve_gemini_api_key(device_id: str, settings) -> str | None:
     """A device's own BYOK Gemini key (set via /api/ai/gemini-key) takes priority over
     the server-wide GEMINI_API_KEY, so a user who supplies their own key always gets
@@ -380,7 +393,7 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
         # Keyed only by content, not by which key answered it - two devices asking the
         # same question about the same context get the same cached reply regardless of
         # whose Gemini key served it, since the answer itself doesn't depend on that.
-        cache_key = "gemini_reply:" + hashlib.sha256(f"{system_instruction}\x1f{request.message}".encode()).hexdigest()
+        cache_key = _reply_cache_key(context, request.message)
         cached_reply = cache.get(cache_key)
         if cached_reply is not None:
             reply = cached_reply
@@ -494,9 +507,7 @@ async def handle_chat_stream(request: ChatRequest, device_id: str) -> AsyncItera
             # Same anti-double-submit cache as handle_chat - a cached reply is already
             # fully generated, so it's chunked and streamed back at full speed (no
             # delay) purely so the UI treatment stays consistent regardless of path.
-            cache_key = "gemini_reply:" + hashlib.sha256(
-                f"{system_instruction}\x1f{request.message}".encode()
-            ).hexdigest()
+            cache_key = _reply_cache_key(context, request.message)
             cached_reply = cache.get(cache_key)
             if cached_reply is not None:
                 for chunk in _chunk_text(cached_reply):
@@ -638,9 +649,7 @@ async def handle_regenerate_stream(request: RegenerateRequest, device_id: str) -
 
     try:
         if api_key:
-            cache_key = "gemini_reply:" + hashlib.sha256(
-                f"{system_instruction}\x1f{user_message.content}".encode()
-            ).hexdigest()
+            cache_key = _reply_cache_key(context, user_message.content)
             cached_reply = cache.get(cache_key)
             if cached_reply is not None:
                 for chunk in _chunk_text(cached_reply):
