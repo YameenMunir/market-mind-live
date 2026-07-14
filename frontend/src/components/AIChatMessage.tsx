@@ -52,46 +52,88 @@ interface ParsedInsight {
   footer: string;
 }
 
-// Matches the AI's own consistent reply shape: "* **Label**: description" bullet
-// lines. The model produces this structure naturally when summarizing an asset
-// (Market Status, AI Prediction, Technical Trends, Risk Level, ...) - this only
-// *detects* that existing shape to render it as cards instead of changing what the
-// model is asked to say. Free-form conversational replies (no bullets) fall back to
-// plain prose further down, so nothing about the AI's actual output is altered.
-const SECTION_LINE = /^\*\s+\*\*([^*]+)\*\*:?\s*(.*)$/;
+// Matches a section heading line in the AI's own reply shape: a bolded label,
+// optionally preceded by a number marker ("1. ") and optionally followed by inline
+// body text on the same line - the rest of that section's body, if any, follows on
+// subsequent non-heading lines (see parseInsightSections below). Deliberately does
+// NOT treat a "* "/"- " bullet marker as a heading prefix - both the live prompt and
+// the mock provider (mock_ai_provider.py, e.g. "- **Bull Scenario**: ...") use
+// dash/asterisk bullets exclusively for sub-items *within* a section, never for the
+// section heading itself, so allowing them here would misread a bold-labeled
+// sub-bullet as the start of a new section and truncate the one it belongs to.
+const SECTION_HEADING = /^(?:\d+\.\s+)?\*\*([^*]+)\*\*:?\s*(.*)$/;
+
+// Substrings (checked case-insensitively against a heading's label) recognized as
+// one of the assistant's own structured-reply sections - covers both the live
+// Gemini prompt's headings (ai_insights_service.py's response_structure: "Direct
+// Answer", "Bullish vs. Bearish Factors", "Key Risks", "Confidence Level",
+// "Actionable Scenarios / What to Watch Next", "Balanced Conclusion") and the mock
+// provider's (mock_ai_provider.py: "Bullish/Bearish Factors", "Key Risks", "Model
+// Confidence", "Actionable Scenarios", "Balanced Conclusion", "{TICKER}
+// Strengths", ...). Gates which bolded lines get treated as card sections instead
+// of being left as ordinary prose.
+const KNOWN_SECTION_KEYWORDS = [
+  "direct answer",
+  "reasoning",
+  "bullish",
+  "bearish",
+  "risk",
+  "confidence",
+  "actionable",
+  "scenario",
+  "conclusion",
+  "strengths",
+  "market status",
+  "ai prediction",
+  "technical",
+  "methodology",
+];
+
+function isKnownSectionLabel(label: string): boolean {
+  const l = label.toLowerCase();
+  return KNOWN_SECTION_KEYWORDS.some((k) => l.includes(k));
+}
 
 function parseInsightSections(content: string): ParsedInsight | null {
-  const lines = content.split("\n").map((line) => line.trim());
+  const lines = content.split("\n");
   const intro: string[] = [];
   const sections: InsightSection[] = [];
-  const footer: string[] = [];
-  let seenBullet = false;
+  let current: InsightSection | null = null;
 
-  const OLD_KEYS = ["market status", "ai prediction", "technical trends", "technical indicators", "risk level", "methodology notes"];
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const match = line.match(SECTION_HEADING);
+    const label = match?.[1]?.trim();
 
-  for (const line of lines) {
-    if (!line) continue;
-    const match = line.match(SECTION_LINE);
-    if (match) {
-      const label = match[1].trim();
-      const body = match[2].trim();
-      
-      const isOldKey = OLD_KEYS.some((k) => label.toLowerCase().includes(k));
-      if (!isOldKey || body === "") {
-        return null;
-      }
-      
-      seenBullet = true;
-      sections.push({ label, body });
-    } else if (!seenBullet) {
+    if (match && label && isKnownSectionLabel(label)) {
+      current = { label, body: match[2].trim() };
+      sections.push(current);
+    } else if (current) {
+      if (line) current.body = current.body ? `${current.body}\n${line}` : line;
+    } else if (line) {
       intro.push(line);
-    } else {
-      footer.push(line);
     }
   }
 
-  if (sections.length === 0) return null;
-  return { intro: intro.join(" "), sections, footer: footer.join(" ") };
+  // Require at least two recognized headings before switching to card layout - a
+  // single stray bold phrase in otherwise free-form prose (e.g. an isolated
+  // "**Note**") shouldn't be enough to reshape the whole reply.
+  if (sections.length < 2) return null;
+
+  // Trailing standalone lines (the disclaimer, or a "data is delayed"/"missing
+  // data" note - see mock_ai_provider.py) read better pulled out into a separate
+  // footer than buried inside the last section's body.
+  const last = sections[sections.length - 1];
+  const bodyLines = last.body.split("\n");
+  const footerLines: string[] = [];
+  while (bodyLines.length > 1 && /^(_[^_]+_|Note:.*)$/i.test(bodyLines[bodyLines.length - 1])) {
+    footerLines.unshift(bodyLines.pop()!);
+  }
+  if (footerLines.length > 0) {
+    last.body = bodyLines.join("\n").trim();
+  }
+
+  return { intro: intro.join(" "), sections, footer: footerLines.join("\n") };
 }
 
 interface SectionMeta {
@@ -122,6 +164,29 @@ function getSectionMeta(label: string, body: string): SectionMeta {
       return { icon: TrendingUp, iconClass: "text-bull", badgeClass: "border border-bull/30 bg-bull/5" };
     }
     return { icon: Minus, iconClass: "text-ink-muted", badgeClass: "border border-border bg-surface-raised" };
+  }
+
+  // A combined "Bullish vs. Bearish Factors" section (the live prompt's shape)
+  // covers both directions at once, so it gets a neutral chart icon rather than
+  // picking a side; the mock provider's separate "Bullish Factors"/"Bearish
+  // Factors" (and comparison "{TICKER} Strengths") sections are single-sided and
+  // get the directional treatment.
+  if (l.includes("bullish") && l.includes("bearish")) {
+    return { icon: BarChart3, iconClass: "text-brand", badgeClass: "border border-brand/30 bg-brand/5" };
+  }
+  if (l.includes("bullish") || l.includes("strengths")) {
+    return { icon: TrendingUp, iconClass: "text-bull", badgeClass: "border border-bull/30 bg-bull/5" };
+  }
+  if (l.includes("bearish")) {
+    return { icon: TrendingDown, iconClass: "text-bear", badgeClass: "border border-bear/30 bg-bear/5" };
+  }
+
+  if (l.includes("confidence")) {
+    return { icon: Activity, iconClass: "text-brand", badgeClass: "border border-brand/30 bg-brand/5" };
+  }
+
+  if (l.includes("actionable") || l.includes("scenario")) {
+    return { icon: BarChart3, iconClass: "text-brand", badgeClass: "border border-brand/30 bg-brand/5" };
   }
 
   if (l.includes("technical") || l.includes("trend")) {
