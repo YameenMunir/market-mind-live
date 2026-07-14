@@ -405,6 +405,21 @@ export interface AINewsItem {
   summary: string | null;
 }
 
+export interface AIComparisonAssetContext {
+  asset: string;
+  asset_name: string | null;
+  latest_price: number | null;
+  price_change_percent: number | null;
+  market_status: string | null;
+  is_market_open: boolean | null;
+  data_is_delayed: boolean;
+  technical_indicators: AITechnicalContext | null;
+  prediction: AIPredictionContext | null;
+  risk: AIRiskContext | null;
+  rating_changes: RatingChange[];
+  news: AINewsItem[];
+}
+
 export interface AIAssetContext {
   asset: string;
   asset_name: string | null;
@@ -424,6 +439,9 @@ export interface AIAssetContext {
   rating_changes: RatingChange[];
   prediction_history_count: number;
   missing_data: string[];
+  // Populated server-side only when the user asked to compare this asset against a
+  // second one and it could be resolved - see backend AIAssetContext.comparison.
+  comparison: AIComparisonAssetContext | null;
 }
 
 export interface ChatRequest {

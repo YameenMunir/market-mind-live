@@ -469,6 +469,30 @@ class AINewsItem(BaseModel):
     summary: str | None = None
 
 
+class AIComparisonAssetContext(BaseModel):
+    """A second asset's snapshot, populated on `AIAssetContext.comparison` when the
+    user asks to compare the primary asset against another one (COMPARE intent) -
+    see `services/ai_insights_service.py`'s comparison-symbol extraction. Mirrors
+    the fields of `AIAssetContext` that are actually comparable (price, technicals,
+    prediction, risk, ratings, a couple of headlines) but deliberately omits
+    backtesting/prediction_history_count/missing_data/its own `comparison` - those
+    are either primary-asset-specific or would recurse.
+    """
+
+    asset: str
+    asset_name: str | None = None
+    latest_price: float | None = None
+    price_change_percent: float | None = None
+    market_status: str | None = None
+    is_market_open: bool | None = None
+    data_is_delayed: bool = True
+    technical_indicators: AITechnicalContext | None = None
+    prediction: AIPredictionContext | None = None
+    risk: AIRiskContext | None = None
+    rating_changes: list[RatingChange] = Field(default_factory=list)
+    news: list[AINewsItem] = Field(default_factory=list)
+
+
 class AIAssetContext(BaseModel):
     asset: str
     asset_name: str | None = None
@@ -491,6 +515,11 @@ class AIAssetContext(BaseModel):
     rating_changes: list[RatingChange] = Field(default_factory=list)
     prediction_history_count: int = 0
     missing_data: list[str] = Field(default_factory=list)
+    # Populated server-side (never by the frontend's client_context) when the user's
+    # message asks to compare the primary asset against a second one and that second
+    # symbol could be resolved - see services/ai_insights_service.py. None means no
+    # comparison was requested, or the requested one couldn't be resolved/fetched.
+    comparison: AIComparisonAssetContext | None = None
 
 
 class ChatRequest(BaseModel):

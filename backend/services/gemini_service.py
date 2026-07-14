@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import AsyncIterator
 
 import httpx
@@ -20,6 +21,19 @@ from utils.errors import AppError, ErrorCode, MissingApiKeyError
 logger = logging.getLogger(__name__)
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+# Google AI Studio / Cloud Console API keys are reliably "AIza" followed by 35 more
+# alphanumeric/`_`/`-` characters (39 total), with no whitespace. This is a format
+# sanity check only (it can't confirm the key is live/authorized - only a real call
+# does that), but it's cheap and catches an obviously wrong value (a pasted OAuth
+# token, a truncated paste, ...) immediately instead of only discovering it's broken
+# on every subsequent chat message, where it's indistinguishable from a genuine
+# Gemini outage (both surface as the same "showing a local summary instead" fallback).
+_KEY_FORMAT = re.compile(r"^AIza[0-9A-Za-z_-]{35}$")
+
+
+def looks_like_valid_key_format(api_key: str) -> bool:
+    return bool(_KEY_FORMAT.match(api_key.strip()))
 
 
 class GeminiProviderError(AppError):

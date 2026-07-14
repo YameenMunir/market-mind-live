@@ -23,6 +23,7 @@ function baseContext(overrides: Partial<AIAssetContext> = {}): AIAssetContext {
     rating_changes: [],
     prediction_history_count: 0,
     missing_data: [],
+    comparison: null,
     ...overrides,
   };
 }

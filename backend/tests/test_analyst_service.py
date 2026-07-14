@@ -6,7 +6,10 @@ error (frontend shows "Temporarily rate-limited") or silently serves stale data.
 from __future__ import annotations
 
 import pytest
+from sqlmodel import Session
 
+from db.models import FallbackCacheRecord
+from db.session import engine
 import services.analyst_service as analyst_service
 from utils.cache import cache
 from utils.errors import RateLimitedError
@@ -30,13 +33,21 @@ def _raw_consensus(buy: int = 5) -> dict:
 
 @pytest.fixture(autouse=True)
 def _clean_cache():
-    """The cache module is a process-wide singleton - scrub this test's keys before
-    and after so runs don't interfere with each other."""
+    """The cache module is a process-wide singleton, and the durable fallback cache
+    (utils/durable_fallback_cache.py) persists in the real SQLite dev DB across test
+    runs - scrub both this test's keys before and after so runs don't interfere with
+    each other (in particular, so "no stale fallback available" tests aren't
+    contaminated by a durable row a previous test's successful fetch left behind)."""
 
     def _clear():
         for key in (f"analyst:{SYMBOL}", f"analyst_fallback:{SYMBOL}"):
             with cache._lock:
                 cache._store.pop(key, None)
+        with Session(engine) as session:
+            record = session.get(FallbackCacheRecord, f"analyst_fallback:{SYMBOL}")
+            if record is not None:
+                session.delete(record)
+                session.commit()
 
     _clear()
     yield

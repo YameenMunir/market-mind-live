@@ -22,8 +22,12 @@ def _fmt_price(value: float | None) -> str:
     return f"{value:,.2f}" if value is not None else "N/A"
 
 
+def _asset_label_from(asset: str, asset_name: str | None) -> str:
+    return f"{asset_name} ({asset})" if asset_name else asset
+
+
 def _asset_label(context: AIAssetContext) -> str:
-    return f"{context.asset_name} ({context.asset})" if context.asset_name else context.asset
+    return _asset_label_from(context.asset, context.asset_name)
 
 
 def generate_mock_reply(context: AIAssetContext, message: str, history: list[ChatMessage]) -> str:
@@ -221,24 +225,87 @@ def generate_mock_reply(context: AIAssetContext, message: str, history: list[Cha
         lines.append("The current move is backed by volume and news flow, suggesting continuation is probable in the short term, but caution near resistance is advised.")
 
     elif intent == "COMPARE":
-        lines.append(f"Comparing {asset_lbl} at ${price_val} against peer assets reveals relative strength and risk metrics.")
-        lines.append(f"**Reasoning**: {asset_lbl} is displaying a **{signal}** signal with {confidence} confidence and a {risk_level} risk score. Peer comparisons should evaluate volatility ({vol}) and consensus ratings to assess relative value.")
+        comparison = context.comparison
+        if comparison is not None:
+            comp_lbl = _asset_label_from(comparison.asset, comparison.asset_name)
+            comp_price = _fmt_price(comparison.latest_price)
+            comp_change = _fmt_pct(comparison.price_change_percent)
+            comp_signal = comparison.prediction.signal.upper() if comparison.prediction else "HOLD"
+            comp_confidence = f"{comparison.prediction.confidence:.0f}%" if comparison.prediction else "N/A"
+            comp_risk_level = comparison.risk.level.value if comparison.risk else "unknown"
+            comp_risk_score = f"{comparison.risk.score:.0f}/100" if comparison.risk else "N/A"
+            comp_vol = _fmt_pct(comparison.risk.volatility_annualized_pct) if comparison.risk else "N/A"
+            comp_rsi = comparison.technical_indicators.rsi if comparison.technical_indicators else None
+            comp_macd = comparison.technical_indicators.macd_trend if comparison.technical_indicators else None
 
-        lines.append("\n**Relative Strengths**:")
-        lines.append(f"- {asset_lbl} has a model signal of {signal} with {confidence} confidence.")
-        lines.append(f"- Technical posture: Price is {ma_trend or 'stabilizing'}.")
+            lines.append(
+                f"Comparing {asset_lbl} (${price_val}, {change_val} today) against {comp_lbl} "
+                f"(${comp_price}, {comp_change} today) on signal, momentum, and risk."
+            )
+            lines.append(
+                f"**Reasoning**: {asset_lbl} carries a **{signal}** signal at {confidence} confidence, versus "
+                f"{comp_lbl}'s **{comp_signal}** at {comp_confidence}. On risk, {asset_lbl} is {risk_level} "
+                f"({risk_score}) with {vol} annualized volatility, while {comp_lbl} is {comp_risk_level} "
+                f"({comp_risk_score}) with {comp_vol} volatility."
+            )
 
-        lines.append("\n**Relative Risks**:")
-        lines.append(f"- Peer volatility stands at {vol} with a max drawdown of {drawdown}.")
+            lines.append(f"\n**{context.asset} Strengths**:")
+            lines.append(f"- Signal: **{signal}** at {confidence} confidence.")
+            lines.append(
+                f"- Technical posture: Price is {ma_trend or 'stabilizing'}, MACD is {macd or 'neutral'}, "
+                f"RSI at {f'{rsi:.1f}' if rsi else 'N/A'}."
+            )
 
-        lines.append(f"\n**Model Confidence**: {confidence}")
+            lines.append(f"\n**{comparison.asset} Strengths**:")
+            lines.append(f"- Signal: **{comp_signal}** at {comp_confidence} confidence.")
+            lines.append(
+                f"- Technical posture: MACD is {comp_macd or 'neutral'}, "
+                f"RSI at {f'{comp_rsi:.1f}' if comp_rsi else 'N/A'}."
+            )
 
-        lines.append("\n**Actionable Scenarios**:")
-        lines.append("- **Relative trade**: Allocate capital to the asset with higher model confidence and lower relative risk.")
-        lines.append("- **Diversification**: Split allocation between both to balance structural risk across the sector.")
+            lines.append("\n**Relative Risk**:")
+            if context.risk and comparison.risk:
+                lower_risk_lbl = asset_lbl if context.risk.score <= comparison.risk.score else comp_lbl
+                lines.append(f"- {lower_risk_lbl} currently carries the lower model risk score of the two.")
+            lines.append(f"- Volatility: {asset_lbl} {vol} vs. {comp_lbl} {comp_vol}.")
 
-        lines.append("\n**Balanced Conclusion**:")
-        lines.append(f"{asset_lbl} remains a strong relative choice under current technical configurations.")
+            lines.append(f"\n**Model Confidence**: {confidence} for {context.asset}, {comp_confidence} for {comparison.asset}.")
+
+            lines.append("\n**Actionable Scenarios**:")
+            stronger_lbl = asset_lbl
+            if (
+                context.prediction
+                and comparison.prediction
+                and comparison.prediction.confidence > context.prediction.confidence
+            ):
+                stronger_lbl = comp_lbl
+            lines.append(f"- **Relative trade**: {stronger_lbl} currently shows the stronger model conviction of the two, on a risk-adjusted basis.")
+            lines.append("- **Diversification**: Split allocation between both to balance structural risk across the sector.")
+
+            lines.append("\n**Balanced Conclusion**:")
+            lines.append(
+                f"On current data, {asset_lbl} and {comp_lbl} present different risk/reward trade-offs; "
+                "the better fit depends on your existing exposure and risk tolerance."
+            )
+        else:
+            lines.append(f"Comparing {asset_lbl} at ${price_val} against peer assets reveals relative strength and risk metrics.")
+            lines.append(f"**Reasoning**: {asset_lbl} is displaying a **{signal}** signal with {confidence} confidence and a {risk_level} risk score. Peer comparisons should evaluate volatility ({vol}) and consensus ratings to assess relative value.")
+
+            lines.append("\n**Relative Strengths**:")
+            lines.append(f"- {asset_lbl} has a model signal of {signal} with {confidence} confidence.")
+            lines.append(f"- Technical posture: Price is {ma_trend or 'stabilizing'}.")
+
+            lines.append("\n**Relative Risks**:")
+            lines.append(f"- Peer volatility stands at {vol} with a max drawdown of {drawdown}.")
+
+            lines.append(f"\n**Model Confidence**: {confidence}")
+
+            lines.append("\n**Actionable Scenarios**:")
+            lines.append("- **Relative trade**: Allocate capital to the asset with higher model confidence and lower relative risk.")
+            lines.append("- **Diversification**: Split allocation between both to balance structural risk across the sector.")
+
+            lines.append("\n**Balanced Conclusion**:")
+            lines.append(f"{asset_lbl} remains a strong relative choice under current technical configurations.")
 
     else:
         lines.append(f"Here is a professional market analyst's summary for {asset_lbl} trading at ${price_val} ({change_val} today).")

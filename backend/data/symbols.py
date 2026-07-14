@@ -6,7 +6,6 @@ to local listings in case of network outages or rate limiting.
 
 from __future__ import annotations
 
-import requests
 from models.schemas import AssetType, MarketSession
 from utils.cache import cache
 
@@ -117,7 +116,7 @@ def _fetch_yahoo_suggestions(query: str, limit: int = 15) -> list[dict]:
     throttling isn't endpoint-specific, so unthrottled search traffic could both
     contribute to a block and keep hammering Yahoo during one instead of backing off
     with everything else."""
-    from data.yfinance_provider import _call_with_retry
+    from data.yfinance_provider import _call_with_retry, _get_session
     from utils.errors import AppError
 
     url = "https://query2.finance.yahoo.com/v1/finance/search"
@@ -132,7 +131,12 @@ def _fetch_yahoo_suggestions(query: str, limit: int = 15) -> list[dict]:
     }
 
     def _fetch() -> list[dict]:
-        response = requests.get(url, params=params, headers=headers, timeout=5)
+        # Shares the same curl_cffi session (browser impersonation + the
+        # Windows-only cert-verification workaround) that every other Yahoo call
+        # in yfinance_provider.py already goes through, rather than a second,
+        # unhardened plain `requests` client - this endpoint hit the identical
+        # Windows SSL verification gap that session was built to work around.
+        response = _get_session().get(url, params=params, headers=headers, timeout=5)
         response.raise_for_status()
         return response.json().get("quotes", [])
 

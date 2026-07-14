@@ -161,5 +161,9 @@ export function buildAssetContext(input: BuildContextInput): AIAssetContext {
     rating_changes: ratingChangeItems,
     prediction_history_count: input.predictionHistory?.length ?? 0,
     missing_data: missing,
+    // Always null from the client - the frontend has no way to know ahead of time
+    // which second asset (if any) a not-yet-typed chat message will ask to compare
+    // against. The backend resolves and fills this in server-side when applicable.
+    comparison: null,
   };
 }
