@@ -29,6 +29,7 @@ from api import settings as settings_router
 from config import get_settings
 from db.migrate import run_migrations
 from db.session import engine
+from services.gemini_service import looks_like_valid_key_format
 from services.live_hub import hub
 from utils.errors import register_error_handlers
 from utils.logging import configure_logging
@@ -55,7 +56,15 @@ def _log_startup_config() -> None:
         settings.hub_quote_interval_closed_seconds,
     )
     if settings.gemini_api_key:
-        logger.info("AI Insights Assistant: using live Gemini API (model=%s).", settings.gemini_model)
+        if looks_like_valid_key_format(settings.gemini_api_key):
+            logger.info("AI Insights Assistant: using live Gemini API (model=%s).", settings.gemini_model)
+        else:
+            logger.warning(
+                "AI Insights Assistant: GEMINI_API_KEY is set but doesn't match the expected "
+                'format (Google AI Studio keys start with "AIza" and are 39 characters long) - '
+                "every chat request will fail authentication and silently fall back to the mock "
+                "provider. Get a real key at https://aistudio.google.com/apikey."
+            )
     else:
         logger.warning(
             "AI Insights Assistant: GEMINI_API_KEY is not set - falling back to the deterministic "
