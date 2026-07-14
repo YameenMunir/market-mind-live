@@ -405,6 +405,7 @@ class YFinanceProvider(MarketDataProvider):
             raise NetworkError("Unable to reach the market data source.", detail=str(exc)) from exc
 
         counts = {"strong_buy": 0, "buy": 0, "hold": 0, "sell": 0, "strong_sell": 0}
+        trend_points: list[dict] = []
         try:
             trend = _call_with_retry(
                 lambda: ticker.recommendations, description=f"get_analyst_consensus.recommendations({symbol})"
@@ -427,11 +428,30 @@ class YFinanceProvider(MarketDataProvider):
                 "strong_sell": int(row.get("strongSell", 0) or 0),
             }
 
+            # yfinance's `period` column covers the current month ("0m") plus the
+            # prior three ("-1m"/"-2m"/"-3m") - previously only "0m" was read here,
+            # discarding history that shows whether sentiment is improving or
+            # deteriorating rather than just where it stands right now.
+            for period_str, months_ago in (("-3m", 3), ("-2m", 2), ("-1m", 1), ("0m", 0)):
+                period_rows = trend[trend["period"] == period_str]
+                if period_rows.empty:
+                    continue
+                period_row = period_rows.iloc[0]
+                trend_points.append({
+                    "months_ago": months_ago,
+                    "strong_buy": int(period_row.get("strongBuy", 0) or 0),
+                    "buy": int(period_row.get("buy", 0) or 0),
+                    "hold": int(period_row.get("hold", 0) or 0),
+                    "sell": int(period_row.get("sell", 0) or 0),
+                    "strong_sell": int(period_row.get("strongSell", 0) or 0),
+                })
+
         return {
             "price_target_low": targets.get("low"),
             "price_target_high": targets.get("high"),
             "price_target_mean": targets.get("mean"),
             "price_target_median": targets.get("median"),
+            "recommendation_trend": trend_points,
             **counts,
         }
 

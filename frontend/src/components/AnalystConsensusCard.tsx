@@ -89,6 +89,69 @@ export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: An
               </div>
             )}
 
+            {consensus.recommendation_trend.length > 1 && (
+              <div className="mt-4 border-t border-border pt-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-2xs uppercase font-bold text-ink-faint">3-Month Trend</span>
+                  {(() => {
+                    const oldest = consensus.recommendation_trend[0];
+                    const newest = consensus.recommendation_trend[consensus.recommendation_trend.length - 1];
+                    const delta = newest.strong_buy + newest.buy - (oldest.strong_buy + oldest.buy);
+                    if (delta === 0) {
+                      return (
+                        <span className="flex items-center gap-1 font-mono text-2xs font-bold text-ink-faint">
+                          <Minus size={11} aria-hidden />
+                          Flat
+                        </span>
+                      );
+                    }
+                    const improving = delta > 0;
+                    return (
+                      <span
+                        className={cn(
+                          "flex items-center gap-1 font-mono text-2xs font-bold",
+                          improving ? "text-bull" : "text-bear"
+                        )}
+                      >
+                        {improving ? <TrendingUp size={11} aria-hidden /> : <TrendingDown size={11} aria-hidden />}
+                        {improving ? "+" : ""}
+                        {delta} buy-rated
+                      </span>
+                    );
+                  })()}
+                </div>
+                <div className="mt-2 flex items-end gap-1.5">
+                  {consensus.recommendation_trend.map((point) => {
+                    const pointBullish = point.strong_buy + point.buy;
+                    const pointNeutral = point.hold;
+                    const pointBearish = point.sell + point.strong_sell;
+                    const pointTotal = pointBullish + pointNeutral + pointBearish;
+                    const label = point.months_ago === 0 ? "Now" : `-${point.months_ago}mo`;
+                    return (
+                      <div key={point.months_ago} className="flex flex-1 flex-col items-center gap-1">
+                        <div
+                          role="img"
+                          aria-label={`${point.months_ago === 0 ? "Current" : `${point.months_ago} month(s) ago`}: ${pointBullish} buy, ${pointNeutral} hold, ${pointBearish} sell`}
+                          className="flex h-2.5 w-full overflow-hidden rounded-sm border border-border bg-surface-raised"
+                        >
+                          {pointBullish > 0 && (
+                            <div className="h-full bg-bull" style={{ width: `${(pointBullish / pointTotal) * 100}%` }} />
+                          )}
+                          {pointNeutral > 0 && (
+                            <div className="h-full bg-warn" style={{ width: `${(pointNeutral / pointTotal) * 100}%` }} />
+                          )}
+                          {pointBearish > 0 && (
+                            <div className="h-full bg-bear" style={{ width: `${(pointBearish / pointTotal) * 100}%` }} />
+                          )}
+                        </div>
+                        <span className="font-mono text-2xs text-ink-faint">{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {consensus.price_target_mean != null && (
               <div className="mt-4 border-t border-border pt-3 font-mono text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">

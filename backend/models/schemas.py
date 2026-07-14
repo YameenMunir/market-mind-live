@@ -253,6 +253,19 @@ class AnalystRating(str, Enum):
     NOT_COVERED = "not_covered"
 
 
+class AnalystRecommendationTrendPoint(BaseModel):
+    """One month's rating breakdown from yfinance's recommendation trend history -
+    lets the frontend show whether analyst sentiment is improving or deteriorating
+    rather than only a single current snapshot."""
+
+    months_ago: int  # 0 = current month, 1-3 = that many months back
+    strong_buy: int = 0
+    buy: int = 0
+    hold: int = 0
+    sell: int = 0
+    strong_sell: int = 0
+
+
 class AnalystConsensus(BaseModel):
     symbol: str
     rating: AnalystRating
@@ -266,6 +279,10 @@ class AnalystConsensus(BaseModel):
     price_target_high: float | None = None
     price_target_mean: float | None = None
     price_target_median: float | None = None
+    # Oldest first (months_ago descending) so callers can render left-to-right as
+    # time progressing toward "now" - empty when yfinance has no trend history for
+    # this symbol (same "no coverage" cases as `rating`/`total_analysts`).
+    recommendation_trend: list[AnalystRecommendationTrendPoint] = Field(default_factory=list)
     currency: str = "USD"
     as_of: str
     # True when this is the last successfully-fetched value being served during a

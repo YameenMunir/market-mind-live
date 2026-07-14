@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from config import get_settings
 from data.yfinance_provider import provider
-from models.schemas import AnalystConsensus, AnalystRating
+from models.schemas import AnalystConsensus, AnalystRating, AnalystRecommendationTrendPoint
 from services.price_service import check_rate_limit
 from utils import metrics
 from utils.cache import cache
@@ -55,6 +55,7 @@ def get_analyst_consensus(symbol: str, currency: str = "USD") -> AnalystConsensu
         check_rate_limit(symbol)
         raw = provider.get_analyst_consensus(symbol)
         counts = {key: raw.get(key, 0) for key in _RATING_WEIGHTS}
+        trend = [AnalystRecommendationTrendPoint(**point) for point in raw.get("recommendation_trend", [])]
 
         result = AnalystConsensus(
             symbol=symbol.upper(),
@@ -65,6 +66,7 @@ def get_analyst_consensus(symbol: str, currency: str = "USD") -> AnalystConsensu
             price_target_high=raw.get("price_target_high"),
             price_target_mean=raw.get("price_target_mean"),
             price_target_median=raw.get("price_target_median"),
+            recommendation_trend=trend,
             currency=currency,
             as_of=datetime.now(timezone.utc).isoformat(),
         )

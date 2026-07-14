@@ -206,6 +206,7 @@ def test_get_analyst_consensus_treats_genuine_yf_data_exception_as_no_coverage(m
         "price_target_high": None,
         "price_target_mean": None,
         "price_target_median": None,
+        "recommendation_trend": [],
         "strong_buy": 0,
         "buy": 0,
         "hold": 0,
