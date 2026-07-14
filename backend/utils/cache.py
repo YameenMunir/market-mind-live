@@ -124,3 +124,57 @@ class RateLimiter:
             hits.append(now)
             self._hits[key] = hits
             return True
+
+
+class ThrottlingRateLimiter:
+    """Token bucket / leaky bucket style scheduling rate limiter that enforces both
+    a sliding-window per-minute rate limit and a per-second pacing rate limit.
+    If a request is within the timeout, it blocks/sleeps until its slot arrives,
+    otherwise returns False.
+    """
+
+    def __init__(self, max_per_minute: int, rate_per_second: float) -> None:
+        self.max_per_minute = max_per_minute
+        self.min_interval = 1.0 / rate_per_second if rate_per_second > 0 else 0.0
+        self._lock = Lock()
+        self._next_allowed_time: dict[str, float] = {}
+        self._hits: dict[str, list[float]] = {}
+
+    def acquire(self, key: str, timeout: float = 5.0) -> bool:
+        if self.max_per_minute <= 0:
+            return True
+
+        now = time.monotonic()
+        with self._lock:
+            # 1. Clean up hits older than 60 seconds
+            window_start = now - 60.0
+            hits = [t for t in self._hits.get(key, []) if t > window_start]
+
+            # 2. Check sliding window limit slot
+            if len(hits) >= self.max_per_minute:
+                next_window_slot = hits[0] + 60.0
+            else:
+                next_window_slot = now
+
+            # 3. Check pacing limit slot
+            last_allowed = self._next_allowed_time.get(key, 0.0)
+            if self.min_interval > 0:
+                next_pacing_slot = max(now, last_allowed + self.min_interval)
+            else:
+                next_pacing_slot = now
+
+            # 4. Schedule the request
+            scheduled_time = max(next_window_slot, next_pacing_slot)
+            wait_time = scheduled_time - now
+
+            if wait_time > timeout:
+                return False
+
+            self._next_allowed_time[key] = scheduled_time
+            hits.append(scheduled_time)
+            self._hits[key] = hits
+
+        # Sleep outside the lock
+        if wait_time > 0:
+            time.sleep(wait_time)
+        return True

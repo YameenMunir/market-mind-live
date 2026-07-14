@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     # symbols at once trips it during normal use.
     provider_rate_limit_per_minute: int = 60
     provider_global_rate_limit_per_minute: int = 900
+    provider_rate_limit_per_second: float = 2.0
+    provider_global_rate_limit_per_second: float = 10.0
 
     # yfinance has no official retry/backoff of its own - transient network hiccups
     # (DNS blips, connection resets) are retried here with exponential backoff + jitter

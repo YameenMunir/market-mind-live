@@ -10,17 +10,23 @@ from data.yfinance_provider import provider
 from models.schemas import Candle, CandleSeries, PriceQuote
 from services.market_status_service import get_market_status
 from utils import metrics
-from utils.cache import RateLimiter, cache
-from utils.errors import RateLimitedError, ValidationError
+from utils.cache import ThrottlingRateLimiter, cache
+from utils.errors import AppError, RateLimitedError, ValidationError
 
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
-_rate_limiter = RateLimiter(max_per_minute=settings.provider_rate_limit_per_minute)
+_rate_limiter = ThrottlingRateLimiter(
+    max_per_minute=settings.provider_rate_limit_per_minute,
+    rate_per_second=settings.provider_rate_limit_per_second
+)
 # Yahoo's real throttling is IP-wide, not per-symbol - this catches a dashboard watching
 # many symbols simultaneously that would otherwise stay under every individual symbol's
 # quota while still tripping Yahoo's actual limit.
-_global_rate_limiter = RateLimiter(max_per_minute=settings.provider_global_rate_limit_per_minute)
+_global_rate_limiter = ThrottlingRateLimiter(
+    max_per_minute=settings.provider_global_rate_limit_per_minute,
+    rate_per_second=settings.provider_global_rate_limit_per_second
+)
 _GLOBAL_KEY = "__global__"
 
 # Chart time-range options -> how far back to fetch, what candle size to request, and how
@@ -52,19 +58,19 @@ RANGE_CONFIG: dict[str, dict] = {
 DEFAULT_RANGE = "1d"
 
 
-def check_rate_limit(symbol: str) -> None:
+def check_rate_limit(symbol: str, timeout: float = 5.0) -> None:
     # Distinguished from data/yfinance_provider.py's cooldown (which reacts to a *real*
     # Yahoo 429) - this is our own proactive circuit breaker rejecting a call before it
     # ever reaches the network. Logged/counted separately so it's possible to tell "we're
     # over-fetching" apart from "the provider is actually throttling us" in production.
-    if not _global_rate_limiter.check(_GLOBAL_KEY):
+    if not _global_rate_limiter.acquire(_GLOBAL_KEY, timeout=timeout):
         metrics.increment("rate_limit.self_throttled_global")
         logger.info("Self-throttled (global limit) for %s - not a provider response.", symbol.upper())
         raise RateLimitedError(
             "Too many requests across all symbols in a short period.",
             detail="Please wait a moment before refreshing again.",
         )
-    if not _rate_limiter.check(symbol.upper()):
+    if not _rate_limiter.acquire(symbol.upper(), timeout=timeout):
         metrics.increment("rate_limit.self_throttled_symbol")
         logger.info("Self-throttled (per-symbol limit) for %s - not a provider response.", symbol.upper())
         raise RateLimitedError(
@@ -92,12 +98,28 @@ def _quote_from_raw(symbol: str, raw: dict) -> PriceQuote:
 
 
 def get_quote(symbol: str) -> PriceQuote:
+    fallback_key = f"quote_fallback:{symbol.upper()}"
+    fallback_ttl = 24 * 60 * 60
+
     def _fetch() -> PriceQuote:
         check_rate_limit(symbol)
         raw = provider.get_quote(symbol)
-        return _quote_from_raw(symbol, raw)
+        res = _quote_from_raw(symbol, raw)
+        cache.set(fallback_key, res, fallback_ttl)
+        return res
 
-    return cache.get_or_set(f"quote:{symbol.upper()}", settings.quote_cache_ttl_seconds, _fetch)
+    try:
+        return cache.get_or_set(f"quote:{symbol.upper()}", settings.quote_cache_ttl_seconds, _fetch)
+    except AppError as exc:
+        stale = cache.get(fallback_key)
+        if stale is not None:
+            metrics.increment("quote.served_stale")
+            logger.warning(
+                "Quote for %s: live fetch failed (%s) - serving stale cache.",
+                symbol.upper(), exc.error_code.value
+            )
+            return stale.model_copy(update={"is_stale": True})
+        raise
 
 
 def get_quotes_batch(symbols: list[str]) -> dict[str, PriceQuote | Exception]:
@@ -120,26 +142,35 @@ def get_quotes_batch(symbols: list[str]) -> dict[str, PriceQuote | Exception]:
 
     if misses:
         for symbol in misses:
-            if not _global_rate_limiter.check(_GLOBAL_KEY):
-                results[symbol] = RateLimitedError(
-                    "Too many requests across all symbols in a short period.",
-                    detail="Please wait a moment before refreshing again.",
-                )
-            elif not _rate_limiter.check(symbol):
-                results[symbol] = RateLimitedError(
-                    "Too many requests for this symbol in a short period.",
-                    detail="Please wait a moment before refreshing again.",
-                )
+            try:
+                check_rate_limit(symbol, timeout=5.0)
+            except AppError as exc:
+                results[symbol] = exc
+
         fetchable = [s for s in misses if s not in results]
         if fetchable:
-            raw_results = provider.get_quotes_batch(fetchable)
-            for symbol, raw in raw_results.items():
-                if isinstance(raw, Exception):
-                    results[symbol] = raw
-                else:
-                    quote = _quote_from_raw(symbol, raw)
-                    cache.set(f"quote:{symbol}", quote, settings.quote_cache_ttl_seconds)
-                    results[symbol] = quote
+            try:
+                raw_results = provider.get_quotes_batch(fetchable)
+                for symbol, raw in raw_results.items():
+                    if isinstance(raw, Exception):
+                        results[symbol] = raw
+                    else:
+                        quote = _quote_from_raw(symbol, raw)
+                        cache.set(f"quote:{symbol}", quote, settings.quote_cache_ttl_seconds)
+                        cache.set(f"quote_fallback:{symbol}", quote, 24 * 60 * 60)
+                        results[symbol] = quote
+            except AppError as exc:
+                for symbol in fetchable:
+                    results[symbol] = exc
+
+    # For any symbols that ended up with an error/exception, try to fall back to stale cache
+    for symbol in unique_symbols:
+        val = results.get(symbol)
+        if isinstance(val, Exception):
+            fallback_val = cache.get(f"quote_fallback:{symbol}")
+            if fallback_val is not None:
+                metrics.increment("quote.served_stale")
+                results[symbol] = fallback_val.model_copy(update={"is_stale": True})
 
     return results
 
@@ -178,7 +209,7 @@ def get_candles(symbol: str, range_key: str = DEFAULT_RANGE) -> CandleSeries:
         cached_quote = cache.get(f"quote:{symbol.upper()}")
         currency = cached_quote.currency if isinstance(cached_quote, PriceQuote) else "USD"
 
-        return CandleSeries(
+        res = CandleSeries(
             symbol=symbol.upper(),
             range=range_key,
             interval=bar_interval,
@@ -188,20 +219,47 @@ def get_candles(symbol: str, range_key: str = DEFAULT_RANGE) -> CandleSeries:
             last_updated=datetime.now(timezone.utc).isoformat(),
             candles=_dataframe_to_candles(df),
         )
+        cache.set(f"candles_fallback:{symbol.upper()}:{range_key}", res, 24 * 60 * 60)
+        return res
 
     key = f"candles:{symbol.upper()}:{range_key}"
-    return cache.get_or_set(key, config["cache_ttl_seconds"], _fetch)
+    try:
+        return cache.get_or_set(key, config["cache_ttl_seconds"], _fetch)
+    except AppError as exc:
+        stale = cache.get(f"candles_fallback:{symbol.upper()}:{range_key}")
+        if stale is not None:
+            metrics.increment("candles.served_stale")
+            logger.warning(
+                "Candles for %s (%s): live fetch failed (%s) - serving stale cache.",
+                symbol.upper(), range_key, exc.error_code.value
+            )
+            return stale.model_copy(update={"is_stale": True})
+        raise
 
 
 def get_history_df(symbol: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
+    key = f"history:{symbol.upper()}:{period}:{interval}"
+    fallback_key = f"history_fallback:{symbol.upper()}:{period}:{interval}"
+    fallback_ttl = 24 * 60 * 60
+
     def _fetch() -> pd.DataFrame:
         check_rate_limit(symbol)
-        return provider.get_history(symbol, period=period, interval=interval)
+        df = provider.get_history(symbol, period=period, interval=interval)
+        cache.set(fallback_key, df, fallback_ttl)
+        return df
 
-    # Indicators/predictions/risk/backtest all pull the same recent history for a symbol -
-    # cache it so the live hub's frequent recompute cycles don't each trigger a fresh Yahoo call.
-    key = f"history:{symbol.upper()}:{period}:{interval}"
-    return cache.get_or_set(key, settings.candle_cache_ttl_seconds, _fetch)
+    try:
+        return cache.get_or_set(key, settings.candle_cache_ttl_seconds, _fetch)
+    except AppError as exc:
+        stale = cache.get(fallback_key)
+        if stale is not None:
+            metrics.increment("history.served_stale")
+            logger.warning(
+                "History DF for %s (%s/%s): live fetch failed (%s) - serving stale cache.",
+                symbol.upper(), period, interval, exc.error_code.value
+            )
+            return stale
+        raise
 
 
 def _dataframe_to_candles(df: pd.DataFrame) -> list[Candle]:

@@ -107,6 +107,7 @@ class PriceQuote(BaseModel):
     currency: str = "USD"
     as_of: str
     is_delayed: bool = False
+    is_stale: bool = False
 
 
 class Candle(BaseModel):
@@ -132,6 +133,7 @@ class CandleSeries(BaseModel):
     # serialized) - unchanged across cache hits, so it reflects true data freshness.
     last_updated: str
     candles: list[Candle]
+    is_stale: bool = False
 
 
 class FxRates(BaseModel):
