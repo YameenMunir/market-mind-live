@@ -61,6 +61,11 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, FeedbackRating>>({});
+  // message_id -> whether the backend's grounding check flagged this reply as
+  // containing a figure it couldn't trace back to the underlying data (see
+  // ChatResponse.unverified_figures / ChatStreamEvent's "done" variant). Only ever
+  // populated for freshly-streamed replies - not recomputed on session reload.
+  const [unverifiedFigures, setUnverifiedFigures] = useState<Record<string, boolean>>({});
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
@@ -84,6 +89,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
       setSessionAsset(res.asset);
       setMessages([res.welcome_message]);
       setFeedbackGiven({});
+      setUnverifiedFigures({});
     } catch (err) {
       await handleApiKeyError(err);
       setError(err instanceof ApiError ? err.message : "Couldn't start a new chat session.");
@@ -104,6 +110,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
       setSessionAsset(detail.asset);
       setMessages(detail.messages);
       setFeedbackGiven({});
+      setUnverifiedFigures({});
       if (detail.asset) writeActiveSession(detail.asset, detail.session_id);
     } catch (err) {
       await handleApiKeyError(err);
@@ -218,6 +225,9 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
                 m.message_id === streamingId ? { ...m, message_id: final.message_id, created_at: final.created_at } : m
               )
             );
+            if (final.unverified_figures) {
+              setUnverifiedFigures((prev) => ({ ...prev, [final.message_id]: true }));
+            }
             setStreamingMessageId(null);
             setIsSending(false);
             abortControllerRef.current = null;
@@ -284,6 +294,9 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
               m.message_id === streamingId ? { ...m, message_id: final.message_id, created_at: final.created_at } : m
             )
           );
+          if (final.unverified_figures) {
+            setUnverifiedFigures((prev) => ({ ...prev, [final.message_id]: true }));
+          }
           setStreamingMessageId(null);
           setIsSending(false);
           abortControllerRef.current = null;
@@ -331,6 +344,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
     regenerate,
     sendFeedback,
     feedbackGiven,
+    unverifiedFigures,
     startNewChat,
     loadSession,
     sessions,

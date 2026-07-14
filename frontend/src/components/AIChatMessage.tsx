@@ -39,6 +39,11 @@ interface AIChatMessageProps {
    * delivery - a manual "I'd rather not see this" toggle alongside the automatic
    * prefers-reduced-motion handling (both use the same motion-safe: variant). */
   skipAnimation?: boolean;
+  /** True when the backend's post-hoc numeric grounding check (services/
+   * grounding_check.py) flagged this reply as containing a figure it couldn't trace
+   * back to the underlying data - see ChatResponse.unverified_figures. A soft,
+   * non-blocking hint to double-check this specific reply, not an error state. */
+  hasUnverifiedFigures?: boolean;
 }
 
 interface InsightSection {
@@ -271,6 +276,7 @@ export function AIChatMessage({
   size = "compact",
   isStreaming,
   skipAnimation,
+  hasUnverifiedFigures,
 }: AIChatMessageProps) {
   const isUser = message.role === "user";
   const isFullscreen = size === "fullscreen";
@@ -309,6 +315,13 @@ export function AIChatMessage({
               )}
             </>
           )}
+        </div>
+      )}
+
+      {!isUser && !isStreaming && hasUnverifiedFigures && (
+        <div className="flex items-center gap-1.5 px-1 font-mono text-2xs uppercase tracking-wide text-warn/90">
+          <AlertTriangle size={11} className="shrink-0" />
+          Double-check the figures in this reply
         </div>
       )}
 

@@ -31,6 +31,9 @@ interface AIChatConversationProps {
   onRegenerate: () => void;
   onFeedback: (messageId: string, rating: FeedbackRating) => void;
   feedbackGiven: Record<string, FeedbackRating>;
+  /** message_id -> whether the backend's grounding check flagged that reply - see
+   * AIChatMessage's hasUnverifiedFigures prop. */
+  unverifiedFigures: Record<string, boolean>;
   /** Slightly larger type/spacing in full-screen mode where there's room to breathe. */
   size?: "compact" | "fullscreen";
 }
@@ -53,6 +56,7 @@ export function AIChatConversation({
   onRegenerate,
   onFeedback,
   feedbackGiven,
+  unverifiedFigures,
   size = "compact",
 }: AIChatConversationProps) {
   const [input, setInput] = useState("");
@@ -155,6 +159,7 @@ export function AIChatConversation({
               size={size}
               isStreaming={message.message_id === streamingMessageId}
               skipAnimation={skipAnimation}
+              hasUnverifiedFigures={unverifiedFigures[message.message_id]}
             />
           ))}
 

@@ -33,6 +33,7 @@ from models.schemas import (
     SummariseResponse,
 )
 from services import context_builder, gemini_service, mock_ai_provider
+from services.grounding_check import find_ungrounded_numbers
 from services.reasoning_engine import reasoning_engine
 from services.chat_store import FeedbackEntry, chat_store, feedback_store
 from services.gemini_key_store import gemini_key_store
@@ -273,6 +274,29 @@ def _reply_cache_key(context: AIAssetContext, message: str) -> str:
     return "gemini_reply:" + hashlib.sha256(f"{stable_context}\x1f{message}".encode()).hexdigest()
 
 
+def _check_grounding(context: AIAssetContext, message: str, reply_text: str, session_id: str) -> bool:
+    """Runs the post-hoc numeric grounding check (see `services/grounding_check.py`)
+    against a completed Gemini reply and logs a warning if it finds figures that
+    don't trace back to real data. Only meaningful for genuinely model-generated
+    text - callers should skip this for mock-provider replies, which are built
+    directly from `context`'s own values and are grounded by construction.
+
+    Returns whether any ungrounded figures were found, so callers can surface a
+    lightweight "verify this figure" signal to the user alongside the reply.
+    """
+    kb_articles = retrieve_knowledge(message)
+    offenders = find_ungrounded_numbers(context, kb_articles, reply_text)
+    if offenders:
+        logger.warning(
+            "AI reply for session=%s asset=%s contains figures not found in the grounding "
+            "context/knowledge base: %s",
+            session_id,
+            context.asset,
+            offenders,
+        )
+    return bool(offenders)
+
+
 def _resolve_gemini_api_key(device_id: str, settings) -> str | None:
     """A device's own BYOK Gemini key (set via /api/ai/gemini-key) takes priority over
     the server-wide GEMINI_API_KEY, so a user who supplies their own key always gets
@@ -421,6 +445,15 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
     else:
         reply = mock_ai_provider.generate_mock_reply(context, request.message, history)
 
+    # Mock replies are built directly from context's own values (see
+    # mock_ai_provider.py) and are grounded by construction - only a genuinely
+    # model-generated reply needs the check.
+    unverified_figures = (
+        _check_grounding(context, request.message, reply, request.session_id)
+        if provider.startswith("gemini")
+        else False
+    )
+
     now = _now_iso()
     user_msg = ChatMessage(message_id=str(uuid.uuid4()), role=ChatRole.USER, content=request.message, created_at=now)
     assistant_msg_id = str(uuid.uuid4())
@@ -446,6 +479,7 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
         context_used=context,
         disclaimer=DISCLAIMER,
         created_at=assistant_msg.created_at,
+        unverified_figures=unverified_figures,
     )
 
 
@@ -584,6 +618,12 @@ async def handle_chat_stream(request: ChatRequest, device_id: str) -> AsyncItera
     # Unreachable on cancellation (the `finally` above still ran, but execution never
     # returns here) - the frontend's stream simply ending without a "done" event is
     # itself the signal that generation was stopped/interrupted before completing.
+    # See handle_chat's comment on why mock replies skip the grounding check.
+    unverified_figures = (
+        _check_grounding(context, request.message, accumulated, request.session_id)
+        if provider.startswith("gemini")
+        else False
+    )
     yield {
         "type": "done",
         "session_id": request.session_id,
@@ -592,6 +632,7 @@ async def handle_chat_stream(request: ChatRequest, device_id: str) -> AsyncItera
         "context_used": context.model_dump(mode="json"),
         "disclaimer": DISCLAIMER,
         "created_at": created_at,
+        "unverified_figures": unverified_figures,
     }
 
 
@@ -720,6 +761,11 @@ async def handle_regenerate_stream(request: RegenerateRequest, device_id: str) -
                 device_id=device_id,
             )
 
+    unverified_figures = (
+        _check_grounding(context, user_message.content, accumulated, request.session_id)
+        if provider.startswith("gemini")
+        else False
+    )
     yield {
         "type": "done",
         "session_id": request.session_id,
@@ -728,6 +774,7 @@ async def handle_regenerate_stream(request: RegenerateRequest, device_id: str) -
         "context_used": context.model_dump(mode="json"),
         "disclaimer": DISCLAIMER,
         "created_at": created_at,
+        "unverified_figures": unverified_figures,
     }
 
 

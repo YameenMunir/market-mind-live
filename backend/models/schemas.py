@@ -547,6 +547,12 @@ class ChatResponse(BaseModel):
     context_used: AIAssetContext
     disclaimer: str
     created_at: str
+    # True when the post-hoc numeric grounding check (services/grounding_check.py)
+    # found a figure in `reply` that doesn't trace back to `context_used` or the
+    # knowledge base - a non-blocking hint to double-check this specific reply, not
+    # an error. Always False for a mock/mock-fallback reply (grounded by
+    # construction - see services/ai_insights_service.py::_check_grounding).
+    unverified_figures: bool = False
 
 
 class FeedbackRating(str, Enum):

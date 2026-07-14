@@ -150,6 +150,7 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
               onRegenerate={chat.regenerate}
               onFeedback={chat.sendFeedback}
               feedbackGiven={chat.feedbackGiven}
+              unverifiedFigures={chat.unverifiedFigures}
               size="fullscreen"
             />
           </div>

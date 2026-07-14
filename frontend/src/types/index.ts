@@ -469,6 +469,11 @@ export interface ChatResponse {
   context_used: AIAssetContext;
   disclaimer: string;
   created_at: string;
+  /** True when the backend's post-hoc numeric grounding check (services/
+   * grounding_check.py) found a figure in `reply` that doesn't trace back to
+   * `context_used` or the knowledge base - a non-blocking hint to double-check this
+   * specific reply, not an error. Always false for a mock/mock-fallback reply. */
+  unverified_figures: boolean;
 }
 
 /** Events sent over the `/api/ai/insights/chat/stream` SSE endpoint - see
@@ -483,6 +488,7 @@ export type ChatStreamEvent =
       context_used: AIAssetContext;
       disclaimer: string;
       created_at: string;
+      unverified_figures: boolean;
     }
   | { type: "error"; error_code: ErrorCode; message: string };
 
