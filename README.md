@@ -115,6 +115,24 @@ frontend/
   src/charts/     # chart wrapper components (candlestick + equity curve)
 ```
 
+## Strengths & Challenges
+
+### Strengths
+- **Resilient and Paced Data Pipeline**: Incorporates custom `ThrottlingRateLimiter` pacing at both global and per-symbol levels combined with 24-hour cache fallbacks for quotes, candles, and historical data. If the upstream provider is rate-limiting the server or encounters a network issue, the system gracefully falls back to serving stale/cached values labeled `is_stale=True` rather than presenting errors to the user.
+- **Resource-Efficient Connection Pooling (LiveDataHub)**: The `LiveDataHub` manages one background poller task per active symbol, shared by all WebSocket subscribers. Whether 1 or 1,000 users watch a symbol, it consumes exactly one upstream request, preventing unnecessary server-side load. Pacing adaptively slows down during pre/post-market sessions and when the market is closed.
+- **Fast Parallel Batch Lookups**: Tickers in watchlist/batch requests are fetched concurrently using a thread pool (`ThreadPoolExecutor`), significantly decreasing latency compared to sequential queries.
+- **Privacy-First, Account-Less Persistence**: Interactive features like price alerts and chat histories persist per-device in a SQLite database via SQLModel/Alembic, allowing users to configure alerts and hold conversation sessions without needing to sign up or log in.
+- **SSE Streaming AI Insights**: Chat insights are streamed token-by-token over Server-Sent Events from Gemini (or a deterministic keyword-based mock fallback), complete with markdown formatting and control hooks (e.g. stop generation, regenerate).
+- **Premium Design System & Responsive Layout**: Features custom theme-synchronized charts (built on `lightweight-charts` and `recharts`), clean geometric typography (Sora and JetBrains Mono), a responsive layout with custom mobile bottom tab navigation, and lightweight CSS/SVG animations without three.js overhead.
+
+### Challenges
+- **Keyless Unofficial API Constraints**: Using `yfinance` means the application relies on unofficial Yahoo Finance scraping endpoints that do not guarantee high rate limits or official SLA. This requires strict client-side pacing and fallback handling to maintain stability.
+- **IP-Wide Throttling**: Yahoo's rate limiting is IP-wide rather than per-symbol. If one symbol is throttled, the entire server IP faces a cooldown, making global caching and parallel request deduplication critical.
+- **Stateless Cloud Hosting Limitations**: Because the backend maintains WebSocket connections, active pollers, and a SQLite database, it requires persistent server resources (like Render) and cannot easily run on serverless platforms (like Vercel or AWS Lambda) without using an external database and a separate WebSocket gateway.
+- **High-Frequency WebSocket Synchronization**: Broadcasting live snapshots (quotes, indicators, predictions, risk) every second to multiple concurrent WebSocket clients requires careful version diffing (avoiding pushing frames when data hasn't changed) to prevent browser re-rendering bottlenecks.
+- **Client-Side Build Time Configs**: Crucial configuration variables (like the backend API base URLs) are inlined into the frontend bundle at build time, requiring a full redeployment if the backend location changes.
+- **LLM Rate-Limiting**: Grounding Gemini chat with live dataframes and recent news articles increases token payload sizes and requires strict client-side chat rate-limiting and intelligent fallback handlers to handle API quota exhaustion gracefully.
+
 ## Getting started
 
 ### Backend
