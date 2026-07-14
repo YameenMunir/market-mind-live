@@ -13,15 +13,10 @@ import { CandlestickChart3D } from "@/components/CandlestickChart3D";
 import { BacktestingSimulation3D } from "@/components/BacktestingSimulation3D";
 import { EvidenceNetwork3D } from "@/components/EvidenceNetwork3D";
 import { MarketGlobe3D } from "@/components/MarketGlobe3D";
+import { HeroSection } from "@/components/HeroSection";
 import { cn } from "@/lib/utils";
 
 const ASSET_CLASSES = ["Stocks", "ETFs", "Crypto", "Forex", "Commodities", "Indices"];
-
-const REASONING_FACTORS = [
-  "SMA-20 crossed above SMA-50, twelve sessions ago",
-  "RSI at 58 - momentum without overbought risk",
-  "Volatility sitting mid-range of the 90-day ATR band",
-];
 
 export default function LandingPage() {
   return (
@@ -29,101 +24,8 @@ export default function LandingPage() {
       <Navbar />
 
       {/* ================= HERO SECTION ================= */}
-      <section className="relative mx-auto max-w-7xl px-4 pb-8 pt-4 sm:px-6 sm:pb-16 sm:pt-12 lg:py-24">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-center lg:gap-12">
-          {/* Left Column: Heading, Supporting Text, CTAs */}
-          <div className="relative mx-auto max-w-3xl text-center lg:col-span-7 lg:text-left lg:max-w-none">
-            <Reveal delay={0} className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-sm border border-brand/20 bg-brand/5 px-3 py-1 font-mono text-xs uppercase font-bold tracking-wider text-brand-strong sm:mb-6 lg:mx-0">
-              <Sparkles size={11} className="text-brand-strong" />
-              Live asset intelligence &middot; Multi-asset stream
-            </Reveal>
+      <HeroSection />
 
-            <Reveal delay={0.06}>
-              <h1 className="text-[clamp(1.75rem,1.1rem+3.5vw,4.5rem)] font-bold uppercase tracking-tight text-ink font-mono leading-[1.1] max-w-2xl mx-auto lg:mx-0">
-                Market intelligence, <span className="text-brand block sm:inline">read in plain English.</span>
-              </h1>
-            </Reveal>
-
-            <Reveal delay={0.12}>
-              <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-ink-muted sm:mt-6 sm:text-base sm:max-w-xl lg:mx-0">
-                Live prices, technical indicators, transparent predictions, and risk scoring - in one terminal built for
-                traders who want the signal, not the noise.
-              </p>
-            </Reveal>
-
-            <Reveal delay={0.18} className="mt-6 flex flex-col items-center justify-center gap-3 w-full sm:mt-8 sm:flex-row lg:justify-start">
-              <Link
-                href="/dashboard"
-                className={cn(
-                  BUTTON_VARIANT_STYLES.primary,
-                  BUTTON_SIZE_STYLES.lg,
-                  "group flex h-11 w-full items-center justify-center gap-2 sm:w-auto px-6"
-                )}
-              >
-                Open the terminal
-                <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </Link>
-              <Link
-                href="/backtesting"
-                className={cn(
-                  BUTTON_VARIANT_STYLES.secondary,
-                  BUTTON_SIZE_STYLES.lg,
-                  "flex h-11 w-full items-center justify-center whitespace-nowrap sm:w-auto px-6"
-                )}
-              >
-                Explore backtesting
-              </Link>
-            </Reveal>
-          </div>
-
-          {/* Right Column: Dynamic 3D Stock Graph + Floating AAPL card overlay */}
-          <div className="relative mx-auto w-full max-w-xl lg:col-span-5 flex flex-col items-center justify-center">
-            {/* StockGraph3D - visual background element with isometric layout */}
-            <Reveal delay={0.24} className="mb-4 w-full lg:mb-0 lg:absolute lg:-top-24 lg:left-[-60px] lg:-z-10 lg:max-w-none lg:w-[480px] lg:opacity-85 sm:mb-6">
-              <StockGraph3D className="mx-auto" />
-            </Reveal>
-
-            {/* Signature reasoning trail card with glassmorphism style */}
-            <Reveal delay={0.3} className="w-full relative lg:mt-24 shadow-2xl shadow-brand/5 backdrop-blur-[2px]">
-              <div className="overflow-hidden rounded-sm border border-border bg-surface/90">
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-3 bg-surface-raised/40 sm:px-5">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-sm bg-bull" />
-                    <span className="truncate font-mono text-xs uppercase font-bold tracking-wider text-ink-faint">AAPL &middot; reasoning trail</span>
-                  </div>
-                  <span className="numeric shrink-0 font-mono text-xs font-bold text-ink">$212.48</span>
-                </div>
-
-                <div className="flex items-center gap-3 border-b border-border px-4 py-3 sm:px-5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-bull/30 bg-bull/5">
-                    <Activity size={14} className="text-bull" />
-                  </span>
-                  <div>
-                    <p className="font-mono text-xs font-bold uppercase tracking-wider text-bull">Bullish</p>
-                    <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">78% confidence</p>
-                  </div>
-                </div>
-
-                <div className="px-4 py-4 sm:px-5">
-                  <p className="text-sm leading-relaxed text-ink-muted">
-                    &ldquo;Price action confirms an established uptrend with room before overbought conditions - momentum
-                    aligns but isn&rsquo;t extreme. This reads as trend continuation, not a speculative spike.&rdquo;
-                  </p>
-                  <ul className="mt-4 space-y-2 border-t border-border/60 pt-4">
-                    {REASONING_FACTORS.map((factor) => (
-                      <li key={factor} className="flex gap-2.5 font-mono text-xs leading-relaxed text-ink-muted">
-                        <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-sm bg-brand" />
-                        {factor}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              <p className="mt-3 text-center font-mono text-2xs uppercase tracking-wider text-ink-faint">Illustrative example - not a live quote.</p>
-            </Reveal>
-          </div>
-        </div>
-      </section>
 
       {/* ================= ASSET CLASSES RIBBON ================= */}
       <section className="border-y border-border bg-surface/40 py-3.5">
