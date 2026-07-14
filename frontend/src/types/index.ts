@@ -71,6 +71,9 @@ export interface AssetFundamentals {
   revenue_average?: number | null;
   revenue_low?: number | null;
   revenue_high?: number | null;
+
+  as_of: string;
+  is_stale: boolean;
 }
 
 export interface PriceQuote {

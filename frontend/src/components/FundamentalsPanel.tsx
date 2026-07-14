@@ -12,6 +12,7 @@ import {
   ExternalLink 
 } from "lucide-react";
 
+import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -347,6 +348,10 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-4 border-t border-border pt-3">
+        <LastUpdated updatedAt={data.as_of} isStale={data.is_stale} />
       </div>
     </Panel>
   );

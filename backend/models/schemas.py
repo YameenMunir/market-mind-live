@@ -87,6 +87,12 @@ class AssetFundamentals(BaseModel):
     revenue_low: float | None = None
     revenue_high: float | None = None
 
+    as_of: str
+    # True when this is the last successfully-fetched value being served during a
+    # provider outage/rate-limit window rather than a fresh fetch - mirrors
+    # PriceQuote/CandleSeries/AnalystConsensus's same field.
+    is_stale: bool = False
+
 
 class MarketSession(str, Enum):
     OPEN = "open"
