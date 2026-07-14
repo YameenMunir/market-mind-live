@@ -21,8 +21,16 @@ venv\Scripts\activate            # Windows; `source venv/Scripts/activate` in gi
 pip install -r requirements.txt
 uvicorn main:app --reload        # http://localhost:8000, health check at /api/health
 ```
-No test suite or linter is configured for the backend. Sanity-check changes by importing the app
-(`python -c "import main"`) and/or hitting endpoints with `curl` against a running `uvicorn` instance.
+No linter is configured for the backend, but there is a real pytest suite in `backend/tests/` (provider/
+price-service retry and rate-limit resilience, Gemini streaming, analyst service/API contract) - run it
+before shipping a backend change, don't skip it as if nothing were there:
+```bash
+pip install -r requirements-dev.txt   # adds pytest on top of requirements.txt
+pytest                                # from backend/
+```
+Tests monkeypatch the provider/network calls they exercise, so they don't hit real yfinance/Gemini and
+need no API keys or `.env`. Also sanity-check changes by importing the app (`python -c "import main"`)
+and/or hitting endpoints with `curl` against a running `uvicorn` instance.
 
 ### Frontend (`frontend/`)
 ```bash
