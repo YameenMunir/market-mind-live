@@ -56,7 +56,7 @@ def generate_mock_reply(context: AIAssetContext, message: str, history: list[Cha
             lines.append(f"**Reasoning**: With the overall model displaying a **{signal}** signal at {confidence} confidence, the macro-trend remains constructive. RSI at {f'{rsi:.1f}' if rsi else 'N/A'} indicates active momentum without being extremely overbought. Adding here increases your average cost basis, so doing so in small tranches on brief support test pullbacks is historically a safer strategy than a lump-sum add.")
         else:
             lines.append(f"Based on current market parameters, entering a fresh position in {asset_lbl} at ${price_val} is supported by a **{signal}** model layout with {confidence} confidence.")
-            lines.append(f"**Reasoning**: Price is currently {ma_trend or 'stabilizing'}. The MACD is exhibiting {macd or 'neutral'} momentum, while the RSI sits at {f'{rsi:.1f}' if rsi else 'N/A'}. This configuration suggests that structural buyers are in control, though near-term resistance {f'({bollinger})' if bollinger else ''} warrants a controlled entry.")
+            lines.append(f"**Reasoning**: Price is currently {ma_trend or 'stabilizing'}. The MACD is exhibiting {macd or 'neutral'} momentum, while the RSI sits at {f'{rsi:.1f}' if rsi else 'N/A'}. This configuration suggests that structural buyers are in control, though near-term resistance{f' ({bollinger})' if bollinger else ''} warrants a controlled entry.")
         
         lines.append("\n**Bullish Factors**:")
         lines.append(f"- Trend: Price is currently {ma_trend or 'above short-term support'}.")
@@ -86,7 +86,7 @@ def generate_mock_reply(context: AIAssetContext, message: str, history: list[Cha
     elif intent == "SELL":
         if has_portfolio:
             lines.append(f"If you are holding {asset_lbl} in your portfolio, managing your exit or taking profits at ${price_val} should focus on protecting your accumulated gains.")
-            lines.append(f"**Reasoning**: The model is currently flashing a **{signal}** signal at {confidence} confidence. With price currently {ma_trend or 'in a steady path'}, immediate trend breakdown is not confirmed. However, if the position has become over-concentrated, scaling out in structured tranches is a highly disciplined portfolio rule rather than attempting to time a absolute top.")
+            lines.append(f"**Reasoning**: The model is currently flashing a **{signal}** signal at {confidence} confidence. With price currently {ma_trend or 'in a steady path'}, immediate trend breakdown is not confirmed. However, if the position has become over-concentrated, scaling out in structured tranches is a highly disciplined portfolio rule rather than attempting to time an absolute top.")
         else:
             lines.append(f"For traders looking to exit a position in {asset_lbl} at ${price_val}, the current signal is **{signal}** at {confidence} confidence, suggesting patience is warranted.")
             lines.append(f"**Reasoning**: Technical momentum is {macd or 'mixed'} and RSI is at {f'{rsi:.1f}' if rsi else 'N/A'}. Bollinger Band placement indicates price is {bollinger or 'mid-range'}, meaning a panic exit is unnecessary, but key support levels should be closely monitored.")
@@ -187,7 +187,7 @@ def generate_mock_reply(context: AIAssetContext, message: str, history: list[Cha
         lines.append(f"\n**Model Confidence**: {confidence} based on structural alignment.")
 
         lines.append("\n**Actionable Scenarios**:")
-        lines.append("- **Dollar-Cost Average (DCA)**: Accumulate shares at regular monthly or quarterly intervals to smooth out short-term fluctuations.")
+        lines.append("- **Dollar-Cost Averaging (DCA)**: Accumulate shares at regular monthly or quarterly intervals to smooth out short-term fluctuations.")
         lines.append("- **Long Term Hold**: Maintain the core position, re-evaluating only if competitive moats or secular growth parameters change.")
 
         lines.append("\n**Balanced Conclusion**:")
@@ -229,7 +229,7 @@ def generate_mock_reply(context: AIAssetContext, message: str, history: list[Cha
         lines.append(f"- Technical posture: Price is {ma_trend or 'stabilizing'}.")
 
         lines.append("\n**Relative Risks**:")
-        lines.append(f"- Peering volatility stands at {vol} with a max drawdown of {drawdown}.")
+        lines.append(f"- Peer volatility stands at {vol} with a max drawdown of {drawdown}.")
 
         lines.append(f"\n**Model Confidence**: {confidence}")
 
