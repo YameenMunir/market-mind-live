@@ -103,8 +103,8 @@ async def summarise(request: SummariseRequest, device_id: str = Depends(get_devi
 
 
 @router.post("/new-session", response_model=NewSessionResponse)
-def new_session(request: NewSessionRequest, device_id: str = Depends(get_device_id)):
-    return ai_insights_service.create_new_session(request, device_id)
+async def new_session(request: NewSessionRequest, device_id: str = Depends(get_device_id)):
+    return await ai_insights_service.create_new_session(request, device_id)
 
 
 @router.get("/sessions", response_model=SessionListResponse)

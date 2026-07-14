@@ -3,6 +3,7 @@ selection (Gemini vs mock), session history, and feedback recording."""
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import re
 import uuid
@@ -87,14 +88,19 @@ def _resolve_gemini_api_key(device_id: str, settings) -> str | None:
     return gemini_key_store.get_decrypted_key(device_id) or settings.gemini_api_key
 
 
-def resolve_context(asset: str, client_context: AIAssetContext | None) -> AIAssetContext:
+async def resolve_context(asset: str, client_context: AIAssetContext | None) -> AIAssetContext:
     """Prefer the context the frontend already has on screen (guarantees the assistant
     talks about exactly what the user is looking at); fall back to a fresh server-side
     build if the client didn't send one (e.g. the `/context/{asset}` preview endpoint,
-    or a client that hasn't loaded live data yet)."""
+    or a client that hasn't loaded live data yet).
+
+    `build_asset_context` is synchronous and makes several blocking calls (yfinance
+    fetches, and a rate limiter that can do a real `time.sleep`) - offloaded to a
+    thread so a cold-context request can't stall the whole event loop the way
+    `services/live_hub.py` already avoids for the same underlying calls."""
     if client_context is not None:
         return client_context
-    return context_builder.build_asset_context(asset)
+    return await asyncio.to_thread(context_builder.build_asset_context, asset)
 
 
 def _build_system_instruction(context: AIAssetContext, user_message: str, history: list[ChatMessage]) -> str:
@@ -145,7 +151,7 @@ async def handle_chat(request: ChatRequest, device_id: str) -> ChatResponse:
         raise ChatRateLimitedError()
 
     settings = get_settings()
-    context = resolve_context(request.asset, request.client_context)
+    context = await resolve_context(request.asset, request.client_context)
     history = chat_store.get_history(request.session_id, limit=settings.ai_max_history_messages)
     system_instruction = _build_system_instruction(context, request.message, history)
 
@@ -258,7 +264,7 @@ async def handle_chat_stream(request: ChatRequest, device_id: str) -> AsyncItera
         return
 
     settings = get_settings()
-    context = resolve_context(request.asset, request.client_context)
+    context = await resolve_context(request.asset, request.client_context)
     history = chat_store.get_history(request.session_id, limit=settings.ai_max_history_messages)
     system_instruction = _build_system_instruction(context, request.message, history)
 
@@ -406,7 +412,7 @@ async def handle_regenerate_stream(request: RegenerateRequest, device_id: str) -
     limit = settings.ai_max_history_messages
     history = history_prefix[-limit:] if limit > 0 else history_prefix
 
-    context = resolve_context(request.asset, request.client_context)
+    context = await resolve_context(request.asset, request.client_context)
     system_instruction = _build_system_instruction(context, user_message.content, history)
 
     provider = "mock"
@@ -502,7 +508,7 @@ async def handle_regenerate_stream(request: RegenerateRequest, device_id: str) -
 
 
 async def handle_summarise(request: SummariseRequest, device_id: str) -> SummariseResponse:
-    context = resolve_context(request.asset, request.client_context)
+    context = await resolve_context(request.asset, request.client_context)
     prompt = (
         "Summarise the single most important insight from this dashboard right now in 2-4 sentences, "
         "covering the current signal, its confidence/reliability, and the dominant risk factor."
@@ -558,11 +564,11 @@ def _build_welcome_message(context: AIAssetContext) -> str:
     return "\n\n".join(lines)
 
 
-def create_new_session(request: NewSessionRequest, device_id: str) -> NewSessionResponse:
+async def create_new_session(request: NewSessionRequest, device_id: str) -> NewSessionResponse:
     """Starts a fresh, asset-scoped chat session with a deterministic welcome message
     (no Gemini/mock call needed just to say hello - keeps this instant and free)."""
     session_id = str(uuid.uuid4())
-    context = resolve_context(request.asset, request.client_context)
+    context = await resolve_context(request.asset, request.client_context)
     welcome_text = _build_welcome_message(context)
     welcome_msg = ChatMessage(
         message_id=str(uuid.uuid4()), role=ChatRole.ASSISTANT, content=welcome_text, created_at=_now_iso()

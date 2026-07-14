@@ -58,11 +58,15 @@ def _make_context() -> AIAssetContext:
     return AIAssetContext(asset="AAPL", asset_name="Apple Inc.")
 
 
+async def _fake_resolve_context(asset, client_context) -> AIAssetContext:
+    return _make_context()
+
+
 def test_handle_chat_stream_mock_path_chunks_and_persists(monkeypatch):
     fake_store = _FakeChatStore()
     monkeypatch.setattr(ai_insights_service, "chat_store", fake_store)
     monkeypatch.setattr(ai_insights_service, "_chat_rate_limiter", _AlwaysAllowLimiter())
-    monkeypatch.setattr(ai_insights_service, "resolve_context", lambda asset, client_context: _make_context())
+    monkeypatch.setattr(ai_insights_service, "resolve_context", _fake_resolve_context)
     monkeypatch.setattr(ai_insights_service, "_resolve_gemini_api_key", lambda device_id, settings: None)
     mock_reply = "This is a mock reply with several words in it."
     monkeypatch.setattr(
@@ -126,7 +130,7 @@ def test_handle_regenerate_stream_replaces_stale_reply_without_duplicating_quest
     fake_store = _FakeChatStore(seed_history=seed)
     monkeypatch.setattr(ai_insights_service, "chat_store", fake_store)
     monkeypatch.setattr(ai_insights_service, "_chat_rate_limiter", _AlwaysAllowLimiter())
-    monkeypatch.setattr(ai_insights_service, "resolve_context", lambda asset, client_context: _make_context())
+    monkeypatch.setattr(ai_insights_service, "resolve_context", _fake_resolve_context)
     monkeypatch.setattr(ai_insights_service, "_resolve_gemini_api_key", lambda device_id, settings: None)
     new_reply = "This is a fresh, better answer with several words."
     seen_calls = []
