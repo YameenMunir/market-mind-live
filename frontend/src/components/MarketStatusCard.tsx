@@ -26,7 +26,7 @@ export function MarketStatusCard({ status, updatedAt, isLive, isStale }: MarketS
   return (
     <Panel eyebrow="Market Status" title={status?.symbol ?? "--"} className="flex h-full flex-col gap-3">
       <div className="flex items-center gap-3">
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised")}>
+        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-surface-raised")}>
           <Icon size={18} className="text-ink-muted" />
         </div>
         {status ? (

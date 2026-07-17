@@ -124,7 +124,7 @@ export function OnboardingTour({ tour }: OnboardingTourProps) {
               left: displayRect.left - 4,
               width: displayRect.width + 8,
               height: displayRect.height + 8,
-              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.65)",
+              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
             }}
           />
           <div
@@ -132,7 +132,7 @@ export function OnboardingTour({ tour }: OnboardingTourProps) {
             aria-modal="true"
             aria-label={step.title}
             onClick={(e) => e.stopPropagation()}
-            className="fixed z-[81] rounded-xl border border-border bg-surface-raised p-4 text-left shadow-panel"
+            className="fixed z-[81] rounded-lg border border-border bg-surface-raised p-4 text-left shadow-popover"
             style={{ top: position.top, left: position.left, width: POPOVER_WIDTH, maxWidth: "calc(100vw - 2rem)" }}
           >
             <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">

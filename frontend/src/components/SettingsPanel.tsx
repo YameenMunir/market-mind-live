@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { ReactNode } from "react";
 import { Check, KeyRound, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { GeminiKeySetupModal } from "@/components/GeminiKeySetupModal";
 import { Input } from "@/components/Input";
+import { Panel } from "@/components/Panel";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { Toggle } from "@/components/Toggle";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
 import { useChartPreferences } from "@/hooks/useChartPreferences";
@@ -14,23 +15,6 @@ import { useGeminiKey } from "@/hooks/useGeminiKey";
 import { useTheme } from "@/hooks/useTheme";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { API_BASE_URL, INDICATOR_POLL_MS, QUOTE_POLL_FALLBACK_MS, SUPPORTED_CURRENCIES, WS_BASE_URL } from "@/lib/constants";
-import { cn } from "@/lib/utils";
-
-interface SettingsSectionProps {
-  eyebrow: string;
-  title: string;
-  children: ReactNode;
-}
-
-function SettingsSection({ eyebrow, title, children }: SettingsSectionProps) {
-  return (
-    <div className="border-b border-border p-4 last:border-b-0 sm:p-5">
-      <p className="font-mono text-2xs uppercase font-bold tracking-wider text-ink-faint">{eyebrow}</p>
-      <h2 className="mt-0.5 font-mono text-xs uppercase font-bold text-ink border-b border-border/30 pb-1.5">{title}</h2>
-      <div className="mt-3.5">{children}</div>
-    </div>
-  );
-}
 
 export function SettingsPanel() {
   const { theme, setTheme, isReady } = useTheme();
@@ -51,8 +35,8 @@ export function SettingsPanel() {
   };
 
   return (
-    <div className="rounded-sm border border-border bg-surface">
-      <SettingsSection eyebrow="AI Insights" title="Gemini API key">
+    <div className="space-y-4 sm:space-y-5">
+      <Panel eyebrow="AI Insights" title="Gemini API key">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-brand/25 bg-brand/5">
@@ -85,73 +69,69 @@ export function SettingsPanel() {
             </Button>
           </div>
         </div>
-      </SettingsSection>
+      </Panel>
 
-      <SettingsSection eyebrow="Dashboard" title="Experience level">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Experience level">
-          <button
-            onClick={() => setExperienceMode("simple")}
-            aria-pressed={experienceMode === "simple"}
-            className={cn(
-              "flex flex-col items-start gap-1 rounded-sm border px-4 py-3 text-left transition-colors",
-              experienceMode === "simple"
-                ? "border-brand/40 bg-brand/5 text-ink font-semibold"
-                : "border-border text-ink-muted hover:border-ink-faint/40 hover:bg-surface"
-            )}
-          >
-            <span className="font-mono text-xs font-bold uppercase tracking-wider">Simple</span>
-            <span className="text-xs text-ink-muted">Price, prediction, chart, and a one-line summary only.</span>
-          </button>
-          <button
-            onClick={() => setExperienceMode("advanced")}
-            aria-pressed={experienceMode === "advanced"}
-            className={cn(
-              "flex flex-col items-start gap-1 rounded-sm border px-4 py-3 text-left transition-colors",
-              experienceMode === "advanced"
-                ? "border-brand/40 bg-brand/5 text-ink font-semibold"
-                : "border-border text-ink-muted hover:border-ink-faint/40 hover:bg-surface"
-            )}
-          >
-            <span className="font-mono text-xs font-bold uppercase tracking-wider">Advanced</span>
-            <span className="text-xs text-ink-muted">Full dashboard: indicators, risk, analyst consensus, and more.</span>
-          </button>
-        </div>
-      </SettingsSection>
+      <Panel eyebrow="Dashboard" title="Experience level">
+        <SegmentedControl
+          variant="grid"
+          ariaLabel="Experience level"
+          value={experienceMode}
+          onChange={setExperienceMode}
+          options={[
+            {
+              value: "simple",
+              content: (
+                <>
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider">Simple</span>
+                  <span className="text-xs text-ink-muted">Price, prediction, chart, and a one-line summary only.</span>
+                </>
+              ),
+            },
+            {
+              value: "advanced",
+              content: (
+                <>
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider">Advanced</span>
+                  <span className="text-xs text-ink-muted">Full dashboard: indicators, risk, analyst consensus, and more.</span>
+                </>
+              ),
+            },
+          ]}
+        />
+      </Panel>
 
-      <SettingsSection eyebrow="Appearance" title="Theme">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="Theme">
-          {/* Neither button shows as active until isReady - every useTheme() caller
-           * starts from a "dark" placeholder (see the hook's isReady doc), so
-           * highlighting "Dark mode" immediately would misrepresent a stored "light"
-           * preference for a split second before the correction lands. */}
-          <button
-            onClick={() => setTheme("dark")}
-            aria-pressed={isReady && theme === "dark"}
-            className={cn(
-              "flex items-center gap-2 rounded-sm border px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider transition-colors",
-              isReady && theme === "dark"
-                ? "border-brand/40 bg-brand/5 text-ink"
-                : "border-border text-ink-muted hover:border-ink-faint/40 hover:bg-surface"
-            )}
-          >
-            <Moon size={14} aria-hidden /> Dark mode
-          </button>
-          <button
-            onClick={() => setTheme("light")}
-            aria-pressed={isReady && theme === "light"}
-            className={cn(
-              "flex items-center gap-2 rounded-sm border px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider transition-colors",
-              isReady && theme === "light"
-                ? "border-brand/40 bg-brand/5 text-ink"
-                : "border-border text-ink-muted hover:border-ink-faint/40 hover:bg-surface"
-            )}
-          >
-            <Sun size={14} aria-hidden /> Light mode
-          </button>
-        </div>
-      </SettingsSection>
+      <Panel eyebrow="Appearance" title="Theme">
+        {/* Neither option shows as active until isReady - every useTheme() caller
+         * starts from a "dark" placeholder (see the hook's isReady doc), so
+         * highlighting "Dark mode" immediately would misrepresent a stored "light"
+         * preference for a split second before the correction lands. */}
+        <SegmentedControl
+          variant="grid"
+          ariaLabel="Theme"
+          value={isReady ? theme : null}
+          onChange={setTheme}
+          options={[
+            {
+              value: "dark",
+              content: (
+                <span className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider">
+                  <Moon size={14} aria-hidden /> Dark mode
+                </span>
+              ),
+            },
+            {
+              value: "light",
+              content: (
+                <span className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider">
+                  <Sun size={14} aria-hidden /> Light mode
+                </span>
+              ),
+            },
+          ]}
+        />
+      </Panel>
 
-      <SettingsSection eyebrow="Chart Defaults" title="Overlays">
+      <Panel eyebrow="Chart Defaults" title="Overlays">
         <div className="divide-y divide-border">
           <Toggle
             checked={prefs.showMovingAverages}
@@ -168,36 +148,35 @@ export function SettingsPanel() {
             loading={!isChartPrefsReady}
           />
         </div>
-      </SettingsSection>
+      </Panel>
 
-      <SettingsSection eyebrow="Display" title="Currency">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="Display currency">
-          {SUPPORTED_CURRENCIES.map((c) => (
-            <button
-              key={c.code}
-              onClick={() => setCurrency(c.code)}
-              aria-pressed={currency === c.code}
-              className={cn(
-                "flex items-center justify-between gap-2 rounded-sm border px-3 py-2.5 text-left font-mono text-xs font-bold uppercase tracking-wider transition-colors",
-                currency === c.code
-                  ? "border-brand/40 bg-brand/5 text-ink"
-                  : "border-border text-ink-muted hover:border-ink-faint/40 hover:bg-surface"
-              )}
-            >
-              <span>
-                <span className="text-ink-faint font-semibold">{c.symbol}</span> {c.code}
-              </span>
-              {currency === c.code && <Check size={13} className="shrink-0 text-brand" aria-hidden />}
-            </button>
-          ))}
-        </div>
+      <Panel eyebrow="Display" title="Currency">
+        <SegmentedControl
+          variant="grid"
+          ariaLabel="Display currency"
+          className="grid-cols-2 sm:grid-cols-3"
+          optionClassName="flex-row items-center justify-between font-mono text-xs font-bold uppercase tracking-wider"
+          value={currency}
+          onChange={setCurrency}
+          options={SUPPORTED_CURRENCIES.map((c) => ({
+            value: c.code,
+            content: (
+              <>
+                <span>
+                  <span className="text-ink-faint font-semibold">{c.symbol}</span> {c.code}
+                </span>
+                {currency === c.code && <Check size={13} className="shrink-0 text-brand" aria-hidden />}
+              </>
+            ),
+          }))}
+        />
         <p className="mt-3 text-xs leading-relaxed text-ink-muted">
           Prices, charts, predictions, and backtests are converted to this currency using a live FX rate. Numbers
           are still calculated from the asset's native-currency data - only the display is converted.
         </p>
-      </SettingsSection>
+      </Panel>
 
-      <SettingsSection eyebrow="Default Asset" title="Startup symbol">
+      <Panel eyebrow="Default Asset" title="Startup symbol">
         <label htmlFor="settings-default-symbol" className="sr-only">
           Startup symbol
         </label>
@@ -217,9 +196,9 @@ export function SettingsPanel() {
           placeholder="AAPL"
         />
         <p className="mt-2 text-xs text-ink-muted">The dashboard will load this symbol on your next visit.</p>
-      </SettingsSection>
+      </Panel>
 
-      <SettingsSection eyebrow="Connection" title="Data & refresh">
+      <Panel eyebrow="Connection" title="Data & refresh">
         <div className="divide-y divide-border/60 border border-border bg-surface-raised/40">
           <div className="flex items-center justify-between gap-4 p-2.5 sm:px-4">
             <span className="shrink-0 font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">API endpoint</span>
@@ -238,7 +217,7 @@ export function SettingsPanel() {
             <span className="shrink-0 font-mono text-xs text-ink-muted">{INDICATOR_POLL_MS / 1000}s</span>
           </div>
         </div>
-      </SettingsSection>
+      </Panel>
 
       <GeminiKeySetupModal isOpen={isKeyModalOpen} onClose={() => setIsKeyModalOpen(false)} allowSkip cancelLabel="Cancel" />
     </div>

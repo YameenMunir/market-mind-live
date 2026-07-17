@@ -73,9 +73,12 @@ export default function BacktestingPage() {
         )}
       >
         <h1 className="text-xs font-mono font-bold uppercase tracking-wider text-ink-muted">Backtesting</h1>
-        <div className="hidden md:flex items-center gap-2 sm:gap-3">
-          <CurrencySelector />
-          <ThemeToggle />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <AIInsightsButton onClick={() => setIsAIOpen(true)} />
+          <div className="hidden md:flex items-center gap-2 sm:gap-3">
+            <CurrencySelector />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -145,7 +148,6 @@ export default function BacktestingPage() {
         <BacktestResults result={result} theme={theme} isLoading={isLoading} />
       </main>
 
-      <AIInsightsButton onClick={() => setIsAIOpen(true)} />
       <AIInsightsPanel
         isOpen={isAIOpen}
         onClose={() => setIsAIOpen(false)}

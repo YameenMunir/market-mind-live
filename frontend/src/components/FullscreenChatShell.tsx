@@ -58,7 +58,7 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pr-24">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-brand/10">
                   <Sparkles size={17} className="text-brand" />
                 </div>
                 <div>
@@ -151,6 +151,7 @@ export function FullscreenChatShell({ isOpen, onMinimize, onClose, asset, contex
               onFeedback={chat.sendFeedback}
               feedbackGiven={chat.feedbackGiven}
               unverifiedFigures={chat.unverifiedFigures}
+              contextUsed={chat.contextUsed}
               size="fullscreen"
             />
           </div>

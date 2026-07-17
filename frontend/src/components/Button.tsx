@@ -25,7 +25,10 @@ export const BUTTON_VARIANT_STYLES: Record<ButtonVariant, string> = {
 export const BUTTON_SIZE_STYLES: Record<ButtonSize, string> = {
   sm: "h-8 gap-1.5 rounded-sm px-2.5 text-xs font-mono font-semibold uppercase tracking-wider",
   md: "h-9 gap-2 rounded-sm px-3.5 text-xs font-mono font-semibold uppercase tracking-wider",
-  lg: "h-10 gap-2 rounded-sm px-4 text-xs font-mono font-semibold uppercase tracking-wider",
+  // 44px: the only size used for primary/hero CTAs and full-width form submits
+  // (Navbar, HeroSection, AlertsPanel's "Create alert", backtesting's submit) - the
+  // WCAG 2.5.5 touch-target minimum, not just a visual step up from `md`.
+  lg: "h-11 gap-2 rounded-sm px-4 text-xs font-mono font-semibold uppercase tracking-wider",
   icon: "h-9 w-9 rounded-sm",
   "icon-sm": "h-8 w-8 rounded-sm",
 };

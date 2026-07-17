@@ -65,7 +65,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
     <Dialog isOpen={isOpen} onClose={onClose} variant="drawer" labelledBy="alerts-panel-title" className="max-w-[400px]">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-brand/10">
             <Bell size={16} className="text-brand" />
           </div>
           <div className="min-w-0">
@@ -154,7 +154,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
               )}
 
               {!isLoading && alerts.length === 0 && !error && (
-                <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-4 py-8 text-center">
+                <div className="flex flex-col items-center gap-2 rounded-sm border border-dashed border-border px-4 py-8 text-center">
                   <Bell size={18} className="text-ink-faint" aria-hidden />
                   <p className="text-xs font-medium text-ink-muted">No alerts for {symbol} yet</p>
                   <p className="max-w-[240px] text-xs leading-relaxed text-ink-faint">
@@ -168,7 +168,7 @@ export function AlertsPanel({ isOpen, onClose, symbol, alertsState }: AlertsPane
               {alerts.map((alert) => {
                 const meta = STATUS_META[alert.status];
                 return (
-                  <div key={alert.id} className="rounded-lg border border-border p-3">
+                  <div key={alert.id} className="rounded-sm border border-border p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-ink">

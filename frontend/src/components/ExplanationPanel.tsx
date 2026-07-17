@@ -1,9 +1,14 @@
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Panel } from "@/components/Panel";
 import type { PredictionResult } from "@/types";
 
 export function ExplanationPanel({ prediction }: { prediction: PredictionResult | null }) {
   return (
     <Panel eyebrow="Model Reasoning" title="Plain-English Explanation">
+      <p className="mb-3 flex items-center gap-1.5 font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">
+        Rule-based scoring, not machine learning
+        <InfoTooltip articleId="prediction_methodology" />
+      </p>
       <p className="text-sm leading-relaxed text-ink-muted">
         {prediction?.plain_english_explanation ?? "Reasoning will appear here once a prediction has been generated."}
       </p>

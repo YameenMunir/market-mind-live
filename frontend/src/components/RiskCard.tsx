@@ -1,3 +1,4 @@
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { cn } from "@/lib/utils";
@@ -43,8 +44,9 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
         />
       </div>
       {risk ? (
-        <p className={cn("mt-1.5 font-mono text-2xs font-bold uppercase", meta?.text ?? "text-ink-muted")}>
+        <p className={cn("mt-1.5 flex items-center gap-1.5 font-mono text-2xs font-bold uppercase", meta?.text ?? "text-ink-muted")}>
           Score: {Math.round(risk.risk_score)} / 100
+          <InfoTooltip articleId="risk_methodology" />
         </p>
       ) : (
         <div aria-hidden className="mt-2.5 h-3 w-28 animate-pulse rounded-sm bg-surface-raised" />

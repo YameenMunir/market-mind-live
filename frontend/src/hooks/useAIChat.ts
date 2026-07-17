@@ -66,6 +66,13 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
   // ChatResponse.unverified_figures / ChatStreamEvent's "done" variant). Only ever
   // populated for freshly-streamed replies - not recomputed on session reload.
   const [unverifiedFigures, setUnverifiedFigures] = useState<Record<string, boolean>>({});
+  // message_id -> the AIAssetContext that actually grounded that reply (live quote,
+  // indicators, news, etc. - see ChatResponse.context_used / ChatStreamEvent's "done"
+  // variant), so the UI can show what a given answer is based on. Same "freshly-streamed
+  // only" ceiling as unverifiedFigures above: the backend doesn't persist context_used
+  // on ChatMessage, so reloaded session history has nothing to key in here and simply
+  // won't render a provenance strip for those older messages.
+  const [contextUsed, setContextUsed] = useState<Record<string, AIAssetContext>>({});
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
@@ -90,6 +97,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
       setMessages([res.welcome_message]);
       setFeedbackGiven({});
       setUnverifiedFigures({});
+      setContextUsed({});
     } catch (err) {
       await handleApiKeyError(err);
       setError(err instanceof ApiError ? err.message : "Couldn't start a new chat session.");
@@ -111,6 +119,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
       setMessages(detail.messages);
       setFeedbackGiven({});
       setUnverifiedFigures({});
+      setContextUsed({});
       if (detail.asset) writeActiveSession(detail.asset, detail.session_id);
     } catch (err) {
       await handleApiKeyError(err);
@@ -228,6 +237,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
             if (final.unverified_figures) {
               setUnverifiedFigures((prev) => ({ ...prev, [final.message_id]: true }));
             }
+            setContextUsed((prev) => ({ ...prev, [final.message_id]: final.context_used }));
             setStreamingMessageId(null);
             setIsSending(false);
             abortControllerRef.current = null;
@@ -297,6 +307,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
           if (final.unverified_figures) {
             setUnverifiedFigures((prev) => ({ ...prev, [final.message_id]: true }));
           }
+          setContextUsed((prev) => ({ ...prev, [final.message_id]: final.context_used }));
           setStreamingMessageId(null);
           setIsSending(false);
           abortControllerRef.current = null;
@@ -345,6 +356,7 @@ export function useAIChat({ asset, enabled, buildContext }: UseAIChatOptions) {
     sendFeedback,
     feedbackGiven,
     unverifiedFigures,
+    contextUsed,
     startNewChat,
     loadSession,
     sessions,

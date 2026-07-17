@@ -152,6 +152,7 @@ export default function DashboardPage() {
         rightSlot={
           <div className="flex flex-wrap items-center gap-2">
             <ConnectionStatusPill state={snapshot.connectionState} />
+            <AIInsightsButton onClick={() => setIsAIOpen(true)} />
             <AlertsBellButton onClick={() => setIsAlertsOpen(true)} activeCount={activeAlertCount} />
             <DashboardViewMenu
               isFullscreen={isFullscreen}
@@ -397,7 +398,6 @@ export default function DashboardPage() {
       <AlertToastStack alerts={alertsState.newlyTriggered} onDismiss={alertsState.dismissToast} />
       <AlertsPanel isOpen={isAlertsOpen} onClose={() => setIsAlertsOpen(false)} symbol={symbol} alertsState={alertsState} />
 
-      <AIInsightsButton onClick={() => setIsAIOpen(true)} />
       <AIInsightsPanel
         isOpen={isAIOpen}
         onClose={() => setIsAIOpen(false)}

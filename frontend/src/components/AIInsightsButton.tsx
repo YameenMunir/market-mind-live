@@ -1,19 +1,26 @@
 import { Sparkles } from "lucide-react";
 
+import { Button } from "@/components/Button";
+
 interface AIInsightsButtonProps {
   onClick: () => void;
 }
 
+// Lives in Topbar's toolbar row next to AlertsBellButton/DashboardViewMenu, not a
+// floating FAB - a fixed-position launcher previously sat in the same bottom-right
+// corner as MobileNav's bottom tab bar on every viewport under `lg`, and the
+// rounded-full brand-filled pill read as a generic chat-widget launcher inconsistent
+// with the flat/bordered idiom used everywhere else, including the panel it opens.
 export function AIInsightsButton({ onClick }: AIInsightsButtonProps) {
   return (
-    <button
+    <Button
+      variant="secondary"
+      size="icon"
       onClick={onClick}
-      data-tour="ai-insights-button"
       aria-label="Open AI Insights"
-      className="fixed bottom-5 right-5 z-30 flex items-center gap-2 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-canvas shadow-glow transition-transform hover:-translate-y-0.5 lg:bottom-6 lg:right-6"
+      data-tour="ai-insights-button"
     >
       <Sparkles size={16} />
-      <span className="hidden sm:inline">AI Insights</span>
-    </button>
+    </Button>
   );
 }

@@ -66,7 +66,7 @@ export function InfoTooltip({ articleId }: InfoTooltipProps) {
       {open && (
         <div
           role="tooltip"
-          className="absolute bottom-full left-1/2 z-20 mb-2 w-64 -translate-x-1/2 rounded-xl border border-border bg-surface-raised p-3 text-left shadow-panel"
+          className="absolute bottom-full left-1/2 z-20 mb-2 w-64 -translate-x-1/2 rounded-lg border border-border bg-surface-raised p-3 text-left shadow-popover"
         >
           <p className="text-xs font-semibold text-ink">{article.title}</p>
           <p className="mt-1 text-xs leading-relaxed text-ink-muted">{article.body}</p>

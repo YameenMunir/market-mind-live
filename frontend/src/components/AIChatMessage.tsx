@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BarChart3,
   Clock,
+  Database,
   Minus,
   RotateCw,
   ShieldAlert,
@@ -15,8 +16,9 @@ import {
 } from "lucide-react";
 
 import { MarkdownContent } from "@/components/MarkdownContent";
-import { cn } from "@/lib/utils";
-import type { ChatMessage, FeedbackRating } from "@/types";
+import { summarizeProvenance } from "@/lib/aiProvenance";
+import { cn, timeAgo } from "@/lib/utils";
+import type { AIAssetContext, ChatMessage, FeedbackRating } from "@/types";
 
 interface AIChatMessageProps {
   message: ChatMessage;
@@ -44,6 +46,11 @@ interface AIChatMessageProps {
    * back to the underlying data - see ChatResponse.unverified_figures. A soft,
    * non-blocking hint to double-check this specific reply, not an error state. */
   hasUnverifiedFigures?: boolean;
+  /** The AIAssetContext that actually grounded this specific reply - only ever
+   * present for a message generated in the current live session (see useAIChat's
+   * contextUsed doc); undefined for reloaded session history, in which case the
+   * provenance strip below simply doesn't render for that message. */
+  contextUsed?: AIAssetContext;
 }
 
 interface InsightSection {
@@ -277,11 +284,13 @@ export function AIChatMessage({
   isStreaming,
   skipAnimation,
   hasUnverifiedFigures,
+  contextUsed,
 }: AIChatMessageProps) {
   const isUser = message.role === "user";
   const isFullscreen = size === "fullscreen";
   const insight = !isUser && !isStreaming ? parseInsightSections(message.content) : null;
   const isThinking = Boolean(isStreaming) && message.content === "";
+  const provenance = !isUser && !isStreaming && contextUsed ? summarizeProvenance(contextUsed) : null;
 
   return (
     <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
@@ -318,6 +327,23 @@ export function AIChatMessage({
         </div>
       )}
 
+      {provenance && provenance.sources.length > 0 && (
+        <div className="flex items-start gap-1.5 px-1 font-mono text-2xs uppercase tracking-wide text-ink-faint">
+          <Database size={11} className="mt-0.5 shrink-0" />
+          <span>
+            Grounded in: {provenance.sources.join(" · ")}
+            {provenance.asOf && <> &middot; updated {timeAgo(provenance.asOf)}</>}
+          </span>
+        </div>
+      )}
+
+      {provenance && provenance.missingData.length > 0 && (
+        <div className="flex items-start gap-1.5 px-1 font-mono text-2xs uppercase tracking-wide text-warn/90">
+          <AlertTriangle size={11} className="mt-0.5 shrink-0" />
+          <span>Not available for this reply: {provenance.missingData.join(", ")}</span>
+        </div>
+      )}
+
       {!isUser && !isStreaming && hasUnverifiedFigures && (
         <div className="flex items-center gap-1.5 px-1 font-mono text-2xs uppercase tracking-wide text-warn/90">
           <AlertTriangle size={11} className="shrink-0" />
@@ -325,46 +351,51 @@ export function AIChatMessage({
         </div>
       )}
 
-      {!isUser && !isStreaming && (onFeedback || onRegenerate) && (
-        <div className="flex items-center gap-1 px-1">
-          {onFeedback && (
-            <>
-              <button
-                type="button"
-                aria-label="Good response"
-                onClick={() => onFeedback("up")}
-                aria-pressed={feedbackGiven === "up"}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
-                  feedbackGiven === "up" ? "bg-bull/15 text-bull" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
-                )}
-              >
-                <ThumbsUp size={12} />
-              </button>
-              <button
-                type="button"
-                aria-label="Poor response"
-                onClick={() => onFeedback("down")}
-                aria-pressed={feedbackGiven === "down"}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
-                  feedbackGiven === "down" ? "bg-bear/15 text-bear" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
-                )}
-              >
-                <ThumbsDown size={12} />
-              </button>
-            </>
-          )}
-          {onRegenerate && (
-            <button
-              type="button"
-              aria-label="Regenerate response"
-              title="Regenerate response"
-              onClick={onRegenerate}
-              className="flex h-9 w-9 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
-            >
-              <RotateCw size={12} />
-            </button>
+      {!isUser && !isStreaming && (
+        <div className="flex items-center justify-between gap-2 px-1">
+          <span className="font-mono text-2xs text-ink-faint">{timeAgo(message.created_at)}</span>
+          {(onFeedback || onRegenerate) && (
+            <div className="flex items-center gap-1">
+              {onFeedback && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Good response"
+                    onClick={() => onFeedback("up")}
+                    aria-pressed={feedbackGiven === "up"}
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+                      feedbackGiven === "up" ? "bg-bull/15 text-bull" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
+                    )}
+                  >
+                    <ThumbsUp size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Poor response"
+                    onClick={() => onFeedback("down")}
+                    aria-pressed={feedbackGiven === "down"}
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+                      feedbackGiven === "down" ? "bg-bear/15 text-bear" : "text-ink-faint hover:bg-surface-raised hover:text-ink-muted"
+                    )}
+                  >
+                    <ThumbsDown size={12} />
+                  </button>
+                </>
+              )}
+              {onRegenerate && (
+                <button
+                  type="button"
+                  aria-label="Regenerate response"
+                  title="Regenerate response"
+                  onClick={onRegenerate}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
+                >
+                  <RotateCw size={12} />
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}

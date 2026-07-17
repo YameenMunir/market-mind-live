@@ -15,37 +15,13 @@ interface AssetSearchProps {
   onSelect: (asset: AssetSearchResult) => void;
 }
 
-function AssetLogo({ symbol, asset_type }: { symbol: string; asset_type: string }) {
-  const isCrypto = asset_type === "crypto";
+// Flat monogram badge, not a per-symbol gradient avatar - ticker identity comes from
+// the symbol text next to it, so the logo only needs to be a consistent, legible mark.
+function AssetLogo({ symbol }: { symbol: string }) {
   const letter = symbol.replace(/-USD$|=X$|^\^/, "").slice(0, 2).toUpperCase();
-  
-  let bgClass = "bg-gradient-to-br from-zinc-700 to-zinc-900 border-zinc-700/50";
-  if (isCrypto) {
-    if (symbol.startsWith("BTC")) bgClass = "bg-gradient-to-br from-amber-500 to-amber-700 border-amber-500/30";
-    else if (symbol.startsWith("ETH")) bgClass = "bg-gradient-to-br from-indigo-500 to-indigo-700 border-indigo-500/30";
-    else if (symbol.startsWith("SOL")) bgClass = "bg-gradient-to-br from-teal-400 to-indigo-600 border-teal-500/30";
-    else bgClass = "bg-gradient-to-br from-yellow-600 to-orange-800 border-orange-700/30";
-  } else if (asset_type === "forex") {
-    bgClass = "bg-gradient-to-br from-blue-600 to-indigo-800 border-indigo-700/30";
-  } else if (asset_type === "commodity") {
-    bgClass = "bg-gradient-to-br from-yellow-500 to-yellow-800 border-yellow-700/30";
-  } else if (asset_type === "index") {
-    bgClass = "bg-gradient-to-br from-purple-600 to-pink-800 border-purple-700/30";
-  } else {
-    // Generate background color based on symbol letter code
-    const charCodeSum = symbol.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const colorOptions = [
-      "from-blue-600 to-cyan-800 border-blue-700/30",
-      "from-emerald-600 to-teal-800 border-emerald-700/30",
-      "from-red-600 to-rose-800 border-red-700/30",
-      "from-purple-600 to-violet-800 border-purple-700/30",
-      "from-orange-500 to-amber-700 border-orange-600/30",
-    ];
-    bgClass = "bg-gradient-to-br " + colorOptions[charCodeSum % colorOptions.length];
-  }
-  
+
   return (
-    <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold font-mono text-white shadow-inner", bgClass)}>
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border bg-surface-raised text-[10px] font-bold font-mono text-ink-muted">
       {letter}
     </div>
   );
@@ -61,7 +37,7 @@ const formatPrice = (price: number | null | undefined, assetType: string, curren
 const formatChange = (changePercent: number | null | undefined) => {
   if (changePercent === null || changePercent === undefined) return null;
   const prefix = changePercent > 0 ? "+" : "";
-  const colorClass = changePercent >= 0 ? "text-emerald-500" : "text-rose-500";
+  const colorClass = changePercent >= 0 ? "text-bull" : "text-bear";
   return {
     text: `${prefix}${changePercent.toFixed(2)}%`,
     className: colorClass
@@ -162,17 +138,15 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
                     className="flex min-h-[52px] w-full items-center justify-between gap-3 px-3 py-2.5 text-left border-b border-border/30 last:border-b-0 transition-all hover:bg-surface focus-visible:bg-surface"
                   >
                     <span className="flex min-w-0 items-center gap-3">
-                      <AssetLogo symbol={asset.symbol} asset_type={asset.asset_type} />
+                      <AssetLogo symbol={asset.symbol} />
                       <span className="flex flex-col min-w-0 gap-0.5">
                         <span className="flex items-center gap-1.5">
                           <span className="font-mono text-sm font-semibold text-ink leading-none">{asset.symbol}</span>
                           {asset.market_status && (
-                            <span 
+                            <span
                               className={cn(
                                 "h-1.5 w-1.5 rounded-full inline-block shrink-0",
-                                isMarketOpen ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" : 
-                                isPreOrPost ? "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]" : 
-                                "bg-zinc-600"
+                                isMarketOpen ? "bg-bull" : isPreOrPost ? "bg-warn" : "bg-ink-faint"
                               )}
                               title={`Market: ${asset.market_status.replace("_", " ")}`}
                             />

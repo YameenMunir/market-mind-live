@@ -149,7 +149,7 @@ export function Dialog({
                 tabIndex={-1}
                 onClick={(e) => e.stopPropagation()}
                 className={cn(
-                  "w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-panel outline-none",
+                  "w-full max-w-md rounded-lg border border-border bg-surface p-5 shadow-panel outline-none",
                   className
                 )}
               >

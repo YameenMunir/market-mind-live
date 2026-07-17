@@ -26,9 +26,9 @@ function Toast({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) => 
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 40, scale: 0.95 }}
       transition={{ type: "spring", damping: 28, stiffness: 320 }}
-      className="pointer-events-auto flex w-full max-w-80 items-start gap-2.5 rounded-xl border border-brand/30 bg-surface p-3.5 shadow-panel"
+      className="pointer-events-auto flex w-full max-w-80 items-start gap-2.5 rounded-lg border border-brand/30 bg-surface p-3.5 shadow-popover"
     >
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-brand/10">
         <Bell size={14} className="text-brand" />
       </div>
       <div className="min-w-0 flex-1">
@@ -38,7 +38,7 @@ function Toast({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) => 
       <button
         onClick={() => onDismiss(alert.id)}
         aria-label="Dismiss notification"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
       >
         <X size={13} />
       </button>

@@ -1,26 +1,71 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  Building2, 
-  Globe, 
-  Users, 
-  DollarSign, 
-  TrendingUp, 
-  Calendar, 
+import type { ReactNode } from "react";
+import {
+  Building2,
+  Globe,
+  Users,
+  DollarSign,
+  TrendingUp,
+  Calendar,
   Briefcase,
-  ExternalLink 
+  ExternalLink,
 } from "lucide-react";
 
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, formatCompactNumber, formatPercent } from "@/lib/utils";
 import type { AssetFundamentals } from "@/types";
 
 interface FundamentalsPanelProps {
   symbol: string;
   className?: string;
+}
+
+// A ratio/multiple ("24.51x") has no shared equivalent in lib/utils.ts (it's specific
+// to this panel), but still routes through the same null/NaN guard as the shared
+// formatters instead of a bare truthy check - `debt_to_equity: 0` (a debt-free
+// company) is a real value, not missing data, and a `val ? ... : "--"` check would
+// have wrongly hidden it.
+function fmtMultiple(val: number | null | undefined): string {
+  if (val === null || val === undefined || Number.isNaN(val)) return "--";
+  return val.toFixed(2) + "x";
+}
+
+// Fundamentals-specific: most percent fields here are stored as decimals (0.23 ==
+// 23%), a couple (e.g. dividend_yield) already arrive as a raw percent - `isRawPercent`
+// picks which. Delegates the actual null/NaN safety and formatting to lib/utils.ts's
+// formatPercent rather than re-deriving it, and suppresses its "+" sign (right for a
+// price change, not for "Gross Margin: +23.00%").
+function fmtFundamentalsPercent(val: number | null | undefined, isRawPercent = false): string {
+  if (val === null || val === undefined || Number.isNaN(val)) return "--";
+  return formatPercent(isRawPercent ? val : val * 100, false);
+}
+
+function fmtDate(val: string | null | undefined): string {
+  if (!val) return "--";
+  try {
+    return new Date(val).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  } catch {
+    return val;
+  }
+}
+
+/** One label/value row - the shared shape ~20 stats across this panel were each
+ * hand-rolling slightly differently (see the removed duplication). Numbers get
+ * `.numeric` (tabular figures) so a column of them stays visually aligned. */
+function StatRow({ label, value, icon }: { label: string; value: ReactNode; icon?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1">
+      <span className="flex items-center gap-1.5 text-ink-faint">
+        {icon}
+        {label}
+      </span>
+      <span className="numeric font-semibold text-ink">{value}</span>
+    </div>
+  );
 }
 
 export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps) {
@@ -74,43 +119,12 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
     return null; // Gracefully hide when fundamentals are not available (e.g. indices or missing symbols)
   }
 
-  // Formatters
-  const fmtNum = (val: number | null | undefined): string => {
-    if (val === null || val === undefined || isNaN(val)) return "—";
-    const absVal = Math.abs(val);
-    if (absVal >= 1e12) return (val / 1e12).toFixed(2) + "T";
-    if (absVal >= 1e9) return (val / 1e9).toFixed(2) + "B";
-    if (absVal >= 1e6) return (val / 1e6).toFixed(2) + "M";
-    return val.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  };
-
-  const fmtPercent = (val: number | null | undefined, isRawPercent = false): string => {
-    if (val === null || val === undefined || isNaN(val)) return "—";
-    const mult = isRawPercent ? 1 : 100;
-    return (val * mult).toFixed(2) + "%";
-  };
-
-  const fmtPE = (val: number | null | undefined): string => {
-    if (val === null || val === undefined || isNaN(val)) return "—";
-    return val.toFixed(2) + "x";
-  };
-
-  const fmtDate = (val: string | null | undefined): string => {
-    if (!val) return "—";
-    try {
-      const d = new Date(val);
-      return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-    } catch {
-      return val;
-    }
-  };
-
   const showProfile = Boolean(data.sector || data.industry || data.employees || data.description);
 
   return (
-    <Panel 
-      eyebrow="Company Profile & Fundamentals" 
-      title={`${symbol} Valuation Summary`} 
+    <Panel
+      eyebrow="Company Profile & Fundamentals"
+      title={`${symbol} Valuation Summary`}
       className={cn("w-full transition-all duration-300", className)}
     >
       <div className="flex flex-col gap-6 lg:flex-row">
@@ -142,10 +156,10 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
             )}
 
             <div className="mt-auto grid grid-cols-2 gap-4 border-t border-border/40 pt-4 text-xs font-mono">
-              {data.employees && (
+              {data.employees !== null && data.employees !== undefined && (
                 <div className="flex flex-col gap-0.5">
                   <span className="text-2xs text-ink-faint uppercase">Employees</span>
-                  <span className="font-medium text-ink flex items-center gap-1.5">
+                  <span className="numeric font-medium text-ink flex items-center gap-1.5">
                     <Users size={12} className="text-brand/70" />
                     {data.employees.toLocaleString()}
                   </span>
@@ -154,10 +168,10 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
               {data.website && (
                 <div className="flex flex-col gap-0.5">
                   <span className="text-2xs text-ink-faint uppercase">Corporate Site</span>
-                  <a 
-                    href={data.website} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <a
+                    href={data.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="font-medium text-brand hover:underline flex items-center gap-1"
                   >
                     <Globe size={12} className="text-brand/70" />
@@ -176,30 +190,12 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
           <div className="flex flex-col gap-3">
             <h4 className="font-mono text-2xs font-bold uppercase tracking-wider text-brand border-b border-brand/20 pb-1.5">Valuation Metrics</h4>
             <div className="flex flex-col gap-2.5 font-mono text-xs">
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Trailing P/E</span>
-                <span className="font-semibold text-ink">{fmtPE(data.trailing_pe)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Forward P/E</span>
-                <span className="font-semibold text-ink">{fmtPE(data.forward_pe)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">PEG Ratio</span>
-                <span className="font-semibold text-ink">{fmtPE(data.peg_ratio)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Trailing EPS</span>
-                <span className="font-semibold text-ink">${fmtNum(data.trailing_eps)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Forward EPS</span>
-                <span className="font-semibold text-ink">${fmtNum(data.forward_eps)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Beta (Volatility)</span>
-                <span className="font-semibold text-ink">{data.beta ? data.beta.toFixed(2) : "—"}</span>
-              </div>
+              <StatRow label="Trailing P/E" value={fmtMultiple(data.trailing_pe)} />
+              <StatRow label="Forward P/E" value={fmtMultiple(data.forward_pe)} />
+              <StatRow label="PEG Ratio" value={fmtMultiple(data.peg_ratio)} />
+              <StatRow label="Trailing EPS" value={`$${formatCompactNumber(data.trailing_eps)}`} />
+              <StatRow label="Forward EPS" value={`$${formatCompactNumber(data.forward_eps)}`} />
+              <StatRow label="Beta (Volatility)" value={data.beta !== null && data.beta !== undefined ? data.beta.toFixed(2) : "--"} />
             </div>
           </div>
 
@@ -207,30 +203,15 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
           <div className="flex flex-col gap-3">
             <h4 className="font-mono text-2xs font-bold uppercase tracking-wider text-brand border-b border-brand/20 pb-1.5">Margins & Financials</h4>
             <div className="flex flex-col gap-2.5 font-mono text-xs">
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Gross Margin</span>
-                <span className="font-semibold text-ink">{fmtPercent(data.gross_margins)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Operating Margin</span>
-                <span className="font-semibold text-ink">{fmtPercent(data.operating_margins)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Profit Margin</span>
-                <span className="font-semibold text-ink">{fmtPercent(data.profit_margins)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Return on Equity</span>
-                <span className="font-semibold text-ink">{fmtPercent(data.return_on_equity)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Return on Assets</span>
-                <span className="font-semibold text-ink">{fmtPercent(data.return_on_assets)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Debt to Equity</span>
-                <span className="font-semibold text-ink">{data.debt_to_equity ? (data.debt_to_equity / 100).toFixed(2) + "x" : "—"}</span>
-              </div>
+              <StatRow label="Gross Margin" value={fmtFundamentalsPercent(data.gross_margins)} />
+              <StatRow label="Operating Margin" value={fmtFundamentalsPercent(data.operating_margins)} />
+              <StatRow label="Profit Margin" value={fmtFundamentalsPercent(data.profit_margins)} />
+              <StatRow label="Return on Equity" value={fmtFundamentalsPercent(data.return_on_equity)} />
+              <StatRow label="Return on Assets" value={fmtFundamentalsPercent(data.return_on_assets)} />
+              <StatRow
+                label="Debt to Equity"
+                value={data.debt_to_equity !== null && data.debt_to_equity !== undefined ? fmtMultiple(data.debt_to_equity / 100) : "--"}
+              />
             </div>
           </div>
 
@@ -238,36 +219,12 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
           <div className="flex flex-col gap-3">
             <h4 className="font-mono text-2xs font-bold uppercase tracking-wider text-brand border-b border-brand/20 pb-1.5">Balance Sheet & Trading</h4>
             <div className="flex flex-col gap-2.5 font-mono text-xs">
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Market Cap</span>
-                <span className="font-semibold text-ink flex items-center gap-1">
-                  <DollarSign size={10} className="text-brand/70" />
-                  {fmtNum(data.market_cap)}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Enterprise Value</span>
-                <span className="font-semibold text-ink flex items-center gap-1">
-                  <DollarSign size={10} className="text-brand/70" />
-                  {fmtNum(data.enterprise_value)}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Total Revenue</span>
-                <span className="font-semibold text-ink">{fmtNum(data.total_revenue)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">EBITDA</span>
-                <span className="font-semibold text-ink">{fmtNum(data.ebitda)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Free Cash Flow</span>
-                <span className="font-semibold text-ink">{fmtNum(data.free_cashflow)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Shares Short / Float</span>
-                <span className="font-semibold text-ink">{fmtPercent(data.short_percent_of_float)}</span>
-              </div>
+              <StatRow label="Market Cap" icon={<DollarSign size={10} className="text-brand/70" />} value={formatCompactNumber(data.market_cap)} />
+              <StatRow label="Enterprise Value" icon={<DollarSign size={10} className="text-brand/70" />} value={formatCompactNumber(data.enterprise_value)} />
+              <StatRow label="Total Revenue" value={formatCompactNumber(data.total_revenue)} />
+              <StatRow label="EBITDA" value={formatCompactNumber(data.ebitda)} />
+              <StatRow label="Free Cash Flow" value={formatCompactNumber(data.free_cashflow)} />
+              <StatRow label="Shares Short / Float" value={fmtFundamentalsPercent(data.short_percent_of_float)} />
             </div>
           </div>
 
@@ -275,32 +232,18 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
           <div className="flex flex-col gap-3">
             <h4 className="font-mono text-2xs font-bold uppercase tracking-wider text-brand border-b border-brand/20 pb-1.5">Market Ranges & Targets</h4>
             <div className="flex flex-col gap-2.5 font-mono text-xs">
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">52-Week Range</span>
-                <span className="font-semibold text-ink">
-                  ${fmtNum(data.fifty_two_week_low)} - ${fmtNum(data.fifty_two_week_high)}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">50-Day Moving Avg</span>
-                <span className="font-semibold text-ink">${fmtNum(data.fifty_day_average)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">200-Day Moving Avg</span>
-                <span className="font-semibold text-ink">${fmtNum(data.two_hundred_day_average)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Mean Price Target</span>
-                <span className="font-semibold text-brand font-bold">${fmtNum(data.price_target_mean)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Dividend Yield</span>
-                <span className="font-semibold text-ink">{fmtPercent(data.dividend_yield, true)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border/40 pb-1">
-                <span className="text-ink-faint">Payout Ratio</span>
-                <span className="font-semibold text-ink">{fmtPercent(data.payout_ratio)}</span>
-              </div>
+              <StatRow
+                label="52-Week Range"
+                value={`$${formatCompactNumber(data.fifty_two_week_low)} - $${formatCompactNumber(data.fifty_two_week_high)}`}
+              />
+              <StatRow label="50-Day Moving Avg" value={`$${formatCompactNumber(data.fifty_day_average)}`} />
+              <StatRow label="200-Day Moving Avg" value={`$${formatCompactNumber(data.two_hundred_day_average)}`} />
+              <StatRow
+                label="Mean Price Target"
+                value={<span className="text-brand">${formatCompactNumber(data.price_target_mean)}</span>}
+              />
+              <StatRow label="Dividend Yield" value={fmtFundamentalsPercent(data.dividend_yield, true)} />
+              <StatRow label="Payout Ratio" value={fmtFundamentalsPercent(data.payout_ratio)} />
             </div>
           </div>
 
@@ -310,39 +253,37 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
               <h4 className="font-mono text-2xs font-bold uppercase tracking-wider text-brand border-b border-brand/20 pb-1.5">Earnings Calendar</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2.5 font-mono text-xs">
-                  <div className="flex justify-between border-b border-border/40 pb-1">
-                    <span className="text-ink-faint flex items-center gap-1.5">
-                      <Calendar size={12} className="text-brand/70" />
-                      Next Earnings Date
-                    </span>
-                    <span className="font-semibold text-ink">{fmtDate(data.next_earnings_date)}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-border/40 pb-1">
-                    <span className="text-ink-faint">EPS Estimate (Avg)</span>
-                    <span className="font-semibold text-ink">{data.earnings_average ? `$${data.earnings_average.toFixed(2)}` : "—"}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-border/40 pb-1">
-                    <span className="text-ink-faint">EPS Range (Low - High)</span>
-                    <span className="font-semibold text-ink">
-                      {data.earnings_low ? `$${data.earnings_low.toFixed(2)}` : "—"} - {data.earnings_high ? `$${data.earnings_high.toFixed(2)}` : "—"}
-                    </span>
-                  </div>
+                  <StatRow
+                    label="Next Earnings Date"
+                    icon={<Calendar size={12} className="text-brand/70" />}
+                    value={fmtDate(data.next_earnings_date)}
+                  />
+                  <StatRow
+                    label="EPS Estimate (Avg)"
+                    value={data.earnings_average !== null && data.earnings_average !== undefined ? `$${data.earnings_average.toFixed(2)}` : "--"}
+                  />
+                  <StatRow
+                    label="EPS Range (Low - High)"
+                    value={
+                      <>
+                        {data.earnings_low !== null && data.earnings_low !== undefined ? `$${data.earnings_low.toFixed(2)}` : "--"}
+                        {" - "}
+                        {data.earnings_high !== null && data.earnings_high !== undefined ? `$${data.earnings_high.toFixed(2)}` : "--"}
+                      </>
+                    }
+                  />
                 </div>
 
                 <div className="flex flex-col gap-2.5 font-mono text-xs">
-                  <div className="flex justify-between border-b border-border/40 pb-1">
-                    <span className="text-ink-faint flex items-center gap-1.5">
-                      <TrendingUp size={12} className="text-brand/70" />
-                      Revenue Estimate (Avg)
-                    </span>
-                    <span className="font-semibold text-ink">{fmtNum(data.revenue_average)}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-border/40 pb-1">
-                    <span className="text-ink-faint">Revenue Range (Low - High)</span>
-                    <span className="font-semibold text-ink">
-                      {data.revenue_low ? fmtNum(data.revenue_low) : "—"} - {data.revenue_high ? fmtNum(data.revenue_high) : "—"}
-                    </span>
-                  </div>
+                  <StatRow
+                    label="Revenue Estimate (Avg)"
+                    icon={<TrendingUp size={12} className="text-brand/70" />}
+                    value={formatCompactNumber(data.revenue_average)}
+                  />
+                  <StatRow
+                    label="Revenue Range (Low - High)"
+                    value={`${formatCompactNumber(data.revenue_low)} - ${formatCompactNumber(data.revenue_high)}`}
+                  />
                 </div>
               </div>
             </div>

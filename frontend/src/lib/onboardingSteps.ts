@@ -56,6 +56,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     selector: '[data-tour="ai-insights-button"]',
     title: "Ask the AI assistant",
     body: "Have a question about anything on this page? Open the AI Insights chat and ask - it's grounded in exactly what you're looking at.",
-    placement: "top",
+    placement: "bottom",
   },
 ];

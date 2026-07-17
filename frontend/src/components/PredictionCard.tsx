@@ -49,7 +49,7 @@ export function PredictionCard({
               <Icon size={14} className="shrink-0" />
               <span className="truncate">{meta?.label ?? "--"}</span>
             </div>
-            {prediction.target_price && (
+            {prediction.target_price !== null && prediction.target_price !== undefined && (
               <p className="mt-2.5 break-words font-mono text-xs text-ink-muted">
                 Target:{" "}
                 <span className="numeric font-bold text-ink">

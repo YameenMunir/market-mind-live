@@ -158,6 +158,7 @@ export function AIInsightsPanel({ isOpen, onClose, asset, buildContext }: AIInsi
                   onFeedback={chat.sendFeedback}
                   feedbackGiven={chat.feedbackGiven}
                   unverifiedFigures={chat.unverifiedFigures}
+                  contextUsed={chat.contextUsed}
                   size="compact"
                 />
               )}

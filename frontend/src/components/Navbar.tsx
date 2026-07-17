@@ -62,7 +62,7 @@ export function Navbar() {
             className={cn(
               BUTTON_VARIANT_STYLES.primary,
               BUTTON_SIZE_STYLES.lg,
-              "h-11 inline-flex items-center justify-center whitespace-nowrap px-3 transition-colors duration-150 lg:h-10 lg:px-4"
+              "inline-flex items-center justify-center whitespace-nowrap px-3 transition-colors duration-150 lg:h-10 lg:px-4"
             )}
           >
             <span className="lg:hidden">Launch</span>

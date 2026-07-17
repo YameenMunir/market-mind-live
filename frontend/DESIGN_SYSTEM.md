@@ -74,18 +74,34 @@ sidebar navigation to a mobile top bar below `lg`.
 
 ## Radius
 
-- `rounded-lg` (8px) — buttons, inputs, small interactive controls.
-- `rounded-xl` (12px) / `rounded-2xl` (16px) — cards, panels, dialogs.
-- `rounded-full` — pills, avatars, the FAB.
+Two tiers, deliberately not more - matching this app's "precision instrument
+panel" identity (calibrated data readouts, not soft consumer-SaaS chrome):
+
+- `rounded-sm` (2px) — page-flow chrome: panels, buttons, badges, toggles,
+  status banners, nav items, in-panel controls, icon badges, drawer content
+  (alert rows, empty states). This is the default for anything that reads as
+  part of the page rather than floating above it.
+- `rounded-lg` (8px) — detached/floating surfaces only: field chrome
+  (`Input`/`Textarea`/`Select`), `Dropdown` panels, `Dialog`'s centered
+  variant, `InfoTooltip`, toasts, the onboarding tour popover.
+
+Nothing in the app should use `rounded-xl`/`2xl`/`3xl` - if a new component
+seems to need a third radius, it almost certainly belongs in one of the two
+tiers above instead. `rounded-full` remains fine, but only for elements that
+are actually circular/pill-shaped regardless of content - status dots,
+notification-count badges, spinners, small circular icon buttons - not as a
+softer alternative to the two card/panel tiers above.
 
 ## Elevation (shadow)
 
 Two tiers, deliberately not more:
 
-- `shadow-panel` — persistent page sections: cards, drawers, the fullscreen chart.
-- `shadow-popover` — transient floating UI: dropdown menus, tooltips. Tighter
-  blur/spread than `panel` so a small popover doesn't cast as heavy a shadow as a
-  full page section.
+- `shadow-panel` — persistent page sections: cards, drawers, the fullscreen
+  chart, centered dialogs. Currently resolves to no shadow at all (flat,
+  border-only) - separation comes from the border/scrim, not elevation.
+- `shadow-popover` — transient floating UI: dropdown menus, tooltips,
+  toasts, the onboarding popover. Tighter blur/spread than `panel` so a
+  small popover doesn't cast as heavy a shadow as a full page section.
 
 ## Z-index scale
 
