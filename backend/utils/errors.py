@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from models.schemas import ErrorCode, ErrorResponse
+
+logger = logging.getLogger(__name__)
 
 
 class AppError(Exception):
@@ -67,10 +71,20 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 
 
 async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    # Never echo str(exc) back to the client - it can carry internal file paths, SQL
+    # fragments, or other implementation details. Full exception (with traceback) goes
+    # to the server log only, tagged with the request id so it can be correlated with
+    # the client-visible response (see utils/logging.py's RequestIdMiddleware).
+    request_id = getattr(request.state, "request_id", None)
+    logger.error(
+        "Unhandled exception on %s %s (request_id=%s)",
+        request.method, request.url.path, request_id,
+        exc_info=exc,
+    )
     payload = ErrorResponse(
         error_code=ErrorCode.INTERNAL_ERROR,
         message="An unexpected error occurred while processing your request.",
-        detail=str(exc),
+        detail=f"request_id={request_id}" if request_id else None,
     )
     return JSONResponse(status_code=500, content=payload.model_dump(mode="json"))
 

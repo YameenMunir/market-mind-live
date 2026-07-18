@@ -17,8 +17,16 @@ from config import get_settings
 
 settings = get_settings()
 
-_connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=_connect_args)
+_is_sqlite = settings.database_url.startswith("sqlite")
+_connect_args = {"check_same_thread": False} if _is_sqlite else {}
+# SQLite ignores pool_size/max_overflow (it's a single file, not a network service)
+# and create_engine rejects them for its dialect - only pass pool tuning to a real
+# server-backed database (e.g. a future Postgres deployment, per config.py's
+# database_url docstring). pool_pre_ping guards against a connection that went stale
+# while idle in the pool (e.g. the DB server closed it) being handed to a request and
+# failing instead of being transparently replaced.
+_pool_kwargs = {} if _is_sqlite else {"pool_size": 10, "max_overflow": 20, "pool_pre_ping": True, "pool_recycle": 1800}
+engine = create_engine(settings.database_url, connect_args=_connect_args, **_pool_kwargs)
 
 
 if settings.database_url.startswith("sqlite"):

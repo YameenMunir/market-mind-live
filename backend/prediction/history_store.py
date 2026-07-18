@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from db.models import PredictionHistoryRecord
 from db.session import engine
@@ -34,15 +34,27 @@ class PredictionHistoryStore:
                     generated_at=prediction.generated_at,
                 )
             )
-            existing = session.exec(
-                select(PredictionHistoryRecord)
-                .where(PredictionHistoryRecord.symbol == prediction.symbol)
-                .order_by(PredictionHistoryRecord.id)
-            ).all()
-            overflow = len(existing) + 1 - _MAX_ENTRIES_PER_SYMBOL
-            for old in existing[:overflow] if overflow > 0 else []:
-                session.delete(old)
             session.commit()
+
+            # A scalar COUNT instead of loading every row for this symbol - this runs
+            # on every analytics refresh cycle for every actively-watched symbol
+            # (see services/live_hub.py's `_refresh_analytics`), not just occasionally.
+            total = session.exec(
+                select(func.count())
+                .select_from(PredictionHistoryRecord)
+                .where(PredictionHistoryRecord.symbol == prediction.symbol)
+            ).one()
+            overflow = total - _MAX_ENTRIES_PER_SYMBOL
+            if overflow > 0:
+                oldest = session.exec(
+                    select(PredictionHistoryRecord)
+                    .where(PredictionHistoryRecord.symbol == prediction.symbol)
+                    .order_by(PredictionHistoryRecord.id)
+                    .limit(overflow)
+                ).all()
+                for old in oldest:
+                    session.delete(old)
+                session.commit()
 
     def get_history(self, symbol: str) -> list[PredictionHistoryEntry]:
         with Session(engine) as session:

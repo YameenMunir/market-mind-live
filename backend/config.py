@@ -111,6 +111,31 @@ class Settings(BaseSettings):
     forecast_cache_ttl_seconds: float = 300.0
     forecast_max_horizon_days: int = 30
 
+    # Coarse per-client-IP safety net across every endpoint (distinct from the AI
+    # chat/provider-specific limiters above) - catches a runaway client or basic abuse
+    # before it can pile up work server-side. Deliberately generous: the dashboard's
+    # own REST fallback polling (see frontend/src/lib/constants.ts) is ~15 req/min per
+    # watched symbol, so this is sized to comfortably absorb several symbols/tabs at
+    # once and only trip on genuinely abnormal request volume. Set to 0 to disable.
+    api_rate_limit_per_minute: int = 600
+    # Hard ceiling on request body size (bytes) enforced before FastAPI/Pydantic ever
+    # parses the payload - protects against a client (accidentally or otherwise)
+    # sending a multi-hundred-MB body that would otherwise be fully buffered in memory.
+    # Generous relative to this app's actual payloads (chat messages, alert configs -
+    # all small JSON bodies) so it never affects legitimate use.
+    max_request_body_bytes: int = 1_000_000
+    # GZip response compression kicks in only above this response size - skips the
+    # overhead of compressing the many small JSON responses (quotes, single alerts)
+    # this API mostly returns, while still shrinking the larger ones (candle series,
+    # chat history, fundamentals) that actually benefit.
+    gzip_min_size_bytes: int = 1024
+    # How stale a Device row's `last_seen_at` must be before a request bothers writing
+    # an update - every authenticated-ish request (alerts, chat, settings) resolves a
+    # device id via api/deps.py, so without this a busy client writes to SQLite on
+    # every single call just to bump a "last seen" timestamp nobody reads at that
+    # granularity, serializing against every other write on the same file.
+    device_last_seen_update_interval_seconds: float = 300.0
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

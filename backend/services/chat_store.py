@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from api.deps import ANONYMOUS_DEVICE_ID
 from db.models import ChatFeedbackRecord, ChatMessageRecord, ChatSessionRecord
@@ -77,15 +77,25 @@ class ChatSessionStore:
                     created_at=message.created_at,
                 )
             )
-            existing = session.exec(
-                select(ChatMessageRecord)
-                .where(ChatMessageRecord.session_id == session_id)
-                .order_by(ChatMessageRecord.created_at)
-            ).all()
-            overflow = len(existing) + 1 - _MAX_MESSAGES_PER_SESSION
-            for old in existing[:overflow] if overflow > 0 else []:
-                session.delete(old)
             session.commit()
+
+            # A single scalar COUNT rather than loading every row for this session
+            # just to measure its length - matters here since this runs on every
+            # single chat message, not just occasionally.
+            total = session.exec(
+                select(func.count()).select_from(ChatMessageRecord).where(ChatMessageRecord.session_id == session_id)
+            ).one()
+            overflow = total - _MAX_MESSAGES_PER_SESSION
+            if overflow > 0:
+                oldest = session.exec(
+                    select(ChatMessageRecord)
+                    .where(ChatMessageRecord.session_id == session_id)
+                    .order_by(ChatMessageRecord.created_at)
+                    .limit(overflow)
+                ).all()
+                for old in oldest:
+                    session.delete(old)
+                session.commit()
 
     def touch(
         self,
@@ -135,13 +145,18 @@ class ChatSessionStore:
     def list_sessions(self, device_id: str) -> list[ChatSessionSummary]:
         with Session(engine) as session:
             metas = session.exec(select(ChatSessionRecord).where(ChatSessionRecord.device_id == device_id)).all()
+            session_ids = [m.session_id for m in metas]
             counts: dict[str, int] = {}
-            for meta in metas:
-                counts[meta.session_id] = len(
-                    session.exec(
-                        select(ChatMessageRecord).where(ChatMessageRecord.session_id == meta.session_id)
-                    ).all()
-                )
+            if session_ids:
+                # One grouped COUNT for every session instead of a separate query per
+                # session (the previous N+1 pattern) - this endpoint is a simple list
+                # view, so its cost shouldn't scale with how many messages exist.
+                rows = session.exec(
+                    select(ChatMessageRecord.session_id, func.count())
+                    .where(ChatMessageRecord.session_id.in_(session_ids))
+                    .group_by(ChatMessageRecord.session_id)
+                ).all()
+                counts = dict(rows)
         summaries = [
             ChatSessionSummary(
                 session_id=m.session_id,
@@ -218,11 +233,17 @@ class FeedbackStore:
             session.commit()
 
     def get_analytics(self) -> dict:
+        # Grouped COUNT rather than loading every feedback row into memory just to
+        # tally two buckets - this table only grows over the app's lifetime.
         with Session(engine) as session:
-            entries = session.exec(select(ChatFeedbackRecord)).all()
-        up = sum(1 for e in entries if e.rating == FeedbackRating.UP.value)
-        down = sum(1 for e in entries if e.rating == FeedbackRating.DOWN.value)
-        total = len(entries)
+            rows = dict(
+                session.exec(
+                    select(ChatFeedbackRecord.rating, func.count()).group_by(ChatFeedbackRecord.rating)
+                ).all()
+            )
+        up = rows.get(FeedbackRating.UP.value, 0)
+        down = rows.get(FeedbackRating.DOWN.value, 0)
+        total = sum(rows.values())
         return {
             "total_feedback": total,
             "thumbs_up": up,

@@ -70,6 +70,19 @@ def _sse_lines(*texts: str) -> list[str]:
     return lines
 
 
+@pytest.fixture(autouse=True)
+def _reset_shared_client():
+    """gemini_service now lazily caches one shared httpx.AsyncClient across calls (see
+    its module docstring) instead of constructing one per call - without resetting
+    this module-level cache between tests, only the first test's monkeypatched
+    `AsyncClient` would ever actually get constructed, and every later test in this
+    file would silently reuse that first test's fake client/response instead of its
+    own."""
+    gemini_service._client = None
+    yield
+    gemini_service._client = None
+
+
 async def _collect(agen) -> list[str]:
     return [piece async for piece in agen]
 

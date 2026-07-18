@@ -8,6 +8,7 @@ the frontend.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -21,6 +22,35 @@ from utils.errors import AppError, ErrorCode, MissingApiKeyError
 logger = logging.getLogger(__name__)
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+# A module-level, lazily-created client shared across every Gemini call in the
+# process, instead of a fresh `httpx.AsyncClient` per request (the previous
+# behaviour) - that meant a new TCP connection plus a full TLS handshake to Google on
+# every single chat message, streamed reply, and regenerate, even for the same host.
+# Reusing one client gets connection-pooled keep-alive for free, cutting per-call
+# latency and file-descriptor/socket churn under concurrent chat load. Per-call
+# timeouts still vary (`timeout_seconds` is caller-supplied), so timeout is set
+# per-request rather than fixed on the client.
+_client: httpx.AsyncClient | None = None
+_client_lock = asyncio.Lock()
+
+
+async def _get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        async with _client_lock:
+            if _client is None:
+                _client = httpx.AsyncClient(limits=httpx.Limits(max_connections=50, max_keepalive_connections=20))
+    return _client
+
+
+async def aclose() -> None:
+    """Closes the shared client's connection pool - called from main.py's lifespan
+    shutdown so a reload/restart doesn't leak open sockets to Google."""
+    global _client
+    if _client is not None:
+        await _client.aclose()
+        _client = None
 
 # Google AI Studio / Cloud Console API keys are reliably "AIza" followed by 35 more
 # alphanumeric/`_`/`-` characters (39 total), with no whitespace. This is a format
@@ -82,8 +112,8 @@ async def generate_reply(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=timeout_seconds) as client:
-            response = await client.post(url, params={"key": api_key}, json=payload)
+        client = await _get_client()
+        response = await client.post(url, params={"key": api_key}, json=payload, timeout=timeout_seconds)
     except httpx.TimeoutException as exc:
         raise GeminiProviderError("The AI assistant timed out. Please try again.", detail=str(exc)) from exc
     except httpx.HTTPError as exc:
@@ -158,50 +188,50 @@ async def stream_reply(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=timeout_seconds) as client:
-            async with client.stream(
-                "POST", url, params={"key": api_key, "alt": "sse"}, json=payload
-            ) as response:
-                if response.status_code == 429:
-                    raise GeminiRateLimitError(
-                        "The Gemini API rate limit was reached.", detail="Please wait a moment and try again."
-                    )
-                if response.status_code in (401, 403):
-                    body = (await response.aread())[:500]
-                    raise MissingApiKeyError(
-                        "The Gemini API key is missing, invalid, or lacks permission.",
-                        detail=body.decode(errors="replace"),
-                    )
-                if response.status_code >= 400:
-                    body = (await response.aread())[:500]
-                    logger.warning("Gemini streaming API error %s: %s", response.status_code, body)
-                    raise GeminiProviderError(
-                        f"Gemini API returned an error (status {response.status_code}).",
-                        detail=body.decode(errors="replace"),
-                    )
+        client = await _get_client()
+        async with client.stream(
+            "POST", url, params={"key": api_key, "alt": "sse"}, json=payload, timeout=timeout_seconds
+        ) as response:
+            if response.status_code == 429:
+                raise GeminiRateLimitError(
+                    "The Gemini API rate limit was reached.", detail="Please wait a moment and try again."
+                )
+            if response.status_code in (401, 403):
+                body = (await response.aread())[:500]
+                raise MissingApiKeyError(
+                    "The Gemini API key is missing, invalid, or lacks permission.",
+                    detail=body.decode(errors="replace"),
+                )
+            if response.status_code >= 400:
+                body = (await response.aread())[:500]
+                logger.warning("Gemini streaming API error %s: %s", response.status_code, body)
+                raise GeminiProviderError(
+                    f"Gemini API returned an error (status {response.status_code}).",
+                    detail=body.decode(errors="replace"),
+                )
 
-                got_any_text = False
-                async for line in response.aiter_lines():
-                    if not line.startswith("data:"):
-                        continue
-                    raw = line[len("data:"):].strip()
-                    if not raw:
-                        continue
-                    try:
-                        data = json.loads(raw)
-                    except json.JSONDecodeError:
-                        continue
-                    candidates = data.get("candidates") or []
-                    if not candidates:
-                        continue
-                    parts = (candidates[0].get("content") or {}).get("parts") or []
-                    text = "".join(part.get("text", "") for part in parts)
-                    if text:
-                        got_any_text = True
-                        yield text
+            got_any_text = False
+            async for line in response.aiter_lines():
+                if not line.startswith("data:"):
+                    continue
+                raw = line[len("data:"):].strip()
+                if not raw:
+                    continue
+                try:
+                    data = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                candidates = data.get("candidates") or []
+                if not candidates:
+                    continue
+                parts = (candidates[0].get("content") or {}).get("parts") or []
+                text = "".join(part.get("text", "") for part in parts)
+                if text:
+                    got_any_text = True
+                    yield text
 
-                if not got_any_text:
-                    raise GeminiProviderError("Gemini did not return a response.")
+            if not got_any_text:
+                raise GeminiProviderError("Gemini did not return a response.")
     except httpx.TimeoutException as exc:
         raise GeminiProviderError("The AI assistant timed out. Please try again.", detail=str(exc)) from exc
     except httpx.HTTPError as exc:
