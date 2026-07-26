@@ -168,7 +168,10 @@ export default function DashboardPage() {
 
       <main className="flex-1 space-y-4 overflow-y-auto p-4 pb-20 sm:space-y-5 sm:p-6 lg:pb-6">
         {snapshot.errorMessage && snapshot.errorCode !== "rate_limited" && (
-          <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" />
+          <div className="space-y-1.5">
+            <StatusBanner message={snapshot.errorMessage} tone="warning" icon="clock" onRetry={snapshot.retry} />
+            <LastUpdated updatedAt={snapshot.lastSuccessAt} isStale className="pl-1" />
+          </div>
         )}
 
         <div

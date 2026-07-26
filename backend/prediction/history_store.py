@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import logging
+import math
+
 from sqlmodel import Session, func, select
 
 from db.models import PredictionHistoryRecord
 from db.session import engine
 from models.schemas import PredictionDirection, PredictionHistoryEntry, PredictionResult
+
+logger = logging.getLogger(__name__)
 
 _MAX_ENTRIES_PER_SYMBOL = 100
 
@@ -24,6 +29,21 @@ class PredictionHistoryStore:
     recent entries per symbol - global engine-performance data, not per-device."""
 
     def record(self, prediction: PredictionResult, price: float) -> None:
+        # Belt-and-suspenders: `price_at_prediction` is a NOT NULL column, and a NaN
+        # float binds to SQLite as NULL (not as the IEEE-754 NaN it looks like in
+        # Python), which raises an unhandled IntegrityError from deep inside the ORM
+        # flush - not something callers can sensibly catch as a normal AppError. The
+        # real source of a NaN price here (an incomplete trailing bar from the
+        # provider) is fixed at data/yfinance_provider.py, but recording history is a
+        # non-essential side effect of every analytics refresh (see
+        # services/live_hub.py) - it must never be able to take down that refresh via
+        # a DB error, so a bad value is logged and skipped rather than raised.
+        if not math.isfinite(price):
+            logger.warning(
+                "Skipping prediction-history record for %s: non-finite price_at_prediction (%r).",
+                prediction.symbol, price,
+            )
+            return
         with Session(engine) as session:
             session.add(
                 PredictionHistoryRecord(

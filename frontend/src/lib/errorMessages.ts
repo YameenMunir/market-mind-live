@@ -17,6 +17,18 @@ export function describeError(error: ApiError): { message: string; tone: StatusT
       return { message: "This feature isn't fully configured yet. Please check back later.", tone: "error", icon: "warning" };
     case "unsupported_asset_type":
       return { message: "This asset type isn't supported yet.", tone: "warning", icon: "warning" };
+    case "internal_error":
+    case "insufficient_history":
+      // Deliberately replaces whatever raw message the backend attached (a dev-facing
+      // detail like "Unexpected error refreshing live data." meant for server logs,
+      // not end users - see backend/services/live_hub.py) with a clear, actionable,
+      // stable message - the underlying cause is already logged server-side with a
+      // request id for support/debugging.
+      return {
+        message: "Live data could not be refreshed. Showing the most recently available data. Please try again shortly.",
+        tone: "warning",
+        icon: "clock",
+      };
     default:
       return { message: error.message || "We couldn't load market data right now. Please try again in a moment.", tone: "error", icon: "warning" };
   }

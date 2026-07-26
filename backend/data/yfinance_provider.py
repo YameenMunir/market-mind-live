@@ -495,6 +495,31 @@ class YFinanceProvider(MarketDataProvider):
 
         if df is None or df.empty:
             raise InvalidSymbolError(f"No historical data available for '{symbol}'.")
+
+        # Yahoo's daily-bar history sometimes includes a trailing row for "today" even
+        # when today had no completed trading session yet (e.g. a request made on a
+        # weekend/holiday, or right after midnight before the new session prints its
+        # first bar for equities/indices - crypto trading 24/7 doesn't hit this) - that
+        # row's OHLC values come back as NaN rather than the row being omitted. Left
+        # in, `float(df["Close"].iloc[-1])` (services/live_hub.py, api/predictions.py)
+        # silently becomes NaN, which then poisons every downstream computation
+        # (indicators, risk, prediction) and ultimately fails a NOT NULL DB insert in
+        # prediction/history_store.py with an unhandled IntegrityError - surfacing to
+        # the user as the generic "Unexpected error refreshing live data." rather than
+        # the real cause. Dropping incomplete trailing rows here, at the true source,
+        # fixes every consumer at once instead of guarding each call site separately.
+        before_rows = len(df)
+        df = df[df["Close"].notna()]
+        dropped = before_rows - len(df)
+        if dropped:
+            logger.info(
+                "get_history(%s, %s): dropped %d row(s) with no Close price (incomplete/"
+                "non-trading trailing bar) out of %d fetched.",
+                symbol.upper(), interval, dropped, before_rows,
+            )
+
+        if df.empty:
+            raise InvalidSymbolError(f"No historical data available for '{symbol}'.")
         return df
 
     def get_quotes_batch(self, symbols: list[str]) -> dict[str, dict | Exception]:

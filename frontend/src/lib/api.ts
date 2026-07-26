@@ -51,6 +51,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT_MS);
 
+  // `init.signal`, if given, lets a caller cancel this specific request (e.g.
+  // useLiveSnapshot.ts aborting a still-in-flight poll when a newer refresh cycle
+  // starts) independently of the timeout above - wiring it to also abort
+  // `timeoutController` is what actually cancels the underlying fetch, since that's
+  // the signal passed to `fetch()` itself.
+  const externalSignal = init?.signal;
+  const abortForExternalSignal = () => timeoutController.abort();
+  externalSignal?.addEventListener("abort", abortForExternalSignal);
+
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
@@ -60,6 +69,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       signal: timeoutController.signal,
     });
   } catch (err) {
+    if (externalSignal?.aborted) {
+      // The caller deliberately cancelled this request (superseded by a newer one,
+      // or the component unmounted) - rethrow the original AbortError unchanged so
+      // callers can recognize and silently ignore it, instead of it masquerading as
+      // a real network failure and surfacing an error to the user.
+      throw err;
+    }
     const isTimeout = err instanceof DOMException && err.name === "AbortError";
     throw new ApiError({
       error_code: "network_error",
@@ -69,6 +85,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
   } finally {
     clearTimeout(timeoutId);
+    externalSignal?.removeEventListener("abort", abortForExternalSignal);
   }
 
   if (!res.ok) {
@@ -81,7 +98,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(payload);
   }
 
-  return res.json() as Promise<T>;
+  try {
+    return (await res.json()) as T;
+  } catch (err) {
+    // A 2xx response with a body that isn't valid JSON (a proxy/CDN error page, a
+    // truncated response from a dropped connection, ...) must not surface as a raw,
+    // uncaught SyntaxError to calling code - wrap it in the same ApiError shape every
+    // other failure uses so callers only ever need to handle one error type.
+    throw new ApiError({
+      error_code: "internal_error",
+      message: "The server returned an unexpected response. Please try again shortly.",
+      detail: err instanceof Error ? err.message : undefined,
+    });
+  }
 }
 
 export interface ChatStreamHandlers {
@@ -193,7 +222,8 @@ export const api = {
   },
   getFundamentals: (symbol: string) =>
     request<AssetFundamentals>(`/api/assets/fundamentals?symbol=${encodeURIComponent(symbol)}`),
-  getQuote: (symbol: string) => request<PriceQuote>(`/api/prices/${encodeURIComponent(symbol)}/quote`),
+  getQuote: (symbol: string, signal?: AbortSignal) =>
+    request<PriceQuote>(`/api/prices/${encodeURIComponent(symbol)}/quote`, { signal }),
   // Fetches quotes for multiple symbols in one round trip (e.g. a watchlist) instead of
   // one request per symbol - a failed/unknown symbol resolves to `null` rather than
   // failing the whole batch.
@@ -203,14 +233,18 @@ export const api = {
     ),
   getCandles: (symbol: string, range: string) =>
     request<CandleSeries>(`/api/prices/${encodeURIComponent(symbol)}/candles?range=${encodeURIComponent(range)}`),
-  getMarketStatus: (symbol: string) => request<MarketStatus>(`/api/market/status/${encodeURIComponent(symbol)}`),
-  getIndicators: (symbol: string) => request<IndicatorSet>(`/api/indicators/${encodeURIComponent(symbol)}`),
-  getPrediction: (symbol: string) => request<PredictionResult>(`/api/predictions/${encodeURIComponent(symbol)}`),
+  getMarketStatus: (symbol: string, signal?: AbortSignal) =>
+    request<MarketStatus>(`/api/market/status/${encodeURIComponent(symbol)}`, { signal }),
+  getIndicators: (symbol: string, signal?: AbortSignal) =>
+    request<IndicatorSet>(`/api/indicators/${encodeURIComponent(symbol)}`, { signal }),
+  getPrediction: (symbol: string, signal?: AbortSignal) =>
+    request<PredictionResult>(`/api/predictions/${encodeURIComponent(symbol)}`, { signal }),
   getPredictionHistory: (symbol: string) =>
     request<PredictionHistoryEntry[]>(`/api/predictions/${encodeURIComponent(symbol)}/history`),
   getPriceForecast: (symbol: string, horizonDays: number) =>
     request<PriceForecast>(`/api/predictions/${encodeURIComponent(symbol)}/forecast?horizon_days=${horizonDays}`),
-  getRisk: (symbol: string) => request<RiskAssessment>(`/api/risk/${encodeURIComponent(symbol)}`),
+  getRisk: (symbol: string, signal?: AbortSignal) =>
+    request<RiskAssessment>(`/api/risk/${encodeURIComponent(symbol)}`, { signal }),
   runBacktest: (body: BacktestRequest) =>
     request<BacktestResult>(`/api/backtest`, { method: "POST", body: JSON.stringify(body) }),
   aiChat: (body: ChatRequest) =>

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -16,7 +17,7 @@ from services.asset_service import resolve_asset_metadata
 from services.indicator_service import compute_indicators
 from services.market_status_service import get_market_status
 from services.risk_service import compute_risk
-from utils.errors import AppError
+from utils.errors import AppError, InsufficientHistoryError
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +144,19 @@ class LiveDataHub:
                         logger.info("Stopping live hub poller for %s (no subscribers)", watch.symbol)
                         return
 
+                # Each data source below runs in its own try/except so a failure in one
+                # (e.g. analytics recomputation) can never prevent the others (e.g. the
+                # quote tick) from updating this cycle - previously a single shared try
+                # block meant any exception, however minor, skipped every remaining
+                # step. `cycle_error`/`cycle_error_phase` track the first failure seen
+                # this cycle purely to drive the snapshot's single shared error banner
+                # below; each phase still logs its own failure immediately with full
+                # detail (symbol, phase, and - for anything not already a classified
+                # AppError - a full traceback) regardless of which one "wins" the
+                # shared banner.
+                cycle_error: BaseException | None = None
+                cycle_error_phase: str | None = None
+
                 try:
                     # Comparing the fetched value against what's already in the snapshot
                     # (rather than unconditionally re-stamping `updated_at`) means the
@@ -154,25 +168,39 @@ class LiveDataHub:
                         watch.snapshot.quote = new_quote
                         watch.snapshot.quote_updated_at = _now_iso()
                         watch.snapshot.version += 1
+                except AppError as exc:
+                    cycle_error, cycle_error_phase = exc, "quote"
+                    logger.warning("Live hub quote fetch failed for %s: %s", watch.symbol, exc.message)
+                except Exception as exc:
+                    cycle_error, cycle_error_phase = exc, "quote"
+                    logger.exception("Live hub quote fetch raised an unexpected error for %s", watch.symbol)
 
+                try:
                     new_status = get_market_status(watch.symbol)
                     if new_status != watch.snapshot.market_status:
                         watch.snapshot.market_status = new_status
                         watch.snapshot.market_status_updated_at = _now_iso()
                         watch.snapshot.version += 1
+                except Exception as exc:
+                    if cycle_error is None:
+                        cycle_error, cycle_error_phase = exc, "market_status"
+                    logger.exception("Live hub market-status lookup raised an unexpected error for %s", watch.symbol)
 
-                    if watch.snapshot.error_code is not None or watch.snapshot.is_stale:
-                        watch.snapshot.version += 1
-                    watch.snapshot.error_code = None
-                    watch.snapshot.error_message = None
-                    watch.snapshot.is_stale = False
-                    watch.backoff_seconds = _base_interval_for_session(watch.snapshot.market_status, settings)
-
-                    now = time.monotonic()
-                    if now - last_analytics_refresh >= settings.hub_indicator_interval_seconds:
+                now = time.monotonic()
+                if now - last_analytics_refresh >= settings.hub_indicator_interval_seconds:
+                    try:
                         await self._refresh_analytics(watch)
                         last_analytics_refresh = now
+                    except AppError as exc:
+                        if cycle_error is None:
+                            cycle_error, cycle_error_phase = exc, "analytics"
+                        logger.warning("Live hub analytics refresh failed for %s: %s", watch.symbol, exc.message)
+                    except Exception as exc:
+                        if cycle_error is None:
+                            cycle_error, cycle_error_phase = exc, "analytics"
+                        logger.exception("Live hub analytics refresh raised an unexpected error for %s", watch.symbol)
 
+                try:
                     alert_store.evaluate(
                         watch.symbol,
                         quote=watch.snapshot.quote,
@@ -180,22 +208,34 @@ class LiveDataHub:
                         prediction=watch.snapshot.prediction,
                         risk=watch.snapshot.risk,
                     )
-                except AppError as exc:
-                    if watch.snapshot.error_code != exc.error_code.value or not watch.snapshot.is_stale:
+                except Exception as exc:
+                    if cycle_error is None:
+                        cycle_error, cycle_error_phase = exc, "alerts"
+                    logger.exception("Live hub alert evaluation raised an unexpected error for %s", watch.symbol)
+
+                if cycle_error is None:
+                    if watch.snapshot.error_code is not None or watch.snapshot.is_stale:
                         watch.snapshot.version += 1
-                    watch.snapshot.error_code = exc.error_code.value
-                    watch.snapshot.error_message = exc.message
+                    watch.snapshot.error_code = None
+                    watch.snapshot.error_message = None
+                    watch.snapshot.is_stale = False
+                    watch.backoff_seconds = _base_interval_for_session(watch.snapshot.market_status, settings)
+                else:
+                    if isinstance(cycle_error, AppError):
+                        new_code, new_message = cycle_error.error_code.value, cycle_error.message
+                    else:
+                        new_code, new_message = "internal_error", "Unexpected error refreshing live data."
+                    if watch.snapshot.error_code != new_code or not watch.snapshot.is_stale:
+                        watch.snapshot.version += 1
+                    watch.snapshot.error_code = new_code
+                    watch.snapshot.error_message = new_message
                     watch.snapshot.is_stale = True
                     watch.backoff_seconds = min(watch.backoff_seconds * 1.5, settings.hub_error_backoff_max_seconds)
-                    logger.warning("Live hub error for %s: %s", watch.symbol, exc.message)
-                except Exception:
-                    if watch.snapshot.error_code != "internal_error" or not watch.snapshot.is_stale:
-                        watch.snapshot.version += 1
-                    watch.snapshot.error_code = "internal_error"
-                    watch.snapshot.error_message = "Unexpected error refreshing live data."
-                    watch.snapshot.is_stale = True
-                    watch.backoff_seconds = min(watch.backoff_seconds * 1.5, settings.hub_error_backoff_max_seconds)
-                    logger.exception("Unexpected live hub error for %s", watch.symbol)
+                    logger.info(
+                        "Live hub cycle for %s completed with an error from phase=%s (code=%s) - "
+                        "other phases still updated normally this cycle.",
+                        watch.symbol, cycle_error_phase, new_code,
+                    )
 
                 await asyncio.sleep(watch.backoff_seconds)
         except asyncio.CancelledError:
@@ -207,6 +247,18 @@ class LiveDataHub:
 
         indicators = compute_indicators(symbol, df)
         price = float(df["Close"].iloc[-1])
+        # Defense in depth: data/yfinance_provider.py already drops incomplete/NaN
+        # trailing bars at the source, so this should be unreachable in practice - but
+        # if a future data-quality edge case slips a non-finite price through anyway,
+        # raising a normal, classified AppError here (caught by _run()'s AppError
+        # branch) gives the user a clear "insufficient data" message and keeps this
+        # symbol's last-known-good indicators/prediction/risk on screen, instead of an
+        # unhandled exception falling through to the generic internal-error path.
+        if not math.isfinite(price):
+            raise InsufficientHistoryError(
+                f"No valid recent closing price available for '{symbol}' yet.",
+                detail="The market data provider returned only incomplete recent bars.",
+            )
         risk = compute_risk(symbol, df)
         metadata = resolve_asset_metadata(symbol)
         prediction = generate_prediction(

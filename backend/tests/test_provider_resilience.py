@@ -14,7 +14,7 @@ from yfinance.exceptions import YFDataException, YFRateLimitError
 
 import data.yfinance_provider as provider_module
 from config import get_settings
-from utils.errors import NetworkError, RateLimitedError
+from utils.errors import InvalidSymbolError, NetworkError, RateLimitedError
 
 
 class _FakeResponse:
@@ -445,6 +445,55 @@ def test_get_rating_changes_skips_rows_missing_firm(monkeypatch):
     monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
 
     assert provider_module.provider.get_rating_changes("AAPL") == []
+
+
+def _fake_history_df(rows: list[dict]) -> pd.DataFrame:
+    """Builds a DataFrame matching yfinance's own `ticker.history()` shape: a
+    DatetimeIndex plus Open/High/Low/Close/Volume columns."""
+    df = pd.DataFrame(rows)
+    df.index = pd.to_datetime(df.pop("Date"), unit="s")
+    return df
+
+
+def test_get_history_drops_incomplete_trailing_row_with_nan_close(monkeypatch):
+    """Regression test for the reported "Unexpected error refreshing live data" bug:
+    Yahoo's daily history sometimes includes a trailing row for a day that hasn't
+    produced a completed bar yet (e.g. a weekend/holiday), with NaN OHLC values. Left
+    in, `float(df["Close"].iloc[-1])` in services/live_hub.py silently becomes NaN,
+    which later fails a NOT NULL DB insert in prediction/history_store.py with an
+    unhandled IntegrityError. The fix drops any row with a NaN Close at the source."""
+    df = _fake_history_df([
+        {"Date": 1751200000, "Open": 100.0, "High": 101.0, "Low": 99.0, "Close": 100.5, "Volume": 1000.0},
+        {"Date": 1751286400, "Open": 100.5, "High": 102.0, "Low": 100.0, "Close": 101.5, "Volume": 1100.0},
+        {"Date": 1751372800, "Open": float("nan"), "High": float("nan"), "Low": float("nan"), "Close": float("nan"), "Volume": float("nan")},
+    ])
+
+    class _FakeTicker:
+        def history(self, **kwargs):
+            return df
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
+
+    result = provider_module.provider.get_history("AAPL", period="1y", interval="1d")
+
+    assert len(result) == 2
+    assert not result["Close"].isna().any()
+    assert float(result["Close"].iloc[-1]) == 101.5
+
+
+def test_get_history_raises_invalid_symbol_when_every_row_has_nan_close(monkeypatch):
+    df = _fake_history_df([
+        {"Date": 1751200000, "Open": float("nan"), "High": float("nan"), "Low": float("nan"), "Close": float("nan"), "Volume": float("nan")},
+    ])
+
+    class _FakeTicker:
+        def history(self, **kwargs):
+            return df
+
+    monkeypatch.setattr(provider_module.yf, "Ticker", lambda symbol, session=None: _FakeTicker())
+
+    with pytest.raises(InvalidSymbolError):
+        provider_module.provider.get_history("AAPL", period="1y", interval="1d")
 
 
 def test_get_rating_changes_respects_count_limit(monkeypatch):
