@@ -29,6 +29,7 @@ import { PriceCard } from "@/components/PriceCard";
 import { PricePredictorControls } from "@/components/PricePredictorControls";
 import { RatingChangesCard } from "@/components/RatingChangesCard";
 import { RiskCard } from "@/components/RiskCard";
+import { StaggerGrid, StaggerItem } from "@/components/StaggerGrid";
 import { StatusBanner } from "@/components/StatusBanner";
 import { TimeframeSelector } from "@/components/TimeframeSelector";
 import { Topbar } from "@/components/Topbar";
@@ -174,47 +175,58 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div
-          data-tour="stat-cards"
+        <StaggerGrid
+          resetKey={symbol}
+          dataTour="stat-cards"
           className={cn(
             "grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4",
             isAdvanced ? "md:grid-cols-3 xl:grid-cols-5" : "md:grid-cols-2"
           )}
         >
-          <PriceCard
-            quote={snapshot.quote}
-            symbol={symbol}
-            isLive={snapshot.connectionState === "live"}
-            isStale={snapshot.isStale}
-          />
-          {isAdvanced && (
-            <MarketStatusCard
-              status={snapshot.marketStatus}
-              updatedAt={snapshot.marketStatusUpdatedAt}
+          <StaggerItem>
+            <PriceCard
+              quote={snapshot.quote}
+              symbol={symbol}
               isLive={snapshot.connectionState === "live"}
               isStale={snapshot.isStale}
             />
-          )}
-          <PredictionCard
-            prediction={snapshot.prediction}
-            isLoading={!snapshot.prediction}
-            updatedAt={snapshot.predictionUpdatedAt}
-            isLive={snapshot.connectionState === "live"}
-            isStale={snapshot.isStale}
-            nativeCurrency={nativeCurrency}
-          />
+          </StaggerItem>
           {isAdvanced && (
-            <>
-              <AnalystConsensusCard consensus={analyst.data} isLoading={analyst.isLoading} error={analyst.error} symbol={symbol} />
-              <RiskCard
-                risk={snapshot.risk}
-                updatedAt={snapshot.riskUpdatedAt}
+            <StaggerItem>
+              <MarketStatusCard
+                status={snapshot.marketStatus}
+                updatedAt={snapshot.marketStatusUpdatedAt}
                 isLive={snapshot.connectionState === "live"}
                 isStale={snapshot.isStale}
               />
+            </StaggerItem>
+          )}
+          <StaggerItem>
+            <PredictionCard
+              prediction={snapshot.prediction}
+              isLoading={!snapshot.prediction}
+              updatedAt={snapshot.predictionUpdatedAt}
+              isLive={snapshot.connectionState === "live"}
+              isStale={snapshot.isStale}
+              nativeCurrency={nativeCurrency}
+            />
+          </StaggerItem>
+          {isAdvanced && (
+            <>
+              <StaggerItem>
+                <AnalystConsensusCard consensus={analyst.data} isLoading={analyst.isLoading} error={analyst.error} symbol={symbol} />
+              </StaggerItem>
+              <StaggerItem>
+                <RiskCard
+                  risk={snapshot.risk}
+                  updatedAt={snapshot.riskUpdatedAt}
+                  isLive={snapshot.connectionState === "live"}
+                  isStale={snapshot.isStale}
+                />
+              </StaggerItem>
             </>
           )}
-        </div>
+        </StaggerGrid>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <Panel

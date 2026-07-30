@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { useCurrencyContext } from "@/contexts/CurrencyContext";
@@ -49,9 +50,11 @@ export function PriceCard({ quote, symbol, isLive, isStale }: PriceCardProps) {
       {quote ? (
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="numeric truncate font-mono text-[clamp(1.5rem,4vw,2.25rem)] font-bold leading-tight text-ink">
-              {formatPrice(convert(quote.price, quote.currency), currency)}
-            </p>
+            <AnimatedNumber
+              value={convert(quote.price, quote.currency)}
+              format={(v) => formatPrice(v, currency)}
+              className="numeric block truncate font-mono text-[clamp(1.5rem,4vw,2.25rem)] font-bold leading-tight text-ink"
+            />
             <div
               className={cn(
                 "mt-2 inline-flex items-center gap-x-1.5 rounded-sm border px-2 py-0.5 font-mono text-xs font-semibold",

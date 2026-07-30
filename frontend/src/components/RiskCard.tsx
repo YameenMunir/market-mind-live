@@ -1,3 +1,4 @@
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
@@ -45,7 +46,7 @@ export function RiskCard({ risk, updatedAt, isLive, isStale }: RiskCardProps) {
       </div>
       {risk ? (
         <p className={cn("mt-1.5 flex items-center gap-1.5 font-mono text-2xs font-bold uppercase", meta?.text ?? "text-ink-muted")}>
-          Score: {Math.round(risk.risk_score)} / 100
+          Score: <AnimatedNumber value={risk.risk_score} format={(v) => `${Math.round(v ?? 0)}`} /> / 100
           <InfoTooltip articleId="risk_methodology" />
         </p>
       ) : (

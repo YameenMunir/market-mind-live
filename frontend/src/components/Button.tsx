@@ -47,7 +47,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        "inline-flex shrink-0 cursor-pointer items-center justify-center whitespace-nowrap transition-colors duration-150",
+        "inline-flex shrink-0 cursor-pointer items-center justify-center whitespace-nowrap transition-[color,background-color,border-color,transform] duration-150",
+        // Tactile press feedback (scale-feedback per standard interaction guidance) -
+        // plain CSS :active rather than a JS/framer-motion tap handler, so every
+        // button gets it (including ones rendered from server components) without
+        // forcing this shared primitive into a client-only component. Automatically
+        // covered by the global prefers-reduced-motion rule in styles/globals.css.
+        "active:scale-[0.97] disabled:active:scale-100",
         "disabled:cursor-not-allowed disabled:opacity-40",
         BUTTON_VARIANT_STYLES[variant],
         BUTTON_SIZE_STYLES[size],
