@@ -15,6 +15,7 @@ import {
 
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
+import { ReadMore } from "@/components/ReadMore";
 import { api } from "@/lib/api";
 import { cn, formatCompactNumber, formatPercent } from "@/lib/utils";
 import type { AssetFundamentals } from "@/types";
@@ -149,9 +150,9 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
             {data.description && (
               <div className="flex flex-col gap-2">
                 <h4 className="font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">Business Profile</h4>
-                <p className="text-xs leading-relaxed text-ink-muted line-clamp-6 hover:line-clamp-none transition-all duration-300 cursor-pointer">
-                  {data.description}
-                </p>
+                <ReadMore collapsedHeight={96}>
+                  <p className="text-xs leading-relaxed text-ink-muted">{data.description}</p>
+                </ReadMore>
               </div>
             )}
 

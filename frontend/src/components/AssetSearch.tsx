@@ -7,6 +7,7 @@ import { Badge } from "@/components/Badge";
 import { FIELD_CHROME_CLASSES } from "@/components/Input";
 import { useAssetSearch } from "@/hooks/useAssetSearch";
 import { ASSET_TYPE_LABELS } from "@/lib/constants";
+import { describeError } from "@/lib/errorMessages";
 import { cn } from "@/lib/utils";
 import type { AssetSearchResult, AssetType } from "@/types";
 
@@ -48,7 +49,7 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { results, isLoading } = useAssetSearch(query, assetType ?? undefined);
+  const { results, isLoading, error } = useAssetSearch(query, assetType ?? undefined);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -114,7 +115,12 @@ export function AssetSearch({ assetType, onSelect }: AssetSearchProps) {
                 Searching...
               </div>
             )}
-            {!isLoading && results.length === 0 && (
+            {!isLoading && error && results.length === 0 && (
+              <div className="px-3 py-3 text-xs text-ink-faint" role="alert">
+                {describeError(error).message}
+              </div>
+            )}
+            {!isLoading && !error && results.length === 0 && (
               <div className="px-3 py-3 text-xs text-ink-faint">
                 No matches for &ldquo;{query}&rdquo;. Try a ticker symbol like AAPL or BTC-USD.
               </div>

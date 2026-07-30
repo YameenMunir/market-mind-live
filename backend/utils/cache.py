@@ -5,7 +5,17 @@ from dataclasses import dataclass
 from threading import Lock
 from typing import Any, Callable, TypeVar
 
+from utils import metrics
+
 T = TypeVar("T")
+
+
+def _key_prefix(key: str) -> str:
+    """The part of a cache key before its first `:` (e.g. "search_suggestions" from
+    "search_suggestions:AAPL:ALL") - used to break down hit/miss metrics per logical
+    cache namespace instead of one undifferentiated global counter, without every
+    call site having to report its own metrics individually."""
+    return key.split(":", 1)[0]
 
 
 @dataclass
@@ -47,9 +57,14 @@ class TTLCache:
             self._store[key] = _CacheEntry(value=value, created_at=now, expires_at=now + ttl_seconds)
 
     def get_or_set(self, key: str, ttl_seconds: float, factory: Callable[[], T]) -> T:
+        prefix = _key_prefix(key)
         cached = self.get(key)
         if cached is not None:
+            metrics.increment("cache.hit")
+            metrics.increment(f"cache.hit.{prefix}")
             return cached
+        metrics.increment("cache.miss")
+        metrics.increment(f"cache.miss.{prefix}")
 
         # Claim (or wait on) this key's in-flight lock so a burst of concurrent
         # requests for the same cold key results in exactly one upstream fetch.
@@ -65,6 +80,11 @@ class TTLCache:
                 # waiting for the lock - check again before calling the factory.
                 cached = self.get(key)
                 if cached is not None:
+                    # A concurrent caller populated it while this one waited on the
+                    # lock above - still a hit from this caller's perspective, just
+                    # one that had to wait rather than returning immediately.
+                    metrics.increment("cache.hit")
+                    metrics.increment(f"cache.hit.{prefix}")
                     return cached
                 value = factory()
                 self.set(key, value, ttl_seconds)

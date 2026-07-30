@@ -215,10 +215,10 @@ const streamRegenerate = (body: RegenerateRequest, handlers: ChatStreamHandlers,
   streamSSE("/api/ai/insights/chat/regenerate", body, handlers, signal);
 
 export const api = {
-  searchAssets: (query: string, assetType?: AssetType) => {
+  searchAssets: (query: string, assetType?: AssetType, signal?: AbortSignal) => {
     const params = new URLSearchParams({ q: query });
     if (assetType) params.set("asset_type", assetType);
-    return request<AssetSearchResult[]>(`/api/assets/search?${params.toString()}`);
+    return request<AssetSearchResult[]>(`/api/assets/search?${params.toString()}`, { signal });
   },
   getFundamentals: (symbol: string) =>
     request<AssetFundamentals>(`/api/assets/fundamentals?symbol=${encodeURIComponent(symbol)}`),

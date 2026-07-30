@@ -6,8 +6,28 @@ to local listings in case of network outages or rate limiting.
 
 from __future__ import annotations
 
+import logging
+import re
+import time
+
 from models.schemas import AssetType, MarketSession
+from utils import metrics
 from utils.cache import cache
+
+logger = logging.getLogger(__name__)
+
+_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
+_MAX_QUERY_LENGTH = 100
+
+
+def _sanitize_query(query: str) -> str:
+    """Strips control characters and caps length before a search term reaches a cache
+    key or an outbound Yahoo request - `api/assets.py`'s `Query(max_length=100)`
+    already rejects an overlong request at the HTTP layer, but this is the single
+    choke point every caller (the search endpoint, and any future internal caller)
+    actually funnels through, so it stays correct even if a caller bypasses the route.
+    """
+    return _CONTROL_CHARS.sub("", query).strip()[:_MAX_QUERY_LENGTH]
 
 SYMBOL_DIRECTORY: list[dict] = [
     # Stocks
@@ -192,8 +212,42 @@ def _hydrate_results_with_quotes(results: list[dict]) -> None:
             r["market_status"] = None
 
 
+def _relevance_rank(entry: dict, uq: str) -> int:
+    """Lower is more relevant - an exact ticker match should always outrank a name
+    that merely contains the query as a substring, which the curated directory's
+    plain "is it a substring anywhere" filter previously made no distinction between
+    (e.g. searching "V" for Visa would rank identically to any entry whose name
+    happens to contain a "v" before Visa, purely by declaration order)."""
+    symbol = entry["symbol"].upper()
+    name = entry["name"].upper()
+    if symbol == uq:
+        return 0
+    if symbol.startswith(uq):
+        return 1
+    if name.startswith(uq):
+        return 2
+    if uq in symbol:
+        return 3
+    return 4
+
+
+def _dedupe_by_symbol(results: list[dict]) -> list[dict]:
+    """Yahoo's own suggestion response can occasionally list the same symbol twice
+    (e.g. under two related quote types) - first occurrence (Yahoo's own relevance
+    order) wins rather than showing the same asset in the dropdown twice."""
+    seen: set[str] = set()
+    deduped = []
+    for entry in results:
+        symbol = entry["symbol"].upper()
+        if symbol in seen:
+            continue
+        seen.add(symbol)
+        deduped.append(entry)
+    return deduped
+
+
 def _search_symbols_uncached(query: str, asset_type: AssetType | None, limit: int) -> list[dict]:
-    q = query.strip()
+    q = _sanitize_query(query)
     if not q:
         # Return default popular symbols when search query is empty
         results = []
@@ -235,33 +289,56 @@ def _search_symbols_uncached(query: str, asset_type: AssetType | None, limit: in
             "logo_url": None
         })
 
+    results = _dedupe_by_symbol(results)
     _hydrate_results_with_quotes(results)
 
     # Fallback to local curated suggestions if Yahoo search returns nothing
     if not results:
+        uq = q.upper()
+        matches = []
         for entry in SYMBOL_DIRECTORY:
             if asset_type and entry["asset_type"] != asset_type:
                 continue
-            uq = q.upper()
             if uq in entry["symbol"].upper() or uq in entry["name"].upper():
-                results.append(dict(entry))
-            if len(results) >= limit:
-                break
+                matches.append(dict(entry))
+        # Exact/prefix ticker matches surface before a merely-substring name match,
+        # instead of the previous plain declaration-order listing.
+        matches.sort(key=lambda entry: _relevance_rank(entry, uq))
+        results = _dedupe_by_symbol(matches)[:limit]
         _hydrate_results_with_quotes(results)
 
     return results
 
 
 def search_symbols(query: str, asset_type: AssetType | None = None, limit: int = 15) -> list[dict]:
+    metrics.increment("assets_search.requests")
+    query = _sanitize_query(query)
     cache_key = f"search_suggestions:{query.upper()}:{asset_type.value if asset_type else 'ALL'}"
-    return cache.get_or_set(
-        cache_key,
-        60,
-        lambda: _search_symbols_uncached(query, asset_type, limit)
-    )
+
+    start = time.monotonic()
+    try:
+        return cache.get_or_set(
+            cache_key,
+            60,
+            lambda: _search_symbols_uncached(query, asset_type, limit)
+        )
+    except Exception:
+        metrics.increment("assets_search.errors")
+        logger.exception("Asset search failed for query=%r asset_type=%s", query, asset_type)
+        raise
+    finally:
+        duration_ms = (time.monotonic() - start) * 1000
+        # Debug-level: this fires on every keystroke of a live search, so it stays out
+        # of the default INFO-level log volume while still being available when
+        # actively diagnosing search latency (LOG_LEVEL=DEBUG).
+        logger.debug("Asset search query=%r asset_type=%s took %.1fms", query, asset_type, duration_ms)
 
 
 def lookup_symbol(symbol: str) -> dict | None:
+    symbol = _sanitize_query(symbol)
+    if not symbol:
+        return None
+
     # First search locally
     for entry in SYMBOL_DIRECTORY:
         if entry["symbol"].upper() == symbol.upper():

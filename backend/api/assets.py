@@ -9,8 +9,15 @@ router = APIRouter(prefix="/api/assets", tags=["assets"])
 
 
 @router.get("/search", response_model=list[AssetSearchResult])
-def search(q: str = Query("", description="Search query"), asset_type: AssetType | None = None):
-    return search_assets(q, asset_type=asset_type)
+def search(
+    q: str = Query("", max_length=100, description="Search query"),
+    asset_type: AssetType | None = None,
+):
+    # Rejected here (422, before any cache lookup or outbound call) rather than
+    # relaxed silently - a query built entirely of whitespace/control characters is
+    # never a meaningful search and would otherwise still cost a cache-key allocation
+    # and, on a cache miss, a live Yahoo suggestion request for garbage input.
+    return search_assets(q.strip(), asset_type=asset_type)
 
 
 @router.get("/fundamentals", response_model=AssetFundamentals)

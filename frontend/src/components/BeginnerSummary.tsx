@@ -1,6 +1,7 @@
 import { Lightbulb } from "lucide-react";
 
 import { Panel } from "@/components/Panel";
+import { ReadMore } from "@/components/ReadMore";
 import type { PredictionResult } from "@/types";
 
 // Lightbulb, not Sparkles - this is a deterministic, rule-based summary of the
@@ -14,9 +15,11 @@ export function BeginnerSummary({ prediction }: { prediction: PredictionResult |
         <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-brand/10">
           <Lightbulb size={15} className="text-brand" />
         </div>
-        <p className="text-sm leading-relaxed text-ink-muted">
-          {prediction?.beginner_summary ?? "Select an asset to see a plain-language summary of what the model is seeing."}
-        </p>
+        <ReadMore collapsedHeight={88} className="min-w-0 flex-1">
+          <p className="text-sm leading-relaxed text-ink-muted">
+            {prediction?.beginner_summary ?? "Select an asset to see a plain-language summary of what the model is seeing."}
+          </p>
+        </ReadMore>
       </div>
     </Panel>
   );
