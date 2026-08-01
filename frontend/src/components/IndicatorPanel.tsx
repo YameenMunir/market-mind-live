@@ -152,7 +152,7 @@ export function IndicatorPanel({
               <span className="font-mono text-xs text-ink-faint">--</span>
             )}
           </div>
-          <p className="mt-1 text-2xs leading-relaxed text-ink-faint">{read.support.note}</p>
+          <p className="mt-1 text-xs leading-relaxed text-ink-faint">{read.support.note}</p>
         </div>
         <div>
           <span className="inline-flex items-center gap-1 font-mono text-2xs uppercase font-bold tracking-wider text-ink-faint">
@@ -170,7 +170,7 @@ export function IndicatorPanel({
               <span className="font-mono text-xs text-ink-faint">--</span>
             )}
           </div>
-          <p className="mt-1 text-2xs leading-relaxed text-ink-faint">{read.resistance.note}</p>
+          <p className="mt-1 text-xs leading-relaxed text-ink-faint">{read.resistance.note}</p>
         </div>
       </div>
 

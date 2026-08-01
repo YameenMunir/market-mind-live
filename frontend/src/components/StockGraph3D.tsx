@@ -1,8 +1,31 @@
 "use client";
 
-import { useState, MouseEvent, useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { useState, MouseEvent, useEffect, useMemo, useRef } from "react";
+import { cn, formatCompactNumber } from "@/lib/utils";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import type { Candle } from "@/types";
+
+// The 3D view renders a small fixed number of bars; a real candle series for a long
+// range can be hundreds of points, so it's evenly sampled down to this many.
+const MAX_POINTS = 12;
+
+/** Evenly samples a candle series down to at most `MAX_POINTS`, always keeping the
+ * most recent candle so the right-hand edge of the chart is the latest real bar. */
+function toDataPoints(candles: Candle[]): DataPoint[] {
+  if (candles.length === 0) return [];
+  const step = Math.max(1, Math.ceil(candles.length / MAX_POINTS));
+  const sampled = candles.filter((_, i) => i % step === 0);
+  const last = candles[candles.length - 1];
+  if (sampled[sampled.length - 1] !== last) sampled.push(last);
+  return sampled.map((c) => ({
+    price: c.close,
+    open: c.open,
+    close: c.close,
+    high: c.high,
+    low: c.low,
+    volume: c.volume ?? 0,
+  }));
+}
 
 type Timeframe = "1D" | "1W" | "1M" | "1Y";
 type ViewType = "line" | "candles" | "volume";
@@ -15,70 +38,24 @@ interface DataPoint {
   high: number;
   low: number;
   volume: number;
-  confidence: number;
 }
 
-const TIMEFRAME_DATA: Record<Timeframe, DataPoint[]> = {
-  "1D": [
-    { price: 142.0, open: 141.2, close: 142.0, high: 142.5, low: 140.8, volume: 1.2, confidence: 75 },
-    { price: 143.5, open: 142.0, close: 143.5, high: 144.0, low: 141.5, volume: 1.5, confidence: 78 },
-    { price: 141.2, open: 143.5, close: 141.2, high: 143.8, low: 140.5, volume: 1.1, confidence: 64 },
-    { price: 142.8, open: 141.2, close: 142.8, high: 143.2, low: 140.9, volume: 1.3, confidence: 70 },
-    { price: 144.0, open: 142.8, close: 144.0, high: 144.5, low: 142.2, volume: 1.6, confidence: 81 },
-    { price: 143.2, open: 144.0, close: 143.2, high: 144.2, low: 142.5, volume: 1.0, confidence: 73 },
-    { price: 145.0, open: 143.2, close: 145.0, high: 145.5, low: 143.0, volume: 1.8, confidence: 84 },
-    { price: 146.8, open: 145.0, close: 146.8, high: 147.2, low: 144.5, volume: 2.1, confidence: 89 },
-    { price: 146.2, open: 146.8, close: 146.2, high: 147.0, low: 145.8, volume: 1.4, confidence: 82 },
-    { price: 148.0, open: 146.2, close: 148.0, high: 148.5, low: 145.9, volume: 2.5, confidence: 92 }
-  ],
-  "1W": [
-    { price: 132.0, open: 130.5, close: 132.0, high: 133.2, low: 129.8, volume: 8.5, confidence: 72 },
-    { price: 136.0, open: 132.0, close: 136.0, high: 137.5, low: 131.5, volume: 9.8, confidence: 79 },
-    { price: 134.0, open: 136.0, close: 134.0, high: 136.8, low: 133.0, volume: 7.2, confidence: 66 },
-    { price: 138.0, open: 134.0, close: 138.0, high: 139.2, low: 133.5, volume: 8.9, confidence: 75 },
-    { price: 142.0, open: 138.0, close: 142.0, high: 143.5, low: 137.2, volume: 11.2, confidence: 83 },
-    { price: 139.0, open: 142.0, close: 139.0, high: 142.8, low: 138.0, volume: 8.0, confidence: 71 },
-    { price: 145.5, open: 139.0, close: 145.5, high: 146.5, low: 138.5, volume: 12.5, confidence: 86 },
-    { price: 148.0, open: 145.5, close: 148.0, high: 149.0, low: 144.2, volume: 13.8, confidence: 90 },
-    { price: 146.0, open: 148.0, close: 146.0, high: 148.5, low: 145.0, volume: 9.5, confidence: 80 },
-    { price: 152.0, open: 146.0, close: 152.0, high: 153.2, low: 145.2, volume: 15.0, confidence: 93 }
-  ],
-  "1M": [
-    { price: 115.0, open: 112.5, close: 115.0, high: 116.8, low: 111.0, volume: 38.5, confidence: 68 },
-    { price: 122.0, open: 115.0, close: 122.0, high: 124.0, low: 114.2, volume: 44.2, confidence: 74 },
-    { price: 118.0, open: 122.0, close: 118.0, high: 123.5, low: 117.0, volume: 35.8, confidence: 61 },
-    { price: 132.0, open: 118.0, close: 132.0, high: 134.5, low: 116.5, volume: 49.0, confidence: 80 },
-    { price: 140.0, open: 132.0, close: 140.0, high: 142.5, low: 131.0, volume: 55.6, confidence: 85 },
-    { price: 135.0, open: 140.0, close: 135.0, high: 141.2, low: 134.0, volume: 40.2, confidence: 73 },
-    { price: 155.0, open: 135.0, close: 155.0, high: 157.8, low: 133.5, volume: 62.1, confidence: 88 },
-    { price: 168.0, open: 155.0, close: 168.0, high: 170.5, low: 153.8, volume: 70.4, confidence: 91 },
-    { price: 162.0, open: 168.0, close: 162.0, high: 169.0, low: 160.5, volume: 48.9, confidence: 83 },
-    { price: 185.0, open: 162.0, close: 185.0, high: 187.2, low: 161.0, volume: 82.5, confidence: 95 }
-  ],
-  "1Y": [
-    { price: 95.0, open: 98.0, close: 95.0, high: 102.5, low: 92.0, volume: 420.5, confidence: 55 },
-    { price: 105.0, open: 95.0, close: 105.0, high: 108.0, low: 94.0, volume: 480.2, confidence: 62 },
-    { price: 101.0, open: 105.0, close: 101.0, high: 107.5, low: 99.0, volume: 390.8, confidence: 58 },
-    { price: 118.0, open: 101.0, close: 118.0, high: 121.2, low: 98.5, volume: 510.0, confidence: 71 },
-    { price: 132.0, open: 118.0, close: 132.0, high: 135.0, low: 116.8, volume: 560.4, confidence: 76 },
-    { price: 126.0, open: 132.0, close: 126.0, high: 134.5, low: 124.0, volume: 440.2, confidence: 68 },
-    { price: 148.0, open: 126.0, close: 148.0, high: 152.0, low: 123.5, volume: 640.8, confidence: 82 },
-    { price: 164.0, open: 148.0, close: 164.0, high: 168.5, low: 145.0, volume: 710.2, confidence: 87 },
-    { price: 155.0, open: 164.0, close: 155.0, high: 166.0, low: 153.2, volume: 520.5, confidence: 78 },
-    { price: 192.0, open: 155.0, close: 192.0, high: 195.8, low: 152.0, volume: 840.0, confidence: 94 }
-  ]
-};
 
 export function StockGraph3D({
   className,
   minimal = false,
   timeframe: propTimeframe,
-  onTimeframeChange
+  onTimeframeChange,
+  candles,
 }: {
   className?: string;
   minimal?: boolean;
   timeframe?: string;
   onTimeframeChange?: (t: string) => void;
+  /** Real candle series for the symbol currently on screen. This component used to
+   * render a hardcoded demo dataset for every symbol regardless of what was
+   * selected, which showed fabricated prices under the real symbol's panel title. */
+  candles: Candle[];
 }) {
   const [containerRef, isVisible] = useIntersectionObserver({ threshold: 0.1 });
   
@@ -133,21 +110,40 @@ export function StockGraph3D({
     setHoveredIdx(null);
   };
 
-  // Get active dataset
-  const activeData = TIMEFRAME_DATA[timeframe];
+  const activeData = useMemo(() => toDataPoints(candles), [candles]);
 
-  // Base scale calculation to map to bounds
-  const getMinMaxPrices = () => {
-    const prices = activeData.map(d => d.price);
-    const min = Math.min(...prices) - 10;
-    const max = Math.max(...prices) + 10;
-    return { min, max };
-  };
-  const { min: priceMin } = getMinMaxPrices();
+  // Padding is proportional, not a flat +/-10: a fixed $10 pad is most of the range
+  // for a ~1.10 forex pair and invisible on a ~$60,000 crypto price, so the vertical
+  // scale only reads correctly across asset classes when it tracks the actual range.
+  const priceMin = useMemo(() => {
+    if (activeData.length === 0) return 0;
+    const prices = activeData.map((d) => d.low);
+    const min = Math.min(...prices);
+    const max = Math.max(...activeData.map((d) => d.high));
+    const pad = (max - min) * 0.1 || Math.abs(min) * 0.01 || 1;
+    return min - pad;
+  }, [activeData]);
 
-  // Volume normalized per-dataset
-  const maxVolume = Math.max(...activeData.map((d) => d.volume));
+  // Volume normalized per-dataset. Guarded against an all-zero series (some assets
+  // report no volume), which would otherwise divide by zero into NaN coordinates.
+  const maxVolume = Math.max(...activeData.map((d) => d.volume), 1);
   const VOLUME_MAX_HEIGHT = 45;
+
+  // Every projection below indexes points[0] / points[length-1] directly, so an empty
+  // series would throw rather than render. All hooks above have already run, so this
+  // early return doesn't change hook order.
+  if (activeData.length === 0) {
+    return (
+      <div
+        className={cn("flex items-center justify-center rounded-sm border border-dashed border-border p-6", className)}
+        role="status"
+      >
+        <p className="text-center font-mono text-2xs uppercase tracking-wide text-ink-faint">
+          No chart data available for this range.
+        </p>
+      </div>
+    );
+  }
 
   // Projection constants
   const origin = { x: 45, y: 125 };
@@ -355,15 +351,17 @@ export function StockGraph3D({
               <div className="text-ink font-bold">NODE #{hoveredIdx + 1}</div>
               <div className="flex justify-between gap-4">
                 <span className="text-ink-muted">PRICE:</span>
-                <span className="text-ink font-bold">${points[hoveredIdx].data.price.toFixed(1)}</span>
+                {/* Sub-$5 assets (forex pairs) need more precision than the flat one
+                    decimal place this used when it only ever rendered ~$145 demo data. */}
+                <span className="numeric text-ink font-bold">
+                  {points[hoveredIdx].data.price < 5
+                    ? points[hoveredIdx].data.price.toFixed(4)
+                    : points[hoveredIdx].data.price.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-ink-muted">VOL:</span>
-                <span className="text-ink-muted">{points[hoveredIdx].data.volume}M</span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="text-ink-muted">CONF:</span>
-                <span className={cn("font-bold", currentTheme.badgeText)}>{points[hoveredIdx].data.confidence}%</span>
+                <span className="numeric text-ink-muted">{formatCompactNumber(points[hoveredIdx].data.volume)}</span>
               </div>
             </div>
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
 
@@ -24,6 +24,7 @@ export function InfoTooltip({ articleId }: InfoTooltipProps) {
   const [pinned, setPinned] = useState(false);
   const open = hovered || pinned;
   const containerRef = useRef<HTMLSpanElement>(null);
+  const panelId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -58,15 +59,23 @@ export function InfoTooltip({ articleId }: InfoTooltipProps) {
         type="button"
         aria-label={`What is ${article.title}?`}
         aria-expanded={open}
+        // Associates the panel below with the trigger, so the explanation is actually
+        // announced instead of being an unreachable role="tooltip" nothing points to.
+        aria-describedby={open ? panelId : undefined}
         onClick={() => setPinned((prev) => !prev)}
-        className="text-ink-faint transition-colors hover:text-ink-muted"
+        // The 12px icon alone was a ~12x12px tap target. Negative margin keeps the
+        // icon optically in place inline while the padding extends the hit area.
+        className="-m-2 inline-flex items-center justify-center p-2 text-ink-faint transition-colors hover:text-ink-muted"
       >
         <Info size={12} />
       </button>
       {open && (
         <div
+          id={panelId}
           role="tooltip"
-          className="absolute bottom-full left-1/2 z-20 mb-2 w-64 -translate-x-1/2 rounded-lg border border-border bg-surface-raised p-3 text-left shadow-popover"
+          // w-64 with no clamp overflowed the viewport on <=375px screens, where this
+          // sits at the right edge of indicator rows. max-w keeps it inside the page.
+          className="absolute bottom-full left-1/2 z-20 mb-2 w-64 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-border bg-surface-raised p-3 text-left shadow-popover"
         >
           <p className="text-xs font-semibold text-ink">{article.title}</p>
           <p className="mt-1 text-xs leading-relaxed text-ink-muted">{article.body}</p>

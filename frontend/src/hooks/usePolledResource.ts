@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiError } from "@/types";
 
@@ -8,6 +8,13 @@ interface PolledResourceState<T> {
   data: T | null;
   isLoading: boolean;
   error: ApiError | null;
+}
+
+interface PolledResource<T> extends PolledResourceState<T> {
+  /** Immediately re-runs the fetch, cancelling the pending backoff timer - lets an
+   * error UI offer a working "Retry" instead of leaving the user to wait out a
+   * backoff window that can be as long as the full poll interval. */
+  refetch: () => void;
 }
 
 // On a failed poll, retry sooner than the normal cadence so a transient failure (rate
@@ -24,10 +31,14 @@ export function usePolledResource<T>(
   deps: React.DependencyList,
   intervalMs: number,
   enabled: boolean = true
-): PolledResourceState<T> {
+): PolledResource<T> {
   const [state, setState] = useState<PolledResourceState<T>>({ data: null, isLoading: true, error: null });
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
+  // Bumping this re-runs the effect below, which cancels the in-flight backoff timer
+  // and starts a fresh fetch immediately.
+  const [retryNonce, setRetryNonce] = useState(0);
+  const refetch = useCallback(() => setRetryNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!enabled) {
@@ -54,8 +65,16 @@ export function usePolledResource<T>(
         scheduleNext(intervalMs);
       } catch (err) {
         if (cancelled) return;
+        // A non-ApiError here is a genuine client-side fault (a thrown TypeError in
+        // parsing, etc.). The message is user-facing, so it says what the user can
+        // actually do rather than the previous bare "Something went wrong."
         const apiError =
-          err instanceof ApiError ? err : new ApiError({ error_code: "internal_error", message: "Something went wrong." });
+          err instanceof ApiError
+            ? err
+            : new ApiError({
+                error_code: "internal_error",
+                message: "This data could not be loaded. It will retry automatically.",
+              });
         // Keep the last-known-good data (if any) so a transient failure doesn't blank
         // out data that's still reasonably fresh - only the error/loading flags change.
         setState((prev) => ({ data: prev.data, isLoading: false, error: apiError }));
@@ -72,7 +91,7 @@ export function usePolledResource<T>(
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, enabled]);
+  }, [...deps, enabled, retryNonce]);
 
-  return state;
+  return { ...state, refetch };
 }

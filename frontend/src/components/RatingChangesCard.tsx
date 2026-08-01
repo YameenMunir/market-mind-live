@@ -30,7 +30,7 @@ export function RatingChangesCard({ changes, isLoading, error }: RatingChangesCa
           <p className="text-xs font-mono font-bold uppercase text-ink-muted">
             {error.errorCode === "rate_limited" ? "Rate-Limited" : "Load Failed"}
           </p>
-          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
+          <p className="text-xs leading-relaxed text-ink-faint">
             {error.errorCode === "rate_limited"
               ? "The market data provider is busy. Automatic retry active."
               : error.message}
@@ -50,12 +50,18 @@ export function RatingChangesCard({ changes, isLoading, error }: RatingChangesCa
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border px-3 py-6 text-center">
           <Users size={18} className="text-ink-faint" aria-hidden />
           <p className="font-mono text-xs font-bold uppercase text-ink-muted">No Recent Activity</p>
-          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
+          <p className="text-xs leading-relaxed text-ink-faint">
             No analyst rating changes on record for this symbol.
           </p>
         </div>
       ) : (
-        <ul className="-mx-1 max-h-80 space-y-3 overflow-y-auto px-1">
+        <ul
+          // Rows contain no links, so this scroll container had no focusable content and
+          // was unreachable by keyboard (axe: scrollable-region-focusable).
+          tabIndex={0}
+          aria-label="Recent analyst rating changes"
+          className="-mx-1 max-h-80 space-y-3 overflow-y-auto px-1"
+        >
           {items.map((change, i) => {
             const meta = ACTION_META[change.action];
             const Icon = meta.icon;

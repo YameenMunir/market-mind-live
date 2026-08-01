@@ -30,7 +30,12 @@
   --color-border: 226 232 240;
   --color-ink: 15 23 42;
   --color-ink-muted: 71 85 105;
-  --color-ink-faint: 100 116 139;
+  /* slate-500 (100 116 139) measured 4.46:1 against `surface-raised` (#f5f8fb) via
+     axe-core on the dashboard - the previously-documented 4.52:1 was computed against
+     `canvas` only, but this token is also used on the lighter raised surface. Darkened
+     to 5.57:1 there while staying lighter than `ink-muted`, so the three-tier text
+     hierarchy is unchanged. */
+  --color-ink-faint: 87 101 120;
   /* amber-600 (217 119 6) measured 3.04:1 against --color-canvas via axe-core -
      below the 4.5:1 AA minimum for normal text, caught by frontend/e2e's
      automated accessibility check. amber-700/800 restore compliance
@@ -41,8 +46,17 @@
      backgrounds via axe-core - below 4.5:1 AA for normal text. emerald-700
      restores compliance (5.5:1) without changing the hue. */
   --color-bull: 4 120 87;
-  --color-bear: 220 38 38;
-  --color-warn: 202 138 4;
+  /* red-600 (220 38 38) clears 4.5:1 on plain white but only reaches 4.46:1 on the
+     `bg-bear/5` tinted badge background it is most often paired with (Badge, rating
+     changes) - the tint darkens the backdrop just enough to drop it under AA.
+     red-700 restores compliance (5.98:1 on that same tint) without changing the hue. */
+  --color-bear: 185 28 28;
+  /* yellow-600 (202 138 4) measured just 2.94:1 on white via axe-core - the worst
+     contrast failure in the app, and the documented 4.76:1 figure only ever held
+     against `canvas`, never against `surface`. yellow-700 reaches 4.92:1 on white and
+     4.68:1 on the `bg-warn/5` tint, and stays yellow rather than drifting into the
+     brand amber it must remain distinguishable from. */
+  --color-warn: 161 98 7;
 }
 
 * {

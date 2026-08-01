@@ -53,6 +53,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { buildAssetContext } from "@/lib/aiContext";
 import { CHART_RANGES } from "@/lib/constants";
+import { describeError } from "@/lib/errorMessages";
 import { cn } from "@/lib/utils";
 import type { AssetSearchResult, AssetType } from "@/types";
 
@@ -147,6 +148,11 @@ export default function DashboardPage() {
       className={isFullscreen ? "fixed inset-0 z-[70] flex flex-col bg-canvas" : "contents"}
     >
       <Topbar
+        // The dashboard previously passed no title, so it was the only page in the app
+        // with no <h1> at all - its first heading was a Panel's <h3>. Naming the asset
+        // in view also tells a returning user which symbol they're looking at without
+        // reading the cards.
+        title={`${symbol} dashboard`}
         assetType={assetType}
         onAssetTypeChange={setAssetType}
         onSelectAsset={handleSelectAsset}
@@ -291,18 +297,21 @@ export default function DashboardPage() {
                     3D
                   </button>
                 </div>
-                {!is3D && (
-                  <>
-                    {candles.isLoading && !candles.data && (
-                      <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" className="shrink-0" />
-                    )}
-                    {!candles.isLoading && candles.data && <LastUpdated updatedAt={candles.data.last_updated} />}
-                  </>
+                {/* Not gated on `!is3D`: the 3D view now renders this same candle
+                    series, so hiding its freshness stamp there left real data on
+                    screen with no indication of how current it was. */}
+                {candles.isLoading && !candles.data && (
+                  <StatusBanner message="Waiting for next candle..." tone="muted" icon="clock" className="shrink-0" />
                 )}
+                {!candles.isLoading && candles.data && <LastUpdated updatedAt={candles.data.last_updated} />}
               </div>
             </div>
-            {!is3D && candles.error && candles.error.errorCode !== "rate_limited" && (
-              <StatusBanner message={candles.error.message} tone="warning" icon="warning" className="mb-3" />
+            {candles.error && candles.error.errorCode !== "rate_limited" && (
+              <StatusBanner
+                {...describeError(candles.error)}
+                onRetry={candles.refetch}
+                className="mb-3"
+              />
             )}
             {!is3D && showPricePredictor && forecast.isLoading && !forecast.data && (
               <StatusBanner message="Generating price forecast..." tone="muted" icon="loading" className="mb-3" />
@@ -313,7 +322,13 @@ export default function DashboardPage() {
             <div className="h-[320px] sm:h-[400px] xl:h-[440px] flex flex-col">
               {is3D ? (
                 <div className="w-full flex-1 min-h-0 flex flex-col">
-                  <StockGraph3D minimal timeframe={range} onTimeframeChange={setRange} className="flex-1 min-h-0" />
+                  <StockGraph3D
+                    minimal
+                    timeframe={range}
+                    onTimeframeChange={setRange}
+                    candles={convertedCandles?.candles ?? []}
+                    className="flex-1 min-h-0"
+                  />
                 </div>
               ) : convertedCandles && convertedCandles.candles.length > 0 ? (
                 <LiveCandlestickChart

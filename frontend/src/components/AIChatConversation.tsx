@@ -249,7 +249,7 @@ export function AIChatConversation({
             <Send size={15} />
           </Button>
         </div>
-        <p className="mt-3 flex items-start gap-1.5 text-2xs leading-relaxed text-ink-faint/80">
+        <p className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-ink-faint/80">
           <ShieldAlert size={11} className="mt-0.5 shrink-0" />
           This is for informational purposes only and is not financial advice.
         </p>

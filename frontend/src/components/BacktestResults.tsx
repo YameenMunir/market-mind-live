@@ -38,13 +38,19 @@ interface BacktestResultsProps {
 }
 
 export function BacktestResults({ result, theme, isLoading }: BacktestResultsProps) {
+  // Must run before the early returns below: on the first render `result` is null and
+  // the component returns early, so calling this further down meant zero hooks on
+  // render 1 and one hook once results arrived - "Rendered more hooks than during the
+  // previous render", which crashed the page on every successful backtest.
+  const { currency, convert } = useCurrencyContext();
+
   if (isLoading) {
     return (
       <Panel eyebrow="Backtest" title="Running simulation...">
         <div className="flex flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-border px-4 py-10 text-center bg-surface">
           <Loader2 size={22} className="animate-spin text-brand" aria-hidden />
           <p className="font-mono text-xs font-bold uppercase text-ink-muted">Simulating trades over the selected window</p>
-          <p className="max-w-sm font-mono text-2xs uppercase tracking-wide text-ink-faint">
+          <p className="max-w-sm text-xs leading-relaxed text-ink-faint">
             Please wait. Results will appear here automatically.
           </p>
         </div>
@@ -58,7 +64,7 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
         <div className="flex flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-border px-4 py-10 text-center bg-surface">
           <BarChart3 size={22} className="text-ink-faint" aria-hidden />
           <p className="font-mono text-xs font-bold uppercase text-ink-muted">Run your first backtest</p>
-          <p className="max-w-sm font-mono text-2xs uppercase tracking-wide text-ink-faint">
+          <p className="max-w-sm text-xs leading-relaxed text-ink-faint">
             Pick an asset and a lookback window above, then run the strategy.
           </p>
         </div>
@@ -67,7 +73,6 @@ export function BacktestResults({ result, theme, isLoading }: BacktestResultsPro
   }
 
   const isProfitable = result.total_return_pct >= 0;
-  const { currency, convert } = useCurrencyContext();
   const nativeCurrency = result.currency;
   const isConverted = nativeCurrency !== currency;
 

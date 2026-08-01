@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import {
   Building2,
+  Clock,
   Globe,
   Users,
   DollarSign,
@@ -17,7 +18,9 @@ import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
 import { ReadMore } from "@/components/ReadMore";
 import { api } from "@/lib/api";
+import { describeError } from "@/lib/errorMessages";
 import { cn, formatCompactNumber, formatPercent } from "@/lib/utils";
+import { ApiError } from "@/types";
 import type { AssetFundamentals } from "@/types";
 
 interface FundamentalsPanelProps {
@@ -72,7 +75,7 @@ function StatRow({ label, value, icon }: { label: string; value: ReactNode; icon
 export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps) {
   const [data, setData] = useState<AssetFundamentals | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -86,10 +89,12 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
           setIsLoading(false);
         }
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (active) {
-          console.error("Error fetching fundamentals:", err);
-          setError("Fundamentals data not available.");
+          // Preserve the real cause so the panel can explain *why* it's empty
+          // (rate-limited vs. unsupported asset vs. offline) instead of the previous
+          // single flat string.
+          setError(err instanceof ApiError ? err : new ApiError({ error_code: "internal_error", message: "Fundamentals are unavailable." }));
           setIsLoading(false);
         }
       });
@@ -102,7 +107,7 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
   if (isLoading) {
     return (
       <Panel eyebrow="Fundamentals" title="Valuation & Profile" className={className}>
-        <div className="flex h-48 animate-pulse flex-col justify-between gap-4 rounded bg-surface-raised/40 p-4">
+        <div aria-hidden className="flex h-48 animate-pulse flex-col justify-between gap-4 rounded bg-surface-raised/40 p-4">
           <div className="h-6 w-1/3 rounded bg-surface-raised" />
           <div className="h-16 w-full rounded bg-surface-raised" />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -116,8 +121,25 @@ export function FundamentalsPanel({ symbol, className }: FundamentalsPanelProps)
     );
   }
 
-  if (error || !data) {
-    return null; // Gracefully hide when fundamentals are not available (e.g. indices or missing symbols)
+  // Many asset classes genuinely have no fundamentals (indices, forex, commodities,
+  // crypto), so an *empty* result still hides the panel rather than showing an error
+  // for a normal outcome. A real failure now explains itself instead of silently
+  // deleting a 192px-tall panel out of the page.
+  if (error) {
+    const described = describeError(error);
+    return (
+      <Panel eyebrow="Company Profile & Fundamentals" title={`${symbol} Valuation Summary`} className={className}>
+        <div className="flex flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border px-4 py-8 text-center">
+          <Clock size={18} className="text-ink-faint" aria-hidden />
+          <p className="font-mono text-xs font-bold uppercase text-ink-muted">Fundamentals unavailable</p>
+          <p className="max-w-sm text-xs leading-relaxed text-ink-faint">{described.message}</p>
+        </div>
+      </Panel>
+    );
+  }
+
+  if (!data) {
+    return null;
   }
 
   const showProfile = Boolean(data.sector || data.industry || data.employees || data.description);

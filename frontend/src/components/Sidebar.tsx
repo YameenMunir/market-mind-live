@@ -16,10 +16,18 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { setIsCollapsed } = useSidebarCollapse();
+  const { isCollapsed, setIsCollapsed } = useSidebarCollapse();
 
   return (
-    <aside className="sidebar-panel hidden shrink-0 overflow-hidden border-r border-border bg-surface/60 lg:flex">
+    <aside
+      // The collapse animation hides this with width:0/opacity:0 (globals.css), which
+      // is invisible but still focusable - keyboard users hit five dead tab stops on a
+      // sidebar they can't see. `inert` removes it from the tab order and the a11y tree
+      // while collapsed, without interfering with the width transition.
+      inert={isCollapsed || undefined}
+      aria-hidden={isCollapsed || undefined}
+      className="sidebar-panel hidden shrink-0 overflow-hidden border-r border-border bg-surface/60 lg:flex"
+    >
       {/* Fixed-width inner wrapper so nav text/links never reflow mid-animation - the
           outer <aside> is what actually animates width to 0, clipping this via
           overflow-hidden for a clean "slide away" effect instead of a text squeeze. */}

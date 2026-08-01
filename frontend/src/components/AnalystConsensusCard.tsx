@@ -46,7 +46,7 @@ export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: An
           <p className="text-xs font-mono font-bold uppercase text-ink-muted">
             {error.errorCode === "rate_limited" ? "Rate-Limited" : "Load Failed"}
           </p>
-          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
+          <p className="text-xs leading-relaxed text-ink-faint">
             {error.errorCode === "rate_limited"
               ? "The market data provider is busy. Automatic retry active."
               : error.message}
@@ -62,7 +62,7 @@ export function AnalystConsensusCard({ consensus, isLoading, error, symbol }: An
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border px-3 py-6 text-center">
           <Users size={18} className="text-ink-faint" aria-hidden />
           <p className="font-mono text-xs font-bold uppercase text-ink-muted">No Analyst Coverage</p>
-          <p className="font-mono text-2xs leading-relaxed text-ink-faint">
+          <p className="text-xs leading-relaxed text-ink-faint">
             Not covered by equity analysts.
           </p>
         </div>

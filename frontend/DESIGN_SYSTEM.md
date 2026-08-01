@@ -26,11 +26,20 @@ standard WCAG relative-luminance formula, not eyeballed:
 |---|---|---|---|
 | `ink` | primary text | 17.17:1 | 16.40:1 |
 | `ink-muted` | secondary text | 7.97:1 | 5.82:1 |
-| `ink-faint` | tertiary text/captions | 4.84:1 | 4.52:1 |
+| `ink-faint` | tertiary text/captions | 4.84:1 | 5.67:1 |
 | `brand` | primary action, live state, focus | 9.83:1 | 4.73:1 |
-| `warn` | warning state | 9.37:1 | 4.76:1 |
+| `warn` | warning state | 9.37:1 | 4.71:1 |
 | `bull` | positive movement | 10.70:1 | 4.57:1 |
-| `bear` | negative movement, destructive | 5.42:1 | 4.57:1 |
+| `bear` | negative movement, destructive | 5.42:1 | 6.18:1 |
+
+**Verify against `surface` and tinted badge fills, not just `canvas`.** The light-theme
+`ink-faint`/`warn`/`bear` values above were each raised after an axe-core run against the
+*dashboard* (not just the marketing homepage) found them failing AA in real use: the table
+had only ever been computed against `canvas`, but these tokens are also rendered on
+`surface` (pure white, lower contrast than canvas) and on the `bg-*/5` tinted fills used by
+`Badge`/`StatusBanner`, which darken the backdrop just enough to drop an otherwise-passing
+value under 4.5:1. `warn` was the worst case at 2.94:1 on white. When changing any of these,
+re-check all three backdrops.
 
 `brand` and `warn` are additionally separated by hue (~18-22deg apart, not just a
 different luminance) — they were previously ~11-17deg apart and read as nearly the
