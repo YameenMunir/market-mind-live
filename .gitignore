@@ -9,6 +9,10 @@ backend/*.db
 backend/*.db-journal
 backend/*.db-wal
 backend/*.db-shm
+backend/.pytest_cache/
+backend/**/.pytest_cache/
+.coverage
+htmlcov/
 
 # Frontend
 node_modules/
@@ -19,7 +23,11 @@ frontend/out/
 frontend/e2e/.artifacts/
 frontend/playwright-report/
 frontend/test-results/
+*.tsbuildinfo
 
 # OS / editor
 .DS_Store
+Thumbs.db
 *.log
+.vscode/
+.idea/

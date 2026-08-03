@@ -1,0 +1,28 @@
+{
+  "name": "market-mind-live",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root orchestration for Market Mind Live's frontend (Next.js) and backend (FastAPI) - see README.md for full setup instructions.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "install:all": "node scripts/install-all.mjs",
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "node scripts/run-backend.mjs --reload",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "concurrently -n backend,frontend -c blue,green \"npm:start:backend\" \"npm:start:frontend\"",
+    "start:backend": "node scripts/run-backend.mjs",
+    "start:frontend": "npm --prefix frontend run start",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "node scripts/test-backend.mjs",
+    "test:frontend": "npm --prefix frontend run test",
+    "lint": "npm --prefix frontend run lint",
+    "typecheck": "npm --prefix frontend exec tsc --noEmit"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

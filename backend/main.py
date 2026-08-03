@@ -1,7 +1,25 @@
 from __future__ import annotations
 
 import logging
+import sys
 from contextlib import asynccontextmanager
+
+# Checked before any other project import: several (SQLModel's generics, the `X | None`
+# union syntax used throughout config.py/models/schemas.py, etc.) only work on Python
+# 3.10+, and this project targets 3.12 specifically (see README/.python-version) - on an
+# older interpreter, the *first* failure a user would otherwise see is an unrelated,
+# confusing SyntaxError or ImportError several frames deep in a dependency, not
+# anything pointing at the actual cause.
+if sys.version_info < (3, 12):
+    sys.stderr.write(
+        f"\nMarket Mind Live requires Python 3.12 or newer (found {sys.version.split()[0]}).\n"
+        "Install Python 3.12+ from https://www.python.org/downloads/, then recreate your\n"
+        "virtual environment:\n"
+        "  python3.12 -m venv venv\n"
+        "  venv\\Scripts\\activate   (Windows)   or   source venv/bin/activate   (macOS/Linux)\n"
+        "  pip install -r requirements.txt\n\n"
+    )
+    sys.exit(1)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,7 +53,7 @@ from db.session import engine
 from services import gemini_service
 from services.gemini_service import looks_like_valid_key_format
 from services.live_hub import hub
-from utils.api_middleware import BodySizeLimitMiddleware, IPRateLimitMiddleware
+from utils.api_middleware import BodySizeLimitMiddleware, IPRateLimitMiddleware, SecurityHeadersMiddleware
 from utils.errors import register_error_handlers
 from utils.logging import RequestIdMiddleware, configure_logging
 
@@ -77,9 +95,28 @@ def _log_startup_config() -> None:
         )
 
 
+def _run_migrations_with_friendly_errors() -> None:
+    try:
+        run_migrations()
+    except Exception as exc:
+        logger.error(
+            "Database migration failed - the app cannot start without a working database.\n"
+            "  DATABASE_URL is currently: %s\n"
+            "  Common causes:\n"
+            "    - SQLite: the backend/ directory isn't writable, or DATABASE_URL has a typo\n"
+            "      (should look like sqlite:///./market_mind.db).\n"
+            "    - Postgres/other: the database server isn't running or isn't reachable,\n"
+            "      credentials are wrong, or the database named in the URL doesn't exist yet.\n"
+            "  See backend/.env.example for DATABASE_URL documentation.\n"
+            "  Original error: %s",
+            settings.database_url, exc,
+        )
+        raise
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    run_migrations()
+    _run_migrations_with_friendly_errors()
     _log_startup_config()
     yield
     # Cancel every live-hub background poller on shutdown so reloads/restarts don't
@@ -106,6 +143,7 @@ app = FastAPI(
 app.add_middleware(GZipMiddleware, minimum_size=settings.gzip_min_size_bytes)
 app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(IPRateLimitMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestIdMiddleware)
 app.add_middleware(
     CORSMiddleware,

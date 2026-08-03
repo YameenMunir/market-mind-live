@@ -131,3 +131,33 @@ class BodySizeLimitMiddleware:
 
 class _BodyTooLarge(Exception):
     pass
+
+
+class SecurityHeadersMiddleware:
+    """Adds baseline security response headers. This is a pure JSON API with no
+    server-rendered HTML (aside from FastAPI's own optional /docs, /redoc pages), so
+    the highest-value, lowest-risk headers are the ones below - a Content-Security-
+    Policy is deliberately not set here since it belongs on the frontend that actually
+    renders HTML (see frontend/next.config.js), not duplicated/conflicting here.
+    """
+
+    _HEADERS = (
+        (b"x-content-type-options", b"nosniff"),
+        (b"x-frame-options", b"DENY"),
+        (b"referrer-policy", b"strict-origin-when-cross-origin"),
+    )
+
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                message["headers"] = list(message.get("headers", [])) + list(self._HEADERS)
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
