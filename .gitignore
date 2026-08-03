@@ -25,6 +25,12 @@ frontend/playwright-report/
 frontend/test-results/
 *.tsbuildinfo
 
+# Desktop launcher build output (see launcher/launcher.cjs + "npm run build:exe") - a
+# ~55MB compiled binary that bundles a Node.js runtime doesn't belong in version
+# control; build it locally or attach it to a GitHub Release instead.
+dist/
+*.exe
+
 # OS / editor
 .DS_Store
 Thumbs.db

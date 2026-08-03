@@ -20,9 +20,11 @@
     "test:backend": "node scripts/test-backend.mjs",
     "test:frontend": "npm --prefix frontend run test",
     "lint": "npm --prefix frontend run lint",
-    "typecheck": "npm --prefix frontend exec tsc --noEmit"
+    "typecheck": "npm --prefix frontend exec tsc --noEmit",
+    "build:exe": "pkg launcher/launcher.cjs --targets node20-win-x64 --output dist/MarketMindLive.exe"
   },
   "devDependencies": {
+    "@yao-pkg/pkg": "^6.22.0",
     "concurrently": "^9.1.2"
   }
 }

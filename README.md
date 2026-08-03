@@ -291,6 +291,41 @@ The frontend also has a Playwright-based mobile/accessibility suite (`npm --pref
 test:mobile`) that checks six mobile breakpoints for layout overflow, touch-target sizing, and
 accessibility violations, saving screenshots to `frontend/e2e/.artifacts/screenshots/`.
 
+## Desktop launcher (Windows)
+
+For a double-click "just start the app" experience instead of running `npm run dev`/`npm run
+start` from a terminal every time, `launcher/launcher.cjs` builds into a real, standalone
+`MarketMindLive.exe`: it starts the backend and frontend together, waits for both to come up,
+opens your browser to the app automatically, and stops both cleanly when you close it.
+
+**What it is not:** a fully self-contained desktop app. It still requires Node.js and Python to
+already be installed and `npm run install:all` to have already been run (same prerequisites as
+everywhere else in this README) - the `.exe` only bundles a small launcher script, not the two
+apps' own dependencies. This was a deliberate scope choice: a fully standalone build (bundling
+Python itself via PyInstaller, wrapped in Electron) is a much larger undertaking that didn't seem
+worth it for what's fundamentally still a client-server app needing a persistent backend
+(WebSocket connections, background pollers, a database) - see [Desktop packaging &
+WebGPU](#desktop-packaging--webgpu-considered-not-added) above for the fuller reasoning.
+
+**Build it:**
+```bash
+npm run install:all   # if you haven't already
+npm run build:exe     # produces dist/MarketMindLive.exe (~55MB, bundles a Node.js runtime)
+```
+
+**Use it:** copy `dist/MarketMindLive.exe` to the project's root folder (next to `package.json`)
+and double-click it, or run it from a terminal. A console window shows startup progress; your
+browser opens automatically once both the backend and frontend are ready. **Press Ctrl+C in that
+window to stop the app** - closing the window via a hard kill (e.g. Task Manager → End Task)
+can't run any application's cleanup code and may leave the backend/frontend processes running in
+the background; if that happens, they're harmless (just re-run the launcher, or find and end
+`python.exe`/`node.exe` in Task Manager).
+
+The built `.exe` isn't committed to the repository (see `.gitignore`) - it's a ~55MB binary
+that's cheap to rebuild locally. If you want to hand it to someone who won't build it themselves,
+attach it to a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github)
+rather than committing it.
+
 ## Progressive Web App
 
 The frontend is installable as a PWA - a "Install app" / "Add to Home Screen" prompt is
