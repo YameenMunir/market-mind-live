@@ -437,10 +437,12 @@ failing outright; it recovers on its own.
 
 ## Contributing
 
-Contributions are welcome - have an idea for a new feature, a bug fix, or an improvement? Pull
-requests are the preferred way to propose changes:
+Have an idea for a new feature, a bug fix, or an improvement? This repo is not open-source (see
+[License](#license) below), but contributions back to it are still very welcome via pull request:
 
-1. Fork the repo and create a branch off `main` (e.g. `feat/short-description`).
+1. Fork the repo and create a branch off `main` (e.g. `feat/short-description`) - forking for the
+   purpose of submitting a PR back to this repository is fine; the license restrictions below are
+   about independent reuse/redistribution, not about contributing here.
 2. Make your changes, following the conventions in `CLAUDE.md` (project structure, where new
    backend errors/schemas/API calls belong, semantic Tailwind tokens, etc.).
 3. Verify before pushing:
@@ -454,9 +456,11 @@ describing the bug or feature suggestion instead.
 
 ## License
 
-[MIT](LICENSE) - Copyright (c) 2026 Yameen Munir. You're free to use, modify, and distribute this
-project (including commercially), provided the copyright notice and license text are preserved -
-see [LICENSE](LICENSE) for the full text.
+Copyright (c) 2026 Yameen Munir. All rights reserved - see [LICENSE](LICENSE). This repository is
+publicly visible for portfolio/demonstration purposes and to accept community pull requests; it
+is **not** open-source. Browsing or cloning the code does not grant any license to use, copy,
+modify, distribute, or build on it independently of this repository - see the Contributing
+section above for the one carve-out (submitting a PR back to this repo).
 
 ## Deployment
 

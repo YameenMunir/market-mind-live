@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Root orchestration for Market Mind Live's frontend (Next.js) and backend (FastAPI) - see README.md for full setup instructions.",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "engines": {
     "node": ">=20.9.0"
   },
@@ -21,7 +21,7 @@
     "test:frontend": "npm --prefix frontend run test",
     "lint": "npm --prefix frontend run lint",
     "typecheck": "npm --prefix frontend exec tsc --noEmit",
-    "build:exe": "pkg launcher/launcher.cjs --targets node20-win-x64 --output dist/MarketMindLive.exe"
+    "build:exe": "pkg launcher/launcher.cjs --targets node22-win-x64 --output dist/MarketMindLive.exe"
   },
   "devDependencies": {
     "@yao-pkg/pkg": "^6.22.0",
