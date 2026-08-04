@@ -80,6 +80,11 @@ class Settings(BaseSettings):
     # double-submit or an immediate retry doesn't burn a second Gemini request for an
     # answer that would be identical anyway. Kept short since market context moves.
     ai_response_cache_ttl_seconds: float = 30.0
+    # News digest (services/news_digest_service.py): a "what moved this week" summary
+    # generated from the news feed. Cached far longer than a chat reply - unlike a
+    # user's own question, this is the same output for every viewer of a symbol, and a
+    # digest doesn't need to be any fresher than the news feed itself actually moves.
+    news_digest_cache_ttl_seconds: float = 1800.0
 
     # LiveDataHub: one background poller per actively-watched symbol, shared across every
     # client subscribed to it, so N viewers of the same symbol still cost 1 upstream poll.

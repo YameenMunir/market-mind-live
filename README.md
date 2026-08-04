@@ -40,6 +40,9 @@ streaming AI Insights chat assistant in a single enterprise-grade dashboard UI.
 - **News feed** - recent per-symbol headlines (publisher, timestamp, link) sourced from Yahoo via
   yfinance, cached and served from `/api/news/{symbol}`. Also fed into the AI Insights context so
   the assistant can answer questions grounded in real headlines, not just price/indicator data.
+  A companion **news digest** (`/api/news/{symbol}/digest`) turns the raw headline list into a
+  short "what moved this week" prose summary - Gemini-generated when a key is configured, with
+  the same deterministic mock fallback as AI Insights otherwise, so it works without a key too.
 - **Price alerts** - browser-notification alerts on price/RSI/signal/risk-level conditions,
   persisted per-browser so they survive a refresh without requiring a login.
 - **Multi-currency display** - convert prices/charts/backtests to your preferred display currency

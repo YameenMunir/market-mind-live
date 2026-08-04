@@ -1,21 +1,42 @@
-import { Clock, ExternalLink, Newspaper } from "lucide-react";
+import { Clock, ExternalLink, Newspaper, Sparkles } from "lucide-react";
 
 import { LastUpdated } from "@/components/LastUpdated";
 import { Panel } from "@/components/Panel";
+import { ReadMore } from "@/components/ReadMore";
 import { timeAgo } from "@/lib/utils";
-import type { ApiError, NewsFeed } from "@/types";
+import type { ApiError, NewsDigest, NewsFeed } from "@/types";
 
 interface NewsFeedCardProps {
   news: NewsFeed | null;
   isLoading?: boolean;
   error?: ApiError | null;
+  /** Optional "what moved this week" summary - a progressive enhancement over the raw
+   * headline list below, not a replacement for it. Omitted entirely (not an error
+   * state) while it's still loading or unavailable, since the headline list is this
+   * card's primary content and already has its own loading/error handling. */
+  digest?: NewsDigest | null;
 }
 
-export function NewsFeedCard({ news, isLoading, error }: NewsFeedCardProps) {
+export function NewsFeedCard({ news, isLoading, error, digest }: NewsFeedCardProps) {
   const articles = news?.articles ?? [];
 
   return (
     <Panel eyebrow="News" title="Recent Headlines" className="flex h-full flex-col">
+      {digest && digest.summary && (
+        <div className="mb-3 flex items-start gap-2 rounded-sm border border-border/60 bg-surface-raised/40 p-2.5">
+          {/* Sparkles is reserved for genuine Gemini/mock-provider AI surfaces (see
+              BeginnerSummary.tsx's identical convention) - this digest is one of them. */}
+          <Sparkles size={14} className="mt-0.5 shrink-0 text-brand" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-2xs font-bold uppercase tracking-wider text-ink-faint">
+              This Week{digest.provider === "gemini" ? " · AI Summary" : ""}
+            </p>
+            <ReadMore collapsedHeight={60} className="mt-1">
+              <p className="text-xs leading-relaxed text-ink-muted">{digest.summary}</p>
+            </ReadMore>
+          </div>
+        </div>
+      )}
       {!news && error ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border px-3 py-6 text-center">
           <Clock size={18} className="text-ink-faint" aria-hidden />

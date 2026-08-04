@@ -342,6 +342,21 @@ class NewsFeed(BaseModel):
     is_stale: bool = False
 
 
+class NewsDigest(BaseModel):
+    """A short "what moved this week" prose summary generated from a symbol's news
+    feed - see services/news_digest_service.py."""
+
+    symbol: str
+    summary: str
+    # "gemini" for a live AI-generated digest, "mock" for the deterministic
+    # local fallback (no Gemini key configured, or a live call failed) - mirrors the
+    # AI Insights chat's own `provider` field on ChatResponse for the same reason.
+    provider: str
+    based_on_article_count: int
+    generated_at: str
+    is_stale: bool = False
+
+
 class PredictionHistoryEntry(BaseModel):
     symbol: str
     direction: PredictionDirection
