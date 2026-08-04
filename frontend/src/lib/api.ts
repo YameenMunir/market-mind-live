@@ -27,6 +27,7 @@ import type {
   MarketStatus,
   NewSessionRequest,
   NewSessionResponse,
+  NewsDigest,
   NewsFeed,
   PredictionHistoryEntry,
   PredictionResult,
@@ -279,6 +280,7 @@ export const api = {
     request<RatingChangeFeed>(`/api/analysts/${encodeURIComponent(symbol)}/rating-changes?count=${count}`),
   getNews: (symbol: string, count = 10) =>
     request<NewsFeed>(`/api/news/${encodeURIComponent(symbol)}?count=${count}`),
+  getNewsDigest: (symbol: string) => request<NewsDigest>(`/api/news/${encodeURIComponent(symbol)}/digest`),
   getKnowledgeArticles: () => request<KnowledgeArticle[]>(`/api/knowledge/articles`),
   getUserSettings: () => request<UserSettings>(`/api/settings`),
   updateUserSettings: (body: UserSettings) =>

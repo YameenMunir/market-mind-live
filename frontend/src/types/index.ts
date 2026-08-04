@@ -317,6 +317,17 @@ export interface NewsFeed {
   is_stale: boolean;
 }
 
+export interface NewsDigest {
+  symbol: string;
+  summary: string;
+  /** "gemini" for a live AI-generated digest, "mock" for the deterministic local
+   * fallback (no Gemini key configured, or a live call failed). */
+  provider: string;
+  based_on_article_count: number;
+  generated_at: string;
+  is_stale: boolean;
+}
+
 export type ErrorCode =
   | "missing_api_key"
   | "invalid_symbol"

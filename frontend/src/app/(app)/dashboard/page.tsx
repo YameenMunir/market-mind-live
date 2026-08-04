@@ -45,6 +45,7 @@ import { useGeminiKeyPrompt } from "@/hooks/useGeminiKeyPrompt";
 import { useCandles } from "@/hooks/useMarketData";
 import { useLiveSnapshot } from "@/hooks/useLiveSnapshot";
 import { useNews } from "@/hooks/useNews";
+import { useNewsDigest } from "@/hooks/useNewsDigest";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { usePriceForecast } from "@/hooks/usePriceForecast";
 import { useRatingChanges } from "@/hooks/useRatingChanges";
@@ -112,6 +113,7 @@ export default function DashboardPage() {
   const alertsState = useAlerts(symbol);
   const analyst = useAnalystConsensus(symbol);
   const news = useNews(symbol);
+  const newsDigest = useNewsDigest(symbol);
   const ratingChanges = useRatingChanges(symbol);
   const isLive = snapshot.connectionState === "live" || snapshot.connectionState === "polling";
   const activeAlertCount = alertsState.alerts.filter((a) => a.status === "active" || a.status === "triggered").length;
@@ -341,7 +343,7 @@ export default function DashboardPage() {
         </div>
 
         <div className={cn("grid grid-cols-1 gap-4", isAdvanced && "lg:grid-cols-2")}>
-          <NewsFeedCard news={news.data} isLoading={news.isLoading} error={news.error} />
+          <NewsFeedCard news={news.data} isLoading={news.isLoading} error={news.error} digest={newsDigest.data} />
           {isAdvanced && (
             <RatingChangesCard changes={ratingChanges.data} isLoading={ratingChanges.isLoading} error={ratingChanges.error} />
           )}
